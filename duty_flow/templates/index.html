@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}DutyFlow - Проверка тем{% endblock %}
+
+{% block content %}
+<div class="demo-page">
+    <h1>🎨 DutyFlow</h1>
+    <p class="subtitle">Проверка переключения тем</p>
+    
+    <div class="card-grid">
+        <div class="card">
+            <div class="card-header">
+                <h2>Карточка 1</h2>
+            </div>
+            <div class="card-body">
+                <p>Это тестовая карточка для проверки тем оформления.</p>
+                <span class="badge">Активно</span>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>Карточка 2</h2>
+            </div>
+            <div class="card-body">
+                <p>Цвета должны меняться при переключении темы.</p>
+                <button class="btn">Кнопка</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>Карточка 3</h2>
+            </div>
+            <div class="card-body">
+                <p>Светлая/темная схема работает глобально.</p>
+                <span class="badge success">Успешно</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-container">
+        <h2>Тестовая таблица</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>План наряда КПП</td>
+                    <td><span class="badge success">Активен</span></td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>План наряда Столовая</td>
+                    <td><span class="badge warning">Черновик</span></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>План наряда Дежурство</td>
+                    <td><span class="badge danger">Отменен</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
