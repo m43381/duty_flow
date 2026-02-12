@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DutyFlow{% endblock %}</title>
+    
+    <!-- БАЗОВЫЕ СТИЛИ -->
+    <link rel="stylesheet" href="/static/css/base/reset.css">
+    <link rel="stylesheet" href="/static/css/base/vars.css">
+    
+    <!-- ТЕМЫ -->
+    <link rel="stylesheet" href="/static/css/themes/light.css" id="theme-light">
+    <link rel="stylesheet" href="/static/css/themes/dark.css" id="theme-dark" disabled>
+    
+    <!-- СТИЛИ КОМПОНЕНТОВ -->
+    <link rel="stylesheet" href="/static/css/components/menu.css">
+    <link rel="stylesheet" href="/static/css/components/card.css">
+    <link rel="stylesheet" href="/static/css/components/table.css">
+    <link rel="stylesheet" href="/static/css/components/theme-btn.css">
+    
+    <!-- СТИЛИ МАКЕТОВ -->
+    <link rel="stylesheet" href="/static/css/layouts/cabinet.css">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% block content %}{% endblock %}
+    
+    <!-- БАЗОВЫЕ СКРИПТЫ -->
+    <script src="/static/js/components/theme.js"></script>
+    <script src="/static/js/components/menu.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
