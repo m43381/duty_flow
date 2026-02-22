@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    container_name: duty_flow_app
+    command: python duty_flow/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_DEBUG=True
+    working_dir: /app  # Указываем рабочую директорию
