@@ -16,6 +16,14 @@ class DutyType(models.Model):
         related_name='created_duty_types',
         verbose_name="Создано подразделением"
     )
+    
+    # Поле указывающее на подразделение, за которым закреплен этот тип наряда
+    unit = models.ForeignKey(
+        Unit,
+        on_delete=models.PROTECT,  # PROTECT чтобы нельзя было удалить подразделение, если есть закрепленные наряды
+        related_name='duty_types',
+        verbose_name="Закрепленное подразделение"
+    )
 
     class Meta:
         verbose_name = "Тип наряда"
@@ -23,4 +31,4 @@ class DutyType(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.unit})"
