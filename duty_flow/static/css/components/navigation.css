@@ -1,0 +1,122 @@
+/* Навигация в личном кабинете */
+.cabinet-nav {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    background: rgba(var(--bg-card-rgb), 0.95);
+}
+
+.nav-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.nav-container::-webkit-scrollbar {
+    height: 4px;
+}
+
+.nav-container::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.nav-link {
+    padding: 1rem 1.5rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: var(--primary);
+}
+
+.nav-link.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+/* Хлебные крошки */
+.breadcrumbs {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 1rem 0;
+    color: var(--text-muted);
+}
+
+.breadcrumbs a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumbs .separator {
+    color: var(--border);
+}
+
+/* Выпадающее меню пользователя */
+.user-menu {
+    position: relative;
+    display: inline-block;
+}
+
+.user-menu-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    border-radius: 2rem;
+    cursor: pointer;
+}
+
+.user-menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    min-width: 200px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-md);
+    display: none;
+    z-index: 1000;
+}
+
+.user-menu:hover .user-menu-dropdown {
+    display: block;
+}
+
+.user-menu-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--text);
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.user-menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.user-menu-item.logout {
+    color: var(--danger);
+    border-top: 1px solid var(--border);
+}
