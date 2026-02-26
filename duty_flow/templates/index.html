@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}DutyFlow - Система управления нарядами{% endblock %}
+
+{% block content %}
+<div class="landing-page">
+    <!-- ГЕРОЙ СЕКЦИЯ -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">DutyFlow</h1>
+            <p class="hero-subtitle">Система автоматизации управления нарядами</p>
+            
+            <div class="hero-buttons">
+                <a href="{% url 'login' %}" class="btn btn-primary">Войти в систему</a>
+            </div>
+        </div>
+        
+        <div class="hero-features">
+            <div class="feature-card">
+                <div class="feature-icon">📋</div>
+                <h3>Планирование</h3>
+                <p>Автоматическое составление графиков нарядов с учетом загрузки</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <h3>Учет персонала</h3>
+                <p>Полная информация о сотрудниках и их допусках</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Статистика</h3>
+                <p>Анализ нагрузки и отчетность по подразделениям</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ИНФОРМАЦИЯ О СИСТЕМЕ -->
+    <section class="info-section">
+        <h2>Для кого предназначена система</h2>
+        
+        <div class="roles-grid">
+            <div class="role-card">
+                <h4>🏛️ Академия</h4>
+                <p>Полный доступ ко всем подразделениям, управление пользователями</p>
+            </div>
+            <div class="role-card">
+                <h4>📚 Факультет</h4>
+                <p>Управление нарядами своего факультета и кафедр</p>
+            </div>
+            <div class="role-card">
+                <h4>📖 Кафедра</h4>
+                <p>Работа с нарядами только своей кафедры</p>
+            </div>
+            <div class="role-card">
+                <h4>🏢 Комендант</h4>
+                <p>Управление хозяйственными нарядами</p>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
