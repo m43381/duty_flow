@@ -1,3 +1,15 @@
 from django.contrib import admin
+from .models import Rank
 
-# Register your models here.
+@admin.register(Rank)
+class RankAdmin(admin.ModelAdmin):
+    list_display = ('name', 'order')
+    search_fields = ('name',)
+    list_editable = ('order',)
+    list_filter = ('order',)
+    
+    fieldsets = (
+        ('Информация о звании', {
+            'fields': ('name', 'order')
+        }),
+    )
