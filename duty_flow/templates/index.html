@@ -1,72 +1,62 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}DutyFlow - Проверка тем{% endblock %}
+{% block title %}DutyFlow - Система управления нарядами{% endblock %}
 
 {% block content %}
-<div class="demo-page">
-    <h1>🎨 DutyFlow</h1>
-    <p class="subtitle">Проверка переключения тем</p>
-    
-    <div class="card-grid">
-        <div class="card">
-            <div class="card-header">
-                <h2>Карточка 1</h2>
-            </div>
-            <div class="card-body">
-                <p>Это тестовая карточка для проверки тем оформления.</p>
-                <span class="badge">Активно</span>
+<div class="landing-page">
+    <!-- ГЕРОЙ СЕКЦИЯ -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">DutyFlow</h1>
+            <p class="hero-subtitle">Система автоматизации управления нарядами</p>
+            
+            <div class="hero-buttons">
+                <a href="{% url 'login' %}" class="btn btn-primary">Войти в систему</a>
             </div>
         </div>
         
-        <div class="card">
-            <div class="card-header">
-                <h2>Карточка 2</h2>
+        <div class="hero-features">
+            <div class="feature-card">
+                <div class="feature-icon">📋</div>
+                <h3>Планирование</h3>
+                <p>Автоматическое составление графиков нарядов с учетом загрузки</p>
             </div>
-            <div class="card-body">
-                <p>Цвета должны меняться при переключении темы.</p>
-                <button class="btn">Кнопка</button>
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <h3>Учет персонала</h3>
+                <p>Полная информация о сотрудниках и их допусках</p>
             </div>
-        </div>
-        
-        <div class="card">
-            <div class="card-header">
-                <h2>Карточка 3</h2>
-            </div>
-            <div class="card-body">
-                <p>Светлая/темная схема работает глобально.</p>
-                <span class="badge success">Успешно</span>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Статистика</h3>
+                <p>Анализ нагрузки и отчетность по подразделениям</p>
             </div>
         </div>
-    </div>
+    </section>
     
-    <div class="table-container">
-        <h2>Тестовая таблица</h2>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Название</th>
-                    <th>Статус</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>План наряда КПП</td>
-                    <td><span class="badge success">Активен</span></td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>План наряда Столовая</td>
-                    <td><span class="badge warning">Черновик</span></td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>План наряда Дежурство</td>
-                    <td><span class="badge danger">Отменен</span></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+    <!-- ИНФОРМАЦИЯ О СИСТЕМЕ -->
+    <section class="info-section">
+        <h2>Для кого предназначена система</h2>
+        
+        <div class="roles-grid">
+            <div class="role-card">
+                <h4>🏛️ Академия</h4>
+                <p>Полный доступ ко всем подразделениям, управление пользователями</p>
+            </div>
+            <div class="role-card">
+                <h4>📚 Факультет</h4>
+                <p>Управление нарядами своего факультета и кафедр</p>
+            </div>
+            <div class="role-card">
+                <h4>📖 Кафедра</h4>
+                <p>Работа с нарядами только своей кафедры</p>
+            </div>
+            <div class="role-card">
+                <h4>🏢 Комендант</h4>
+                <p>Управление хозяйственными нарядами</p>
+            </div>
+        </div>
+    </section>
 </div>
 {% endblock %}
