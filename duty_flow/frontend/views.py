@@ -1,32 +1,88 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.contrib.auth import logout
+from django.shortcuts import redirect
 
 def index(request):
     """Главная страница"""
     return render(request, 'index.html')
 
+
+def logout_view(request):
+    logout(request)
+    return redirect('index')
+
+
 @login_required
 def dashboard(request):
-    """Общий дашборд (перенаправляет в зависимости от роли)"""
+    """Дашборд"""
     profile = request.user.profile
-    
-    # Контекст с данными (позже заменим на реальные запросы к БД)
     context = {
         'page_title': f'Дашборд - {profile.unit.name}',
         'active_tab': 'dashboard',
-        'total_people': 150,  # Заглушка
-        'today_plans': 12,     # Заглушка
-        'active_exemptions': 5, # Заглушка
-        'total_assignments': 450, # Заглушка
-        'upcoming_plans': [],   # Заглушка
+        'total_people': 0,
+        'today_plans': 0,
+        'active_exemptions': 0,
+        'total_assignments': 0,
+        'upcoming_plans': [],
     }
-    
     return render(request, 'cabinets/dashboard.html', context)
 
+# Заглушки для всех разделов
+@login_required
+def person_list(request):
+    return render(request, 'cabinets/person_list.html', {
+        'page_title': 'Сотрудники',
+        'active_tab': 'people'
+    })
+
+@login_required
+def duty_plan_list(request):
+    return render(request, 'cabinets/plan_list.html', {
+        'page_title': 'Планы нарядов',
+        'active_tab': 'plans'
+    })
+
+@login_required
+def duty_type_list(request):
+    # Проверка доступа
+    if request.user.profile.access_level not in ['academy', 'faculty']:
+        return render(request, 'cabinets/access_denied.html', {
+            'page_title': 'Доступ запрещен'
+        })
+    return render(request, 'cabinets/type_list.html', {
+        'page_title': 'Типы нарядов',
+        'active_tab': 'types'
+    })
+
+@login_required
+def unit_list(request):
+    # Только академия
+    if request.user.profile.access_level != 'academy':
+        return render(request, 'cabinets/access_denied.html', {
+            'page_title': 'Доступ запрещен'
+        })
+    return render(request, 'cabinets/unit_list.html', {
+        'page_title': 'Подразделения',
+        'active_tab': 'units'
+    })
+
+@login_required
+def user_list(request):
+    # Только академия
+    if request.user.profile.access_level != 'academy':
+        return render(request, 'cabinets/access_denied.html', {
+            'page_title': 'Доступ запрещен'
+        })
+    return render(request, 'cabinets/user_list.html', {
+        'page_title': 'Пользователи',
+        'active_tab': 'users'
+    })
+
+# Кабинеты для разных ролей (если нужны отдельные страницы)
 @login_required
 def commandant_cabinet(request):
-    """Кабинет коменданта"""
     return render(request, 'cabinets/commandant.html', {
         'page_title': 'Кабинет коменданта',
         'active_tab': 'dashboard'
@@ -34,7 +90,6 @@ def commandant_cabinet(request):
 
 @login_required
 def faculty_cabinet(request):
-    """Кабинет факультета"""
     return render(request, 'cabinets/faculty.html', {
         'page_title': 'Кабинет факультета',
         'active_tab': 'dashboard'
@@ -42,7 +97,6 @@ def faculty_cabinet(request):
 
 @login_required
 def department_cabinet(request):
-    """Кабинет кафедры"""
     return render(request, 'cabinets/department.html', {
         'page_title': 'Кабинет кафедры',
         'active_tab': 'dashboard'

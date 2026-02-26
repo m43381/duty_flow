@@ -5,6 +5,19 @@
 
 {% block content %}
 <div class="landing-page">
+    <!-- Проверка, залогинен ли пользователь -->
+    {% if user.is_authenticated %}
+    <div style="position: absolute; top: 80px; right: 20px;">
+        <a href="{% url 'dashboard' %}" class="btn">Личный кабинет</a>
+        
+        <!-- Выход через форму POST -->
+        <form method="post" action="{% url 'logout' %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn" style="background: var(--danger);">Выйти</button>
+        </form>
+    </div>
+    {% endif %}
+
     <!-- ГЕРОЙ СЕКЦИЯ -->
     <section class="hero">
         <div class="hero-content">
@@ -12,7 +25,11 @@
             <p class="hero-subtitle">Система автоматизации управления нарядами</p>
             
             <div class="hero-buttons">
-                <a href="{% url 'login' %}" class="btn btn-primary">Войти в систему</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-primary">Перейти в кабинет</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary">Войти в систему</a>
+                {% endif %}
             </div>
         </div>
         

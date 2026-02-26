@@ -1,25 +1,25 @@
 <!-- Навигация личного кабинета -->
 <div class="cabinet-nav">
     <div class="nav-container">
-        <a href="#" class="nav-link {% if active_tab == 'dashboard' %}active{% endif %}">
+        <a href="{% url 'dashboard' %}" class="nav-link {% if active_tab == 'dashboard' %}active{% endif %}">
             📊 Дашборд
         </a>
-        <a href="#" class="nav-link {% if active_tab == 'people' %}active{% endif %}">
+        <a href="{% url 'person_list' %}" class="nav-link {% if active_tab == 'people' %}active{% endif %}">
             👥 Сотрудники
         </a>
-        <a href="#" class="nav-link {% if active_tab == 'plans' %}active{% endif %}">
+        <a href="{% url 'duty_plan_list' %}" class="nav-link {% if active_tab == 'plans' %}active{% endif %}">
             📋 Планы нарядов
         </a>
         {% if user.profile.access_level == 'academy' or user.profile.access_level == 'faculty' %}
-        <a href="#" class="nav-link {% if active_tab == 'types' %}active{% endif %}">
+        <a href="{% url 'duty_type_list' %}" class="nav-link {% if active_tab == 'types' %}active{% endif %}">
             📌 Типы нарядов
         </a>
         {% endif %}
         {% if user.profile.access_level == 'academy' %}
-        <a href="#" class="nav-link {% if active_tab == 'units' %}active{% endif %}">
+        <a href="{% url 'unit_list' %}" class="nav-link {% if active_tab == 'units' %}active{% endif %}">
             🏛️ Подразделения
         </a>
-        <a href="#" class="nav-link {% if active_tab == 'users' %}active{% endif %}">
+        <a href="{% url 'user_list' %}" class="nav-link {% if active_tab == 'users' %}active{% endif %}">
             👤 Пользователи
         </a>
         {% endif %}

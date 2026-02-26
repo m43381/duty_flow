@@ -1,0 +1,17 @@
+{% extends 'cabinets/base_cabinet.html' %}
+
+{% block cabinet_content %}
+<div class="card" style="border-color: var(--danger);">
+    <div class="card-header" style="background: var(--danger-bg);">
+        <h2 style="color: var(--danger);">⛔ Доступ запрещен</h2>
+    </div>
+    <div class="card-body">
+        <div style="text-align: center; padding: 3rem;">
+            <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 1rem;">
+                У вас нет прав для просмотра этого раздела
+            </p>
+            <a href="{% url 'dashboard' %}" class="btn">Вернуться на дашборд</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

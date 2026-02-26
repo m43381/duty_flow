@@ -3,7 +3,7 @@ body {
     background: var(--bg-body);
     color: var(--text);
     line-height: 1.5;
-    transition: var(--transition);
+    transition: background-color 0.2s, color 0.2s;
     min-height: 100vh;
 }
 
@@ -13,8 +13,5 @@ body {
     padding: 2rem;
 }
 
-/* Утилиты */
 .text-center { text-align: center; }
 .text-muted { color: var(--text-muted); }
-.mt-4 { margin-top: 2rem; }
-.mb-4 { margin-bottom: 2rem; }
