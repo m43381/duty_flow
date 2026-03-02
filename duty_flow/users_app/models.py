@@ -4,12 +4,6 @@ from units.models import Unit
 
 class UserProfile(models.Model):
     """Профиль пользователя-оператора"""
-    ACCESS_LEVEL_CHOICES = [
-        ('academy', 'Академия'),
-        ('faculty', 'Факультет'),
-        ('department', 'Кафедра'),
-        ('commandant', 'Комендант'),
-    ]
     
     user = models.OneToOneField(
         User, 
@@ -21,14 +15,20 @@ class UserProfile(models.Model):
         on_delete=models.PROTECT, 
         related_name='users'
     )
-    access_level = models.CharField(
-        max_length=20, 
-        choices=ACCESS_LEVEL_CHOICES
-    )
 
     class Meta:
         verbose_name = "Профиль пользователя"
         verbose_name_plural = "Профили пользователей"
 
     def __str__(self):
-        return f"{self.user.username} - {self.unit} ({self.get_access_level_display()})"
+        return f"{self.user.username} - {self.unit.name} ({self.unit.unit_type.name})"
+    
+    @property
+    def level(self):
+        """Уровень пользователя в иерархии"""
+        return self.unit.unit_type.level
+    
+    @property
+    def unit_type(self):
+        """Тип подразделения пользователя"""
+        return self.unit.unit_type.name

@@ -1,10 +1,9 @@
-from django.db import models
 from units.models import Unit
 
 class AccessService:
     """
     Универсальный сервис для проверки прав доступа
-    Основан на уровнях иерархии, а не на названиях ролей
+    Основан на уровнях иерархии подразделений
     """
     
     def __init__(self, user):
@@ -39,7 +38,6 @@ class AccessService:
         # Только своё
         return unit.id == self.user_unit.id
     
-    # Для любой модели, у которой есть поле unit
     def get_visible_queryset(self, queryset):
         """
         Универсальный метод для фильтрации любого queryset'а
@@ -58,7 +56,7 @@ class AccessService:
     def can_view_object(self, obj):
         """Может ли просматривать объект (любая модель с unit)"""
         if not hasattr(obj, 'unit'):
-            return True  # Если нет unit, считаем что можно смотреть
+            return True
         return self.can_view_unit(obj.unit)
     
     def can_edit_object(self, obj):
@@ -73,13 +71,9 @@ class AccessService:
         return int(unit_id) == self.user_unit.id
     
     def get_filter_context(self):
-        """
-        Контекст для фильтров в шаблонах
-        Возвращает структуру подразделений для выпадающих списков
-        """
+        """Контекст для фильтров в шаблонах"""
         visible_units = self.get_visible_units()
         
-        # Строим дерево для фильтров
         def build_tree(unit):
             children = unit.children.filter(id__in=visible_units)
             return {
@@ -90,10 +84,13 @@ class AccessService:
                 'children': [build_tree(child) for child in children]
             }
         
-        # Начинаем с корневых (у которых нет parent или parent не виден)
+        # Начинаем с корневых
         root_units = []
-        for unit in visible_units.filter(parent=None):
-            root_units.append(build_tree(unit))
+        all_units = list(visible_units)
+        for unit in all_units:
+            if unit.parent is None or unit.parent not in all_units:
+                if unit not in [r['id'] for r in root_units]:
+                    root_units.append(build_tree(unit))
         
         return {
             'units_tree': root_units,

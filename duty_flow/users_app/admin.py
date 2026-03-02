@@ -7,18 +7,14 @@ class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
     verbose_name = "Профиль"
-    verbose_name_plural = "Профиль"
+    verbose_name_plural = "Профили"
     
-    fieldsets = (
-        ('Информация о пользователе', {
-            'fields': ('unit', 'access_level')
-        }),
-    )
+    fields = ('unit',)  # только unit, без access_level
 
 class CustomUserAdmin(UserAdmin):
     inlines = (UserProfileInline,)
-    list_display = ('username', 'email', 'first_name', 'last_name', 'get_unit', 'get_access_level')
-    list_select_related = ('profile', 'profile__unit')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'get_unit', 'get_unit_type')
+    list_select_related = ('profile', 'profile__unit', 'profile__unit__unit_type')
     
     fieldsets = (
         ('Логин и пароль', {
@@ -29,7 +25,6 @@ class CustomUserAdmin(UserAdmin):
         }),
         ('Права доступа', {
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
-            'classes': ('wide',),
         }),
         ('Важные даты', {
             'fields': ('last_login', 'date_joined'),
@@ -50,11 +45,11 @@ class CustomUserAdmin(UserAdmin):
         return '-'
     get_unit.short_description = 'Подразделение'
     
-    def get_access_level(self, instance):
-        if hasattr(instance, 'profile') and instance.profile.access_level:
-            return instance.profile.get_access_level_display()
+    def get_unit_type(self, instance):
+        if hasattr(instance, 'profile') and instance.profile.unit:
+            return instance.profile.unit.unit_type.name
         return '-'
-    get_access_level.short_description = 'Уровень доступа'
+    get_unit_type.short_description = 'Тип подразделения'
 
 # Перерегистрируем модель User
 admin.site.unregister(User)

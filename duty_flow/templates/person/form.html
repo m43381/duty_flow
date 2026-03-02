@@ -42,7 +42,7 @@
                 <button type="submit" class="btn btn-primary">
                     {% if item %}💾 Сохранить изменения{% else %}✅ Создать{% endif %}
                 </button>
-                <a href="{% url 'person_list' %}" class="btn btn-secondary">↩️ Отмена</a>
+                <a href="{% url 'person:person_list' %}" class="btn btn-secondary">↩️ Отмена</a>
             </div>
         </form>
     </div>

@@ -7,7 +7,7 @@
             <h2>👤 {{ title }}</h2>
             {% if can_edit %}
             <div>
-                <a href="{% url 'person_edit' item.id %}" class="btn btn-primary">✏️ Редактировать</a>
+                <a href="{% url 'person:person_edit' item.id %}" class="btn btn-primary">✏️ Редактировать</a>
             </div>
             {% endif %}
         </div>
@@ -47,7 +47,7 @@
         </div>
     </div>
     <div class="card-footer">
-        <a href="{% url 'person_list' %}" class="btn btn-secondary">↩️ Вернуться к списку</a>
+        <a href="{% url 'person:person_list' %}" class="btn btn-secondary">↩️ Вернуться к списку</a>
     </div>
 </div>
 {% endblock %}

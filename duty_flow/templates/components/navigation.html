@@ -4,18 +4,21 @@
         <a href="{% url 'dashboard' %}" class="nav-link {% if active_tab == 'dashboard' %}active{% endif %}">
             📊 Дашборд
         </a>
-        <a href="{% url 'person:person_list' %}" class="nav-link {% if active_tab == 'people' %}active{% endif %}">
+        <a href="{% url 'person:person_list' %}" class="nav-link {% if active_tab == 'person' %}active{% endif %}">
             👥 Сотрудники
         </a>
         <a href="{% url 'duty_plan_list' %}" class="nav-link {% if active_tab == 'plans' %}active{% endif %}">
             📋 Планы нарядов
         </a>
-        {% if user.profile.access_level == 'academy' or user.profile.access_level == 'faculty' %}
+        
+        {# Проверяем уровень через unit.unit_type.level #}
+        {% if user.profile.unit.unit_type.level <= 1 %}  {# академия (0) или факультет (1) #}
         <a href="{% url 'duty_type_list' %}" class="nav-link {% if active_tab == 'types' %}active{% endif %}">
             📌 Типы нарядов
         </a>
         {% endif %}
-        {% if user.profile.access_level == 'academy' %}
+        
+        {% if user.profile.unit.unit_type.level == 0 %}  {# только академия #}
         <a href="{% url 'unit_list' %}" class="nav-link {% if active_tab == 'units' %}active{% endif %}">
             🏛️ Подразделения
         </a>

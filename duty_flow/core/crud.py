@@ -4,7 +4,8 @@ from django.contrib.auth.decorators import login_required
 from functools import wraps
 from users_app.access_service import AccessService
 
-def crud_views(model, form_class, template_prefix, 
+def crud_views(model, form_class, template_prefix,
+               list_url_name=None, 
                extra_context=None):
     """
     Универсальная фабрика CRUD view-функций
@@ -18,6 +19,10 @@ def crud_views(model, form_class, template_prefix,
     
     def get_access_service(request):
         return AccessService(request.user)
+    
+
+    if list_url_name is None:
+        list_url_name = f'{template_prefix}_list'
     
     @login_required
     def list_view(request):
@@ -52,25 +57,25 @@ def crud_views(model, form_class, template_prefix,
         
         if not access.can_create_in_unit(access.user_unit.id):
             messages.error(request, 'Нет прав для создания')
-            return redirect(f'{template_prefix}_list')
+            return redirect(list_url_name)
         
         if request.method == 'POST':
-            form = form_class(request.POST, user=request.user)
+            form = form_class(request.POST)  # убрали user
             if form.is_valid():
                 obj = form.save(commit=False)
-                obj.unit = access.user_unit  # Всегда создаём в своём подразделении
+                obj.unit = access.user_unit
                 obj.save()
                 messages.success(request, f'{model._meta.verbose_name} создан')
-                return redirect(f'{template_prefix}_list')
+                return redirect(list_url_name)
         else:
-            form = form_class()
+            form = form_class()  # убрали user
         
         return render(request, f'{template_prefix}/form.html', {
             'form': form,
             'active_tab': template_prefix,
             'title': f'Добавление {model._meta.verbose_name}',
         })
-    
+
     @login_required
     def update_view(request, pk):
         """Редактирование объекта"""
@@ -79,16 +84,16 @@ def crud_views(model, form_class, template_prefix,
         
         if not access.can_edit_object(obj):
             messages.error(request, 'Нет прав для редактирования')
-            return redirect(f'{template_prefix}_list')
+            return redirect(list_url_name)
         
         if request.method == 'POST':
-            form = form_class(request.POST, instance=obj, user=request.user)
+            form = form_class(request.POST, instance=obj)  # убрали user
             if form.is_valid():
                 form.save()
                 messages.success(request, f'{model._meta.verbose_name} обновлен')
-                return redirect(f'{template_prefix}_list')
+                return redirect(list_url_name)
         else:
-            form = form_class(instance=obj)
+            form = form_class(instance=obj)  # убрали user
         
         return render(request, f'{template_prefix}/form.html', {
             'form': form,
@@ -110,7 +115,7 @@ def crud_views(model, form_class, template_prefix,
         if request.method == 'POST':
             obj.delete()
             messages.success(request, f'{model._meta.verbose_name} удален')
-            return redirect(f'{template_prefix}_list')
+            return redirect(list_url_name)
         
         return render(request, f'{template_prefix}/delete.html', {
             'item': obj,

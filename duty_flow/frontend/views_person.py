@@ -7,7 +7,7 @@ person_views = crud_views(
     model=Person,
     form_class=PersonForm,
     template_prefix='person',
-    extra_context={'some_extra': 'data'}
+    list_url_name='person:person_list',  # явно указываем имя URL
 )
 
 # Экспортируем view-функции
