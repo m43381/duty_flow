@@ -31,26 +31,16 @@ class PersonForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        # ВАЖНО: CRUD передает user в kwargs
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
         # Сортируем звания по порядку
         self.fields['rank'].queryset = Rank.objects.all().order_by('order')
         
-        # Если есть пользователь и это не академия, ограничиваем выбор подразделений
+        # Если есть пользователь, ограничиваем выбор подразделений
         if self.user and self.user.profile.access_level != 'academy':
             self.fields['unit'].queryset = Unit.objects.filter(id=self.user.profile.unit.id)
-            self.fields['unit'].empty_label = None  # Убираем пустой вариант
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        unit = cleaned_data.get('unit')
-        
-        # Проверяем права на создание в этом подразделении
-        if self.user and self.user.profile.access_level != 'academy':
-            if unit and unit.id != self.user.profile.unit.id:
-                raise forms.ValidationError(
-                    'Вы можете создавать сотрудников только в своем подразделении'
-                )
-        
-        return cleaned_data
+            self.fields['unit'].empty_label = None
+            # Скрываем поле unit для не-админов (можно закомментировать, если нужно показывать)
+            # self.fields['unit'].widget = forms.HiddenInput()

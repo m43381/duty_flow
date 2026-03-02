@@ -4,7 +4,7 @@
         <a href="{% url 'dashboard' %}" class="nav-link {% if active_tab == 'dashboard' %}active{% endif %}">
             📊 Дашборд
         </a>
-        <a href="{% url 'person_list' %}" class="nav-link {% if active_tab == 'people' %}active{% endif %}">
+        <a href="{% url 'person:person_list' %}" class="nav-link {% if active_tab == 'people' %}active{% endif %}">
             👥 Сотрудники
         </a>
         <a href="{% url 'duty_plan_list' %}" class="nav-link {% if active_tab == 'plans' %}active{% endif %}">

@@ -55,7 +55,7 @@ def crud_views(model, form_class, template_prefix,
             return redirect(f'{template_prefix}_list')
         
         if request.method == 'POST':
-            form = form_class(request.POST)
+            form = form_class(request.POST, user=request.user)
             if form.is_valid():
                 obj = form.save(commit=False)
                 obj.unit = access.user_unit  # Всегда создаём в своём подразделении
@@ -82,7 +82,7 @@ def crud_views(model, form_class, template_prefix,
             return redirect(f'{template_prefix}_list')
         
         if request.method == 'POST':
-            form = form_class(request.POST, instance=obj)
+            form = form_class(request.POST, instance=obj, user=request.user)
             if form.is_valid():
                 form.save()
                 messages.success(request, f'{model._meta.verbose_name} обновлен')

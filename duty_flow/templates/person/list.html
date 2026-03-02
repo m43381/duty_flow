@@ -1,4 +1,5 @@
 {% extends 'cabinets/base_cabinet.html' %}
+{% load custom_filters %}
 
 {% block cabinet_content %}
 <div class="card">
@@ -6,7 +7,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <h2>👥 {{ title }}</h2>
             {% if can_add %}
-            <a href="{% url 'person_add' %}" class="btn btn-primary">➕ Добавить</a>
+            <a href="{% url 'person_add' %}" class="btn btn-primary">➕ Добавить сотрудника</a>
             {% endif %}
         </div>
     </div>
@@ -18,19 +19,33 @@
                 <div class="form-group" style="min-width: 250px;">
                     <label for="unit">Подразделение:</label>
                     <select name="unit" id="unit" class="form-select" onchange="this.form.submit()">
-                        <option value="">Все доступные</option>
-                        {% include 'components/unit_tree_options.html' with units=filter_context.units_tree selected_unit=request.GET.unit %}
+                        <option value="">Все подразделения</option>
+                        {% for unit in filter_context.units_tree %}
+                            <option value="{{ unit.id }}" 
+                                    {% if request.GET.unit == unit.id|stringformat:"s" %}selected{% endif %}>
+                                {% if unit.level > 0 %}{{ '—'|repeat:unit.level }}{% endif %}
+                                {{ unit.name }}
+                            </option>
+                            {% if unit.children %}
+                                {% for child in unit.children %}
+                                    <option value="{{ child.id }}" 
+                                            {% if request.GET.unit == child.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ '—'|repeat:child.level }} {{ child.name }}
+                                    </option>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="search">Поиск:</label>
                     <input type="text" name="search" id="search" class="form-input" 
-                           value="{{ request.GET.search }}" placeholder="Фамилия, имя...">
+                           value="{{ request.GET.search }}" placeholder="Фамилия или имя...">
                 </div>
                 
-                <button type="submit" class="btn">🔍 Применить</button>
-                <a href="?" class="btn btn-secondary">🔄 Сбросить</a>
+                <button type="submit" class="btn btn-primary">🔍 Применить</button>
+                <a href="{% url 'person_list' %}" class="btn btn-secondary">🔄 Сбросить</a>
             </div>
         </form>
     </div>
@@ -38,36 +53,48 @@
     <!-- Таблица -->
     <div class="card-body">
         {% if items %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>ФИО</th>
-                    <th>Звание</th>
-                    <th>Подразделение</th>
-                    <th>Тип подразделения</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for person in items %}
-                <tr>
-                    <td>{{ person.last_name }} {{ person.first_name }} {{ person.middle_name }}</td>
-                    <td>{{ person.rank.name }}</td>
-                    <td>{{ person.unit.name }}</td>
-                    <td><span class="badge">{{ person.unit.unit_type.name }}</span></td>
-                    <td>
-                        <a href="{% url 'person_detail' person.id %}" class="badge">👁️</a>
-                        {% if person.unit.id == filter_context.current_unit_id %}
-                            <a href="{% url 'person_edit' person.id %}" class="badge">✏️</a>
-                            <a href="{% url 'person_delete' person.id %}" class="badge danger">🗑️</a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ФИО</th>
+                        <th>Звание</th>
+                        <th>Подразделение</th>
+                        <th>Уровень</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for person in items %}
+                    <tr>
+                        <td>
+                            <strong>{{ person.last_name }} {{ person.first_name }}</strong>
+                            {% if person.middle_name %}<br><small>{{ person.middle_name }}</small>{% endif %}
+                        </td>
+                        <td><span class="badge">{{ person.rank.name }}</span></td>
+                        <td>{{ person.unit.name }}</td>
+                        <td><span class="badge">{{ person.unit.unit_type.name }}</span></td>
+                        <td>
+                            <a href="{% url 'person_detail' person.id %}" class="badge" title="Просмотр">👁️</a>
+                            {% if person.unit.id == current_unit_id %}
+                                <a href="{% url 'person_edit' person.id %}" class="badge" title="Редактировать">✏️</a>
+                                <a href="{% url 'person_delete' person.id %}" class="badge danger" title="Удалить">🗑️</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-        <p class="text-center text-muted">Нет записей для отображения</p>
+        <div style="text-align: center; padding: 3rem;">
+            <p style="font-size: 1.2rem; color: var(--text-muted);">👥 Нет сотрудников для отображения</p>
+            {% if can_add %}
+            <a href="{% url 'person_add' %}" class="btn btn-primary" style="margin-top: 1rem;">
+                ➕ Добавить первого сотрудника
+            </a>
+            {% endif %}
+        </div>
         {% endif %}
     </div>
 </div>

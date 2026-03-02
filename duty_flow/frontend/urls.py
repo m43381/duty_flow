@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 urlpatterns = [
@@ -6,7 +6,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     
     # Основные разделы
-    path('persons/', views.person_list, name='person_list'),
+    path('persons/', include('frontend.urls_person')),
     path('plans/', views.duty_plan_list, name='duty_plan_list'),
     path('types/', views.duty_type_list, name='duty_type_list'),
     path('units/', views.unit_list, name='unit_list'),
