@@ -1,0 +1,38 @@
+# Файлы IDE и редакторов  
+.idea/  
+.vscode/  
+*.swp  
+*.swo  
+.DS_Store  
+
+# Питоновские временные файлы  
+__pycache__/  
+*.py[cod]  
+*$py.class  
+
+# Файлы зависимостей  
+venv/  
+env/  
+.env  
+*.env  
+*.venv  
+Pipfile*  
+poetry.lock  
+pyproject.toml  
+
+
+# Логи и кэш  
+*.log  
+*.cache  
+
+
+# Файлы сборки и дистрибуции  
+/build/  
+/dist/  
+*.egg-info/  
+*.egg  
+
+# Файлы тестов и покрытия  
+.coverage  
+htmlcov/  
+.pytest_cache/  

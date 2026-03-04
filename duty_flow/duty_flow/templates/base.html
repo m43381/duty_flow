@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Иконка сайта -->
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    
+    <title>{% block title %}DutyFlow{% endblock %}</title>
+    
+    <!-- Базовые стили -->
+    <link rel="stylesheet" href="{% static 'css/base/reset.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base/variables.css' %}">
+    
+    <!-- Темы -->
+    <link rel="stylesheet" href="{% static 'css/themes/light.css' %}" id="theme-light">
+    <link rel="stylesheet" href="{% static 'css/themes/dark.css' %}" id="theme-dark" disabled>
+    
+    <!-- Главный файл стилей (в нем уже всё есть) -->
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Кнопка темы (не показываем на странице входа) -->
+    {% if request.path != '/login/' %}
+    <button class="theme-toggle" id="themeBtn">
+        <span class="theme-icon-light">☀️</span>
+        <span class="theme-icon-dark">🌙</span>
+        <span class="theme-text">Сменить тему</span>
+    </button>
+    {% endif %}
+    
+    {% block content %}{% endblock %}
+    
+    <!-- Скрипты -->
+    <script src="{% static 'js/components/theme.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

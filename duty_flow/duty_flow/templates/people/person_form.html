@@ -1,0 +1,188 @@
+{% extends 'cabinets/base_cabinet.html' %}
+{% load static %}
+
+{% block cabinet_content %}
+<div class="card" style="background-color: var(--bg-card); border: 1px solid var(--border);">
+    <div class="card-header" style="background-color: var(--bg-header); border-bottom: 1px solid var(--border);">
+        <h5 class="card-title mb-0" style="color: var(--text);">{{ page_title }}</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" id="personForm">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="alert" style="background-color: var(--danger-bg); border: 1px solid var(--danger); color: var(--danger); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 1rem;">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label for="{{ form.last_name.id_for_label }}" class="form-label" style="color: var(--text); font-weight: 500;">
+                    Фамилия <span style="color: var(--danger);">*</span>
+                </label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">
+                        {% for error in form.last_name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.first_name.id_for_label }}" class="form-label" style="color: var(--text); font-weight: 500;">
+                    Имя <span style="color: var(--danger);">*</span>
+                </label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">
+                        {% for error in form.first_name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.middle_name.id_for_label }}" class="form-label" style="color: var(--text); font-weight: 500;">
+                    Отчество
+                </label>
+                {{ form.middle_name }}
+                {% if form.middle_name.errors %}
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">
+                        {% for error in form.middle_name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.rank.id_for_label }}" class="form-label" style="color: var(--text); font-weight: 500;">
+                    Звание <span style="color: var(--danger);">*</span>
+                </label>
+                {{ form.rank }}
+                {% if form.rank.errors %}
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">
+                        {% for error in form.rank.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.unit.id_for_label }}" class="form-label" style="color: var(--text); font-weight: 500;">
+                    Подразделение <span style="color: var(--danger);">*</span>
+                </label>
+                {{ form.unit }}
+                {% if form.unit.errors %}
+                    <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">
+                        {% for error in form.unit.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn" style="background-color: var(--primary); color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 0.5rem; font-weight: 500;">
+                    <i class="fas fa-save me-1"></i>
+                    {% if action == 'create' %}
+                        Сохранить
+                    {% else %}
+                        Обновить
+                    {% endif %}
+                </button>
+                <a href="{% url 'people:person_list' %}" class="btn" style="background-color: transparent; color: var(--text); border: 1px solid var(--border); padding: 0.5rem 1.5rem; border-radius: 0.5rem; font-weight: 500; text-decoration: none;">
+                    <i class="fas fa-times me-1"></i> Отмена
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Стили для полей формы */
+    .form-control, .form-select {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        width: 100%;
+        transition: all 0.2s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background-color: var(--bg-card);
+        border-color: var(--primary);
+        color: var(--text);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-control:hover, .form-select:hover {
+        border-color: var(--primary-light);
+    }
+    
+    .form-select {
+        cursor: pointer;
+    }
+    
+    .form-select option {
+        background-color: var(--bg-card);
+        color: var(--text);
+    }
+    
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .btn-secondary {
+        background-color: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+        transition: all 0.2s ease;
+    }
+    
+    .btn-secondary:hover {
+        background-color: var(--bg-hover);
+        transform: translateY(-1px);
+    }
+    
+    /* Стили для плейсхолдеров */
+    .form-control::placeholder {
+        color: var(--text-muted);
+        opacity: 0.7;
+    }
+    
+    /* Стили для обязательных полей */
+    .text-danger {
+        color: var(--danger) !important;
+    }
+    
+    /* Адаптация для темной темы */
+    [data-theme="dark"] .form-control,
+    [data-theme="dark"] .form-select {
+        background-color: var(--bg-card);
+        border-color: var(--border);
+    }
+    
+    [data-theme="dark"] .form-control:focus,
+    [data-theme="dark"] .form-select:focus {
+        background-color: var(--bg-hover);
+    }
+</style>
+{% endblock %}

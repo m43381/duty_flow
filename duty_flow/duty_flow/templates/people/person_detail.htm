@@ -1,0 +1,60 @@
+{% extends 'cabinets/base_cabinet.html' %}
+{% load static %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i>
+            Просмотр данных сотрудника
+        </h5>
+        <div class="card-tools">
+            <a href="{% url 'people:person_update' person.pk %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-pen me-1"></i> Редактировать
+            </a>
+            <a href="{% url 'people:person_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i> Назад
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <table class="table table-bordered">
+                    <tr>
+                        <th style="width: 200px; background-color: var(--bg-header);">Фамилия:</th>
+                        <td>{{ person.last_name }}</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--bg-header);">Имя:</th>
+                        <td>{{ person.first_name }}</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--bg-header);">Отчество:</th>
+                        <td>{{ person.middle_name|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--bg-header);">Звание:</th>
+                        <td>{{ person.rank.name }}</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: var(--bg-header);">Подразделение:</th>
+                        <td>{{ person.unit.name }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">Дополнительная информация</h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <i class="fas fa-user-circle" style="font-size: 5rem; color: var(--primary); opacity: 0.5;"></i>
+                        <p class="text-muted mt-2 mb-0">ID сотрудника: {{ person.pk }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
