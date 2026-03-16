@@ -58,11 +58,6 @@ def duty_type_list(request):
 
 @login_required
 def unit_list(request):
-    # Только академия
-    if request.user.profile.access_level != 'academy':
-        return render(request, 'cabinets/access_denied.html', {
-            'page_title': 'Доступ запрещен'
-        })
     return render(request, 'cabinets/unit_list.html', {
         'page_title': 'Подразделения',
         'active_tab': 'units'
@@ -70,11 +65,6 @@ def unit_list(request):
 
 @login_required
 def user_list(request):
-    # Только академия
-    if request.user.profile.access_level != 'academy':
-        return render(request, 'cabinets/access_denied.html', {
-            'page_title': 'Доступ запрещен'
-        })
     return render(request, 'cabinets/user_list.html', {
         'page_title': 'Пользователи',
         'active_tab': 'users'
