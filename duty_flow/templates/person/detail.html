@@ -1,0 +1,53 @@
+{% extends 'cabinets/base_cabinet.html' %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>👤 {{ title }}</h2>
+            {% if can_edit %}
+            <div>
+                <a href="{% url 'person:person_edit' item.id %}" class="btn btn-primary">✏️ Редактировать</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="info-grid">
+            <div class="info-row">
+                <span class="info-label">Фамилия:</span>
+                <span class="info-value">{{ item.last_name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Имя:</span>
+                <span class="info-value">{{ item.first_name }}</span>
+            </div>
+            {% if item.middle_name %}
+            <div class="info-row">
+                <span class="info-label">Отчество:</span>
+                <span class="info-value">{{ item.middle_name }}</span>
+            </div>
+            {% endif %}
+            <div class="info-row">
+                <span class="info-label">Звание:</span>
+                <span class="info-value">{{ item.rank.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Подразделение:</span>
+                <span class="info-value">{{ item.unit.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Тип подразделения:</span>
+                <span class="info-value">{{ item.unit.unit_type.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Уровень иерархии:</span>
+                <span class="info-value">{{ item.unit.unit_type.level }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <a href="{% url 'person:person_list' %}" class="btn btn-secondary">↩️ Вернуться к списку</a>
+    </div>
+</div>
+{% endblock %}
