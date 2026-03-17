@@ -53,7 +53,7 @@ class PersonForm(forms.ModelForm):
 
 # ========== Форма для освобождений ==========
 class ExemptionForm(forms.ModelForm):
-    """Форма для добавления/редактирования освобождения"""
+    """Форма для освобождения"""
     
     class Meta:
         model = Exemption
@@ -63,12 +63,10 @@ class ExemptionForm(forms.ModelForm):
             'date_from': forms.DateInput(attrs={
                 'class': 'form-input',
                 'type': 'date',
-                'placeholder': 'ГГГГ-ММ-ДД'
             }),
             'date_to': forms.DateInput(attrs={
                 'class': 'form-input',
                 'type': 'date',
-                'placeholder': 'ГГГГ-ММ-ДД'
             }),
             'comment': forms.Textarea(attrs={
                 'class': 'form-textarea',
@@ -77,21 +75,26 @@ class ExemptionForm(forms.ModelForm):
             }),
         }
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['date_from'].input_formats = ['%Y-%m-%d', '%d.%m.%Y']
+        self.fields['date_to'].input_formats = ['%Y-%m-%d', '%d.%m.%Y']
+    
     def clean(self):
-        """Валидация дат"""
         cleaned_data = super().clean()
         date_from = cleaned_data.get('date_from')
         date_to = cleaned_data.get('date_to')
         
-        if date_from and date_to and date_from > date_to:
-            raise forms.ValidationError('Дата начала не может быть позже даты окончания')
+        if date_from and date_to:
+            if date_from > date_to:
+                raise forms.ValidationError('Дата начала не может быть позже даты окончания')
         
         return cleaned_data
 
 
 # ========== Форма для допусков ==========
 class DutyClearanceForm(forms.ModelForm):
-    """Форма для добавления допуска к типу наряда"""
+    """Форма для допуска"""
     
     class Meta:
         model = DutyClearance
@@ -101,8 +104,12 @@ class DutyClearanceForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        self.person = kwargs.pop('person', None)
         super().__init__(*args, **kwargs)
-        # Сортируем типы нарядов по названию
         self.fields['duty_type'].queryset = DutyType.objects.all().order_by('name')
         self.fields['duty_type'].label = 'Тип наряда'
-        self.fields['duty_type'].empty_label = "Выберите тип наряда"
+        
+        # Исключаем уже существующие допуски
+        if self.person:
+            existing_ids = DutyClearance.objects.filter(person=self.person).values_list('duty_type_id', flat=True)
+            self.fields['duty_type'].queryset = self.fields['duty_type'].queryset.exclude(id__in=existing_ids)

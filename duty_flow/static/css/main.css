@@ -13,6 +13,7 @@
 @import 'components/badges.css';
 @import 'components/navigation.css';
 @import 'components/theme-toggle.css';
+@import 'components/person-detail.css';
 
 /* Макеты */
 @import 'layouts/landing.css';

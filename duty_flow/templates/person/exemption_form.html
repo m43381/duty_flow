@@ -6,11 +6,39 @@
         <h2>🔓 {{ title }}</h2>
     </div>
     <div class="card-body">
-        <form method="post">
+        <form method="post" class="form">
             {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn btn-primary">Сохранить</button>
-            <a href="{% url 'person:person_detail' person.pk %}?tab=exemptions" class="btn btn-secondary">Отмена</a>
+            
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+            
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                    {% if field.field.required %}<span style="color: var(--danger);">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}
+                <small class="form-text text-muted">{{ field.help_text }}</small>
+                {% endif %}
+                {% if field.errors %}
+                <div class="form-error">
+                    {% for error in field.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+                <a href="{% url 'person:person_detail' person.pk %}?tab=exemptions" class="btn btn-secondary">↩️ Отмена</a>
+            </div>
         </form>
     </div>
 </div>

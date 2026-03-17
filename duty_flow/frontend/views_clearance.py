@@ -7,22 +7,16 @@ from users_app.access_service import AccessService
 
 @login_required
 def clearance_add(request, pk):
-    """
-    Добавление допуска для сотрудника
-    URL: /persons/<pk>/clearance/add/
-    """
-    # Получаем сотрудника или 404
+    """Добавление допуска для сотрудника"""
     person = get_object_or_404(Person, pk=pk)
-    
-    # Проверяем права
     access = AccessService(request.user)
+    
     if not access.can_edit_object(person):
-        messages.error(request, 'У вас нет прав для редактирования этого сотрудника')
+        messages.error(request, 'Нет прав для редактирования')
         return redirect('person:person_detail', pk=person.pk)
     
-    # Обработка формы
     if request.method == 'POST':
-        form = DutyClearanceForm(request.POST)
+        form = DutyClearanceForm(request.POST, person=person)
         if form.is_valid():
             clearance = form.save(commit=False)
             clearance.person = person
@@ -30,7 +24,7 @@ def clearance_add(request, pk):
             messages.success(request, 'Допуск успешно добавлен')
             return redirect(f'/persons/{person.pk}/?tab=clearances')
     else:
-        form = DutyClearanceForm()
+        form = DutyClearanceForm(person=person)
     
     return render(request, 'person/clearance_form.html', {
         'form': form,
@@ -40,21 +34,15 @@ def clearance_add(request, pk):
 
 @login_required
 def clearance_delete(request, pk, clearance_id):
-    """
-    Удаление допуска
-    URL: /persons/<pk>/clearance/<clearance_id>/delete/
-    """
-    # Получаем сотрудника и убеждаемся, что допуск принадлежит ему
+    """Удаление допуска"""
     person = get_object_or_404(Person, pk=pk)
     clearance = get_object_or_404(DutyClearance, pk=clearance_id, person=person)
-    
-    # Проверяем права
     access = AccessService(request.user)
+    
     if not access.can_edit_object(person):
-        messages.error(request, 'У вас нет прав для удаления')
+        messages.error(request, 'Нет прав для удаления')
         return redirect('person:person_detail', pk=person.pk)
     
-    # Подтверждение удаления
     if request.method == 'POST':
         clearance.delete()
         messages.success(request, 'Допуск успешно удален')

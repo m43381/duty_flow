@@ -1,34 +1,51 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from people.models import Person, Exemption
 from people.forms import ExemptionForm
 from users_app.access_service import AccessService
 
 @login_required
 def exemption_add(request, pk):
-    """
-    Добавление освобождения для сотрудника
-    URL: /persons/<pk>/exemption/add/
-    """
-    # Получаем сотрудника или 404
+    """Добавление освобождения для сотрудника"""
     person = get_object_or_404(Person, pk=pk)
-    
-    # Проверяем права
     access = AccessService(request.user)
+    
     if not access.can_edit_object(person):
-        messages.error(request, 'У вас нет прав для редактирования этого сотрудника')
+        messages.error(request, 'Нет прав для редактирования')
         return redirect('person:person_detail', pk=person.pk)
     
-    # Обработка формы
     if request.method == 'POST':
         form = ExemptionForm(request.POST)
         if form.is_valid():
             exemption = form.save(commit=False)
             exemption.person = person
-            exemption.save()
-            messages.success(request, 'Освобождение успешно добавлено')
-            return redirect(f'{request.path}?tab=exemptions')
+            
+            # Валидация пересечения дат
+            existing = Exemption.objects.filter(
+                person=person,
+                date_from__lte=exemption.date_to,
+                date_to__gte=exemption.date_from
+            )
+            
+            if existing.exists():
+                messages.error(request, 'Освобождение пересекается с существующим периодом')
+                return render(request, 'person/exemption_form.html', {
+                    'form': form,
+                    'person': person,
+                    'title': f'Добавление освобождения: {person.last_name} {person.first_name}',
+                })
+            
+            try:
+                exemption.full_clean()
+                exemption.save()
+                messages.success(request, 'Освобождение успешно добавлено')
+                return redirect(f'/persons/{person.pk}/?tab=exemptions')
+            except ValidationError as e:
+                for field, errors in e.message_dict.items():
+                    for error in errors:
+                        form.add_error(field, error)
     else:
         form = ExemptionForm()
     
@@ -40,27 +57,42 @@ def exemption_add(request, pk):
 
 @login_required
 def exemption_edit(request, pk, exemption_id):
-    """
-    Редактирование освобождения
-    URL: /persons/<pk>/exemption/<exemption_id>/edit/
-    """
-    # Получаем сотрудника и убеждаемся, что освобождение принадлежит ему
+    """Редактирование освобождения"""
     person = get_object_or_404(Person, pk=pk)
     exemption = get_object_or_404(Exemption, pk=exemption_id, person=person)
-    
-    # Проверяем права
     access = AccessService(request.user)
+    
     if not access.can_edit_object(person):
-        messages.error(request, 'У вас нет прав для редактирования этого сотрудника')
+        messages.error(request, 'Нет прав для редактирования')
         return redirect('person:person_detail', pk=person.pk)
     
-    # Обработка формы
     if request.method == 'POST':
         form = ExemptionForm(request.POST, instance=exemption)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Освобождение успешно обновлено')
-            return redirect(f'/persons/{person.pk}/?tab=exemptions')
+            # Валидация пересечения дат (исключая текущее освобождение)
+            existing = Exemption.objects.filter(
+                person=person,
+                date_from__lte=form.cleaned_data['date_to'],
+                date_to__gte=form.cleaned_data['date_from']
+            ).exclude(pk=exemption.pk)
+            
+            if existing.exists():
+                messages.error(request, 'Освобождение пересекается с существующим периодом')
+                return render(request, 'person/exemption_form.html', {
+                    'form': form,
+                    'person': person,
+                    'exemption': exemption,
+                    'title': 'Редактирование освобождения',
+                })
+            
+            try:
+                form.save()
+                messages.success(request, 'Освобождение успешно обновлено')
+                return redirect(f'/persons/{person.pk}/?tab=exemptions')
+            except ValidationError as e:
+                for field, errors in e.message_dict.items():
+                    for error in errors:
+                        form.add_error(field, error)
     else:
         form = ExemptionForm(instance=exemption)
     
@@ -68,26 +100,20 @@ def exemption_edit(request, pk, exemption_id):
         'form': form,
         'person': person,
         'exemption': exemption,
-        'title': f'Редактирование освобождения',
+        'title': 'Редактирование освобождения',
     })
 
 @login_required
 def exemption_delete(request, pk, exemption_id):
-    """
-    Удаление освобождения
-    URL: /persons/<pk>/exemption/<exemption_id>/delete/
-    """
-    # Получаем сотрудника и убеждаемся, что освобождение принадлежит ему
+    """Удаление освобождения"""
     person = get_object_or_404(Person, pk=pk)
     exemption = get_object_or_404(Exemption, pk=exemption_id, person=person)
-    
-    # Проверяем права
     access = AccessService(request.user)
+    
     if not access.can_edit_object(person):
-        messages.error(request, 'У вас нет прав для удаления')
+        messages.error(request, 'Нет прав для удаления')
         return redirect('person:person_detail', pk=person.pk)
     
-    # Подтверждение удаления
     if request.method == 'POST':
         exemption.delete()
         messages.success(request, 'Освобождение успешно удалено')
