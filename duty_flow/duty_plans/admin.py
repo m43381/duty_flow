@@ -1,49 +1,78 @@
 from django.contrib import admin
-from .models import DutyPlan, DutyAssignment
+from .models import MonthlySchedule, DayPlan, DutyAssignment
 
-class DutyAssignmentInline(admin.TabularInline):
-    model = DutyAssignment
-    extra = 1
-    verbose_name = "Назначение"
-    verbose_name_plural = "Назначения"
 
-@admin.register(DutyPlan)
-class DutyPlanAdmin(admin.ModelAdmin):
-    list_display = ('date', 'unit', 'duty_type', 'assignments_count')
-    list_filter = ('date', 'unit', 'duty_type')
-    search_fields = ('unit__name', 'duty_type__name')
-    date_hierarchy = 'date'
+@admin.register(MonthlySchedule)
+class MonthlyScheduleAdmin(admin.ModelAdmin):
+    list_display = ('month', 'name', 'unit', 'status', 'created_by', 'created_at')
+    list_filter = ('status', 'month', 'unit')
+    search_fields = ('name', 'unit__name')
+    readonly_fields = ('created_by', 'created_at', 'updated_at')
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('date', 'unit', 'duty_type')
+            'fields': ('month', 'name', 'status', 'unit')
+        }),
+        ('Иерархия', {
+            'fields': ('parent_schedule',),
+            'classes': ('wide',),
+        }),
+        ('Аудит', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',),
         }),
     )
     
-    inlines = [DutyAssignmentInline]
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(DayPlan)
+class DayPlanAdmin(admin.ModelAdmin):
+    list_display = ('schedule', 'date', 'unit', 'duty_type', 'created_by', 'created_at')
+    list_filter = ('schedule__month', 'schedule__status', 'unit', 'duty_type')
+    search_fields = ('unit__name', 'duty_type__name')
+    readonly_fields = ('created_by', 'created_at', 'updated_at')
     
-    def assignments_count(self, obj):
-        return obj.assignments.count()
-    assignments_count.short_description = 'Количество назначений'
+    fieldsets = (
+        ('Расписание', {
+            'fields': ('schedule', 'date')
+        }),
+        ('Назначение', {
+            'fields': ('unit', 'duty_type')
+        }),
+        ('Аудит', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(DutyAssignment)
 class DutyAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('plan', 'person', 'get_date', 'get_unit')
-    list_filter = ('plan__date', 'plan__unit', 'plan__duty_type')
-    search_fields = ('person__last_name', 'person__first_name', 'plan__unit__name')
+    list_display = ('day_plan', 'person', 'assigned_by', 'assigned_at')
+    list_filter = ('day_plan__schedule__month', 'day_plan__duty_type')
+    search_fields = ('person__last_name', 'person__first_name')
+    readonly_fields = ('assigned_by', 'assigned_at')
     
     fieldsets = (
         ('Назначение', {
-            'fields': ('plan', 'person')
+            'fields': ('day_plan', 'person')
+        }),
+        ('Аудит', {
+            'fields': ('assigned_by', 'assigned_at'),
+            'classes': ('collapse',),
         }),
     )
     
-    def get_date(self, obj):
-        return obj.plan.date
-    get_date.short_description = 'Дата'
-    get_date.admin_order_field = 'plan__date'
-    
-    def get_unit(self, obj):
-        return obj.plan.unit
-    get_unit.short_description = 'Подразделение'
-    get_unit.admin_order_field = 'plan__unit'
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.assigned_by = request.user
+        super().save_model(request, obj, form, change)

@@ -1,6 +1,6 @@
 from django.db import models
 from units.models import Unit
-from duty_plans.models import DutyPlan
+from duty_plans.models import MonthlySchedule, DayPlan  # исправлено
 from duty_types.models import DutyType
 
 
@@ -14,7 +14,7 @@ class AccessService:
         self.user = user
         self.profile = user.profile
         self.user_unit = user.profile.unit
-        self.user_level = self.user_unit.unit_type.level  # статический уровень
+        self.user_level = self.user_unit.unit_type.level
     
     # ========== ПОДРАЗДЕЛЕНИЯ ==========
     
@@ -61,77 +61,73 @@ class AccessService:
         
         return (own_types | parent_types).distinct()
     
-    # ========== ПЛАНЫ НАРЯДОВ ==========
+    # ========== РАСПИСАНИЯ ==========
     
-    def get_visible_plans(self):
+    def get_visible_schedules(self):
         """
-        Планы, которые пользователь может видеть:
-        - Планы своего подразделения
-        - Планы дочерних подразделений
-        - Если план имеет parent_plan, виден и он
+        Расписания, которые пользователь может видеть:
+        - Свои расписания (где unit в расписании = своё подразделение)
+        - Расписания дочерних подразделений
         """
         visible_units = self.get_visible_units()
         
-        # Планы видимых подразделений
-        plans = DutyPlan.objects.filter(unit__in=visible_units)
-        
-        # Добавляем родительские планы (для отслеживания иерархии)
-        parent_ids = plans.filter(parent_plan__isnull=False).values_list('parent_plan_id', flat=True)
-        plans = plans | DutyPlan.objects.filter(id__in=parent_ids)
-        
-        return plans.distinct()
+        # Получаем все расписания, где подразделение в visible_units
+        # TODO: нужно добавить связь между MonthlySchedule и Unit
+        # Пока возвращаем пустой queryset
+        return MonthlySchedule.objects.none()
     
-    def get_plans_for_planning(self):
-        """
-        Планы, которые пользователь может "принять" (создать дочерние).
-        Только корневые планы для подчиненных подразделений.
-        """
-        return DutyPlan.objects.filter(
-            unit=self.user_unit,
-            parent_plan__isnull=True
-        )
+    def can_view_schedule(self, schedule):
+        """Может ли просматривать расписание"""
+        # TODO: реализовать после добавления связи с Unit
+        return True
     
-    def can_create_plan(self, target_unit=None):
-        """
-        Может ли пользователь создавать планы.
-        Если target_unit указан — проверяем конкретное подразделение.
-        """
-        if target_unit is None:
-            return True
-        
-        # Создание для подчиненных (глубина 1)
-        return target_unit.parent_id == self.user_unit.id
+    def can_edit_schedule(self, schedule):
+        """Может ли редактировать расписание"""
+        return schedule.created_by_id == self.user.id
     
-    def can_edit_plan(self, plan):
+    def can_delete_schedule(self, schedule):
+        """Может ли удалять расписание"""
+        return schedule.created_by_id == self.user.id
+    
+    # ========== ПЛАНЫ НА ДЕНЬ ==========
+    
+    def get_visible_day_plans(self):
         """
-        Может ли пользователь редактировать план.
+        Планы на день, которые пользователь может видеть
+        """
+        visible_units = self.get_visible_units()
+        return DayPlan.objects.filter(unit__in=visible_units)
+    
+    def can_edit_day_plan(self, plan):
+        """
+        Может ли пользователь редактировать план на день
         """
         return plan.unit.id == self.user_unit.id or plan.created_by_id == self.user.id
     
-    def can_delete_plan(self, plan):
+    def can_delete_day_plan(self, plan):
         """
-        Может ли пользователь удалять план.
+        Может ли пользователь удалять план на день
         """
         return plan.created_by_id == self.user.id
     
     # ========== НАЗНАЧЕНИЯ ==========
     
-    def can_assign_person(self, plan, person):
+    def can_assign_person(self, day_plan, person):
         """
-        Может ли пользователь назначить сотрудника на план.
+        Может ли пользователь назначить сотрудника на план дня
         """
-        if plan.unit.id != self.user_unit.id:
+        if day_plan.unit.id != self.user_unit.id:
             return False
         
         if person.unit.id != self.user_unit.id:
             return False
         
-        if not person.clearances.filter(duty_type=plan.duty_type).exists():
+        if not person.clearances.filter(duty_type=day_plan.duty_type).exists():
             return False
         
         if person.exemptions.filter(
-            date_from__lte=plan.date,
-            date_to__gte=plan.date
+            date_from__lte=day_plan.date,
+            date_to__gte=day_plan.date
         ).exists():
             return False
         
@@ -146,15 +142,15 @@ class AccessService:
     
     def can_view_object(self, obj):
         """Может ли просматривать объект"""
-        if not hasattr(obj, 'unit'):
-            return True
-        return self.can_view_unit(obj.unit)
+        if hasattr(obj, 'unit'):
+            return self.can_view_unit(obj.unit)
+        return True
     
     def can_edit_object(self, obj):
         """Может ли редактировать объект"""
-        if not hasattr(obj, 'unit'):
-            return False
-        return self.can_edit_unit(obj.unit)
+        if hasattr(obj, 'unit'):
+            return self.can_edit_unit(obj.unit)
+        return False
     
     def can_create_in_unit(self, unit_id):
         """Может ли создавать объекты в указанном подразделении"""
@@ -196,5 +192,4 @@ class AccessService:
             'available_units': self.get_visible_units(),
             'available_duty_types': self.get_available_duty_types(),
             'can_create_plan': self.can_create_plan(),
-            'plans_for_planning': self.get_plans_for_planning(),
         }

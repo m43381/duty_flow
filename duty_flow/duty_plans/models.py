@@ -1,40 +1,45 @@
 from django.db import models
 from django.conf import settings
 from units.models import Unit
-from people.models import DutyType, Person
+from duty_types.models import DutyType
+from people.models import Person
 
-class DutyPlan(models.Model):
+
+class MonthlySchedule(models.Model):
     """
-    План наряда на конкретную дату для конкретного подразделения.
+    Расписание на месяц (черновик или опубликованное)
+    """
+    STATUS_CHOICES = [
+        ('draft', 'Черновик'),
+        ('published', 'Опубликовано'),
+        ('archived', 'Архив'),
+    ]
     
-    Иерархия:
-    - Если parent_plan = None — корневой план (создан вышестоящим подразделением)
-    - Если parent_plan указан — дочерний план (создан нижестоящим подразделением 
-      на основе корневого)
-    """
-    # Основные поля
-    date = models.DateField(db_index=True, verbose_name="Дата наряда")
-    unit = models.ForeignKey(
-        Unit, 
-        on_delete=models.CASCADE, 
-        related_name='duty_plans', 
-        verbose_name="Подразделение"
+    month = models.DateField(verbose_name="Месяц", help_text="Всегда первое число месяца")
+    name = models.CharField(max_length=255, blank=True, verbose_name="Название")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='draft',
+        verbose_name="Статус"
     )
-    duty_type = models.ForeignKey(
-        DutyType, 
-        on_delete=models.CASCADE, 
-        related_name='duty_plans', 
-        verbose_name="Тип наряда"
+    
+    # Подразделение, для которого создано расписание
+    unit = models.ForeignKey(
+        Unit,
+        on_delete=models.CASCADE,
+        related_name='schedules',
+        verbose_name="Подразделение"
     )
     
     # Иерархия
-    parent_plan = models.ForeignKey(
+    parent_schedule = models.ForeignKey(
         'self',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='child_plans',
-        verbose_name="Создан на основе плана"
+        related_name='child_schedules',
+        verbose_name="Создано на основе расписания"
     )
     
     # Аудит
@@ -42,73 +47,100 @@ class DutyPlan(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True,
-        related_name='created_plans',
+        related_name='created_schedules',
         verbose_name="Создал"
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True, 
-        verbose_name="Дата создания"
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True, 
-        verbose_name="Дата обновления"
-    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
     
     class Meta:
-        verbose_name = "План наряда"
-        verbose_name_plural = "Планы нарядов"
-        ordering = ['-date', 'unit']
-        # На одно подразделение в один день не может быть двух одинаковых нарядов
-        unique_together = ('date', 'unit', 'duty_type')
-        indexes = [
-            models.Index(fields=['date', 'unit']),
-            models.Index(fields=['parent_plan']),
-        ]
-
+        verbose_name = "Расписание на месяц"
+        verbose_name_plural = "Расписания на месяц"
+        ordering = ['-month']
+    
     def __str__(self):
-        return f"{self.date}: {self.unit} - {self.duty_type}"
+        return self.name or f"{self.month.strftime('%B %Y')} - {self.unit.name}"
+    
+    def save(self, *args, **kwargs):
+        if self.month:
+            self.month = self.month.replace(day=1)
+        super().save(*args, **kwargs)
     
     @property
     def is_root(self):
-        """Корневой ли план (создан вышестоящим)"""
-        return self.parent_plan is None
+        return self.parent_schedule is None
     
-    @property
-    def is_child(self):
-        """Дочерний ли план (создан нижестоящим)"""
-        return self.parent_plan is not None
+    def publish(self):
+        self.status = 'published'
+        self.save()
     
-    def get_origin_plan(self):
-        """Получить корневой план (первоисточник)"""
-        if self.is_root:
-            return self
-        return self.parent_plan.get_origin_plan()
+    def archive(self):
+        self.status = 'archived'
+        self.save()
+
+
+class DayPlan(models.Model):
+    """
+    План на конкретный день.
+    Принадлежит расписанию на месяц.
+    """
+    schedule = models.ForeignKey(
+        MonthlySchedule,
+        on_delete=models.CASCADE,
+        related_name='days',
+        verbose_name="Расписание на месяц"
+    )
+    date = models.DateField(verbose_name="Дата")
     
-    def get_creation_chain(self):
-        """Получить цепочку создания (от корня до текущего)"""
-        chain = []
-        current = self
-        while current:
-            chain.append(current)
-            current = current.parent_plan
-        return list(reversed(chain))
+    # Основные поля
+    unit = models.ForeignKey(
+        Unit,
+        on_delete=models.CASCADE,
+        related_name='day_plans',
+        verbose_name="Подразделение"
+    )
+    duty_type = models.ForeignKey(
+        DutyType,
+        on_delete=models.CASCADE,
+        related_name='day_plans',
+        verbose_name="Тип наряда"
+    )
+    
+    # Аудит
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_day_plans',
+        verbose_name="Создал"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+    
+    class Meta:
+        verbose_name = "План на день"
+        verbose_name_plural = "Планы на день"
+        ordering = ['date']
+        unique_together = ('schedule', 'date', 'duty_type')
+    
+    def __str__(self):
+        return f"{self.date}: {self.unit} - {self.duty_type}"
 
 
 class DutyAssignment(models.Model):
     """
-    Назначение конкретного сотрудника на план наряда.
+    Назначение конкретного сотрудника на план дня.
     """
-    plan = models.ForeignKey(
-        DutyPlan, 
-        on_delete=models.CASCADE, 
-        related_name='assignments', 
-        verbose_name="План"
+    day_plan = models.ForeignKey(
+        DayPlan,
+        on_delete=models.CASCADE,
+        related_name='assignments',
+        verbose_name="План на день"
     )
     person = models.ForeignKey(
-        Person, 
-        on_delete=models.CASCADE, 
-        related_name='duty_assignments', 
+        Person,
+        on_delete=models.CASCADE,
+        related_name='duty_assignments',
         verbose_name="Сотрудник"
     )
     
@@ -117,23 +149,15 @@ class DutyAssignment(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True,
         related_name='assigned_duties',
         verbose_name="Назначил"
     )
-    assigned_at = models.DateTimeField(
-        auto_now_add=True, 
-        verbose_name="Дата назначения"
-    )
+    assigned_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата назначения")
     
     class Meta:
         verbose_name = "Назначение на наряд"
         verbose_name_plural = "Назначения на наряды"
-        # Один сотрудник не может быть дважды назначен на один и тот же план
-        unique_together = ('plan', 'person')
-        indexes = [
-            models.Index(fields=['plan', 'person']),
-        ]
-
+        unique_together = ('day_plan', 'person')
+    
     def __str__(self):
-        return f"{self.person} назначен в {self.plan}"
+        return f"{self.person} назначен в {self.day_plan}"

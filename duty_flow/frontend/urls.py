@@ -7,7 +7,7 @@ urlpatterns = [
     
     # Основные разделы
     path('persons/', include('frontend.urls_person')),
-    path('plans/', include('frontend.urls_plan')),
+    path('plans/', views.duty_plan_list, name='duty_plan_list'),
     path('types/', include('frontend.urls_type')),
     path('units/', views.unit_list, name='unit_list'),
     path('users/', views.user_list, name='user_list'),
