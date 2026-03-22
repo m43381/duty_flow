@@ -17,19 +17,15 @@
                 <span class="info-label">Название:</span>
                 <span class="info-value">{{ item.name|default:"—" }}</span>
             </div>
-            <div class="info-row">
-                <span class="info-label">Подразделение:</span>
-                <span class="info-value">{{ item.unit.name }}</span>
-            </div>
         </div>
         
-        <p style="color: var(--danger);">Это действие нельзя будет отменить! Все планы на этот месяц будут удалены.</p>
+        <p style="color: var(--danger);">Это действие нельзя будет отменить!</p>
         
         <form method="post">
             {% csrf_token %}
             <div class="form-actions">
                 <button type="submit" class="btn btn-danger">🗑️ Да, удалить</button>
-                <a href="{% url 'plan:list' %}" class="btn btn-secondary">↩️ Отмена</a>
+                <a href="{% url 'plan:detail' item.pk %}" class="btn btn-secondary">↩️ Отмена</a>
             </div>
         </form>
     </div>

@@ -1,194 +1,121 @@
+from core.crud import crud_views
+from duty_plans.models import MonthlySchedule
+from duty_plans.forms import MonthlyScheduleForm
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from datetime import datetime
 import calendar
+from duty_plans.models import DayPlan
 
-from core.crud import crud_views
-from duty_plans.models import MonthlySchedule, DayPlan
-from duty_plans.forms import MonthlyScheduleForm, DayPlanForm
-from duty_types.models import DutyType
 from users_app.access_service import AccessService
 
 
-# ========== БАЗОВЫЙ CRUD ДЛЯ РАСПИСАНИЙ (только delete) ==========
+# ========== БАЗОВЫЙ CRUD (без unit) ==========
 
-schedule_views = crud_views(
+plan_views = crud_views(
     model=MonthlySchedule,
     form_class=MonthlyScheduleForm,
-    template_prefix='schedule',
+    template_prefix='plan',
     list_url_name='plan:list',
+    has_unit_field=False,  # У MonthlySchedule нет поля unit
     extra_context={'active_tab': 'plans'},
 )
 
-# Используем только delete из CRUD
-schedule_delete = schedule_views['delete']
-
-
-# ========== СПИСОК РАСПИСАНИЙ ==========
-
-@login_required
-def schedule_list(request):
-    """Список всех расписаний"""
-    schedules = MonthlySchedule.objects.all().order_by('-month')
-    
-    context = {
-        'items': schedules,
-        'active_tab': 'plans',
-        'title': 'Расписания нарядов',
-        'can_add': True,
-    }
-    return render(request, 'schedule/list.html', context)
-
-
-# ========== СОЗДАНИЕ РАСПИСАНИЯ ==========
-
-@login_required
-def schedule_add(request):
-    """Создание расписания"""
-    if request.method == 'POST':
-        form = MonthlyScheduleForm(request.POST, user=request.user)
-        if form.is_valid():
-            schedule = form.save(commit=False)
-            schedule.created_by = request.user
-            schedule.save()
-            messages.success(request, f'Расписание "{schedule}" создано')
-            return redirect('plan:days', pk=schedule.pk)
-    else:
-        form = MonthlyScheduleForm(user=request.user)
-    
-    context = {
-        'form': form,
-        'active_tab': 'plans',
-        'title': 'Создание расписания',
-    }
-    return render(request, 'schedule/form.html', context)
-
-
-# ========== РЕДАКТИРОВАНИЕ РАСПИСАНИЯ (общие поля) ==========
-
-@login_required
-def schedule_edit(request, pk):
-    """Редактирование расписания (общие поля)"""
-    schedule = get_object_or_404(MonthlySchedule, pk=pk)
-    
-    if request.method == 'POST':
-        form = MonthlyScheduleForm(request.POST, instance=schedule, user=request.user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Расписание обновлено')
-            return redirect('plan:detail', pk=schedule.pk)
-    else:
-        form = MonthlyScheduleForm(instance=schedule, user=request.user)
-    
-    context = {
-        'form': form,
-        'item': schedule,
-        'active_tab': 'plans',
-        'title': 'Редактирование расписания',
-    }
-    return render(request, 'schedule/form.html', context)
-
-
-# ========== ПРОСМОТР РАСПИСАНИЯ ==========
-
-@login_required
-def schedule_detail(request, pk):
-    """Просмотр расписания"""
-    schedule = get_object_or_404(MonthlySchedule, pk=pk)
-    
-    context = {
-        'item': schedule,
-        'active_tab': 'plans',
-        'title': f'Расписание: {schedule}',
-        'can_edit': True,
-    }
-    return render(request, 'schedule/detail.html', context)
-
-
-# ========== УДАЛЕНИЕ РАСПИСАНИЯ ==========
-
-# schedule_delete уже есть из CRUD
+plan_list = plan_views['list']
+plan_add = plan_views['create']
+plan_edit = plan_views['update']
+plan_delete = plan_views['delete']
+plan_detail = plan_views['detail']
 
 
 # ========== РЕДАКТИРОВАНИЕ ДНЕЙ (ТАБЛИЦА) ==========
 
 @login_required
-def schedule_days(request, pk):
-    """Редактирование дней в расписании"""
-    schedule = get_object_or_404(MonthlySchedule, pk=pk)
+def plan_days(request, pk):
+    plan = get_object_or_404(MonthlySchedule, pk=pk)
     access = AccessService(request.user)
     
-    # Получаем все дни месяца
-    year = schedule.month.year
-    month = schedule.month.month
+    year = plan.month.year
+    month = plan.month.month
     last_day = calendar.monthrange(year, month)[1]
     dates = [datetime(year, month, day).date() for day in range(1, last_day + 1)]
     
-    # Доступные типы нарядов
-    available_duty_types = DutyType.objects.all()
-    
-    # Доступные подразделения для выбора
+    from duty_types.models import DutyType
+    duty_types = DutyType.objects.all()
     available_units = access.get_visible_units()
     
-    # Строим матрицу существующих планов
-    plan_matrix = {}
-    for dp in schedule.days.all():
-        key = f"{dp.date}_{dp.duty_type_id}"
-        plan_matrix[key] = dp.unit_id
+    # Получаем все назначения
+    assignments = plan.days.all()
+    
+    # Строим матрицу: (date, duty_type_id) -> unit_id
+    matrix = {}
+    for a in assignments:
+        matrix[(a.date, a.duty_type_id)] = a.unit_id
     
     if request.method == 'POST':
         with transaction.atomic():
-            created_count = 0
-            updated_count = 0
-            kept_keys = []
-            
+            # Собираем все ключи из POST (включая пустые)
+            post_data = {}
             for key, value in request.POST.items():
-                if key.startswith('day_') and value:
-                    parts = key.split('_')
-                    if len(parts) == 3:
-                        date_str = parts[1]
-                        duty_type_id = int(parts[2])
-                        unit_id = int(value)
-                        
-                        try:
-                            date = datetime.strptime(date_str, '%Y-%m-%d').date()
-                            kept_keys.append((date, duty_type_id))
-                            
-                            day_plan, created = DayPlan.objects.update_or_create(
-                                schedule=schedule,
-                                date=date,
-                                duty_type_id=duty_type_id,
-                                defaults={'unit_id': unit_id}
-                            )
-                            
-                            if created:
-                                created_count += 1
-                            else:
-                                updated_count += 1
-                                
-                        except (ValueError, TypeError):
-                            continue
+                if key.startswith('day_'):
+                    # Сохраняем даже пустые значения
+                    post_data[key] = value if value else None
             
-            deleted_count = schedule.days.exclude(
-                date__in=[k[0] for k in kept_keys],
-                duty_type_id__in=[k[1] for k in kept_keys]
-            ).delete()[0]
+            print(f"POST данные: {post_data}")
             
-            messages.success(
-                request,
-                f'Сохранено: создано {created_count}, обновлено {updated_count}, удалено {deleted_count}'
-            )
-            return redirect('plan:days', pk=schedule.pk)
+            for key, unit_id in post_data.items():
+                parts = key.split('_')
+                if len(parts) == 3:
+                    date_str = parts[1]
+                    duty_type_id = int(parts[2])
+                    date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    
+                    if unit_id is not None:
+                        # Есть значение — создаем или обновляем
+                        DayPlan.objects.update_or_create(
+                            schedule=plan,
+                            date=date,
+                            duty_type_id=duty_type_id,
+                            defaults={'unit_id': unit_id}
+                        )
+                        print(f"Создано/обновлено: {date}, тип={duty_type_id}, подр={unit_id}")
+                    else:
+                        # Пустое значение — удаляем
+                        DayPlan.objects.filter(
+                            schedule=plan,
+                            date=date,
+                            duty_type_id=duty_type_id
+                        ).delete()
+                        print(f"Удалено: {date}, тип={duty_type_id}")
+            
+            messages.success(request, 'Сохранено')
+            return redirect('plan:days', pk=plan.pk)
+    
+    # Подготавливаем данные для таблицы
+    table_data = []
+    for duty_type in duty_types:
+        row = {
+            'duty_type': duty_type,
+            'cells': []
+        }
+        for date in dates:
+            unit_id = matrix.get((date, duty_type.id))
+            row['cells'].append({
+                'date': date,
+                'unit_id': unit_id,
+                'unit_name': next((u.name for u in available_units if u.id == unit_id), None) if unit_id else None
+            })
+        table_data.append(row)
     
     context = {
-        'schedule': schedule,
+        'plan': plan,
         'dates': dates,
-        'available_duty_types': available_duty_types,
+        'duty_types': duty_types,
+        'table_data': table_data,
         'available_units': available_units,
-        'plan_matrix': plan_matrix,
         'active_tab': 'plans',
-        'title': f'Редактирование дней: {schedule}',
+        'title': f'Редактирование: {plan}',
     }
-    return render(request, 'schedule/days.html', context)
+    return render(request, 'plan/days.html', context)

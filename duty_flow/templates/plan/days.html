@@ -1,0 +1,95 @@
+{% extends 'cabinets/base_cabinet.html' %}
+{% load static %}
+
+{% block title %}Редактирование: {{ plan }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/schedule-table.css' %}">
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-content">
+            <h2 class="card-title">📅 {{ title }}</h2>
+            <div class="card-actions">
+                <a href="{% url 'plan:detail' plan.pk %}" class="btn btn-secondary">← Назад</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="schedule-table-container">
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>Тип наряда</th>
+                            {% for date in dates %}
+                            <th>
+                                {{ date|date:"d.m" }}<br>
+                                <small>
+                                    {% if date|date:"l" == 'Monday' %}Пн
+                                    {% elif date|date:"l" == 'Tuesday' %}Вт
+                                    {% elif date|date:"l" == 'Wednesday' %}Ср
+                                    {% elif date|date:"l" == 'Thursday' %}Чт
+                                    {% elif date|date:"l" == 'Friday' %}Пт
+                                    {% elif date|date:"l" == 'Saturday' %}Сб
+                                    {% else %}Вс
+                                    {% endif %}
+                                </small>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in table_data %}
+                        <tr>
+                            <td>
+                                <strong>{{ row.duty_type.name }}</strong>
+                                <br><small>({{ row.duty_type.required_people }} чел)</small>
+                            </td>
+                            {% for cell in row.cells %}
+                            <td class="schedule-cell {% if cell.unit_id %}schedule-cell--assigned{% else %}schedule-cell--empty{% endif %}">
+                                {% if cell.unit_id %}
+                                <div class="assignment-card">
+                                    <span class="assignment-badge" title="{{ cell.unit_name }}">
+                                        {{ cell.unit_name|truncatechars:15 }}
+                                    </span>
+                                    <button type="button" 
+                                            class="assignment-remove"
+                                            data-date="{{ cell.date|date:'Y-m-d' }}"
+                                            data-duty="{{ row.duty_type.id }}">
+                                        ✕ Снять
+                                    </button>
+                                </div>
+                                {% else %}
+                                <select name="day_{{ cell.date|date:'Y-m-d' }}_{{ row.duty_type.id }}" 
+                                        class="schedule-select">
+                                    <option value="">— Выбрать —</option>
+                                    {% for unit in available_units %}
+                                    <option value="{{ unit.id }}">{{ unit.name|truncatechars:20 }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="form-actions" style="margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary">💾 Сохранить изменения</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/components/schedule-table.js' %}"></script>
+{% endblock %}

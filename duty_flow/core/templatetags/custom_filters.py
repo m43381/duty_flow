@@ -16,11 +16,7 @@ def repeat(value, times):
     
 @register.filter
 def get_item(dictionary, key):
-    """Получает элемент из словаря по ключу"""
-    try:
-        return dictionary.get(key)
-    except (AttributeError, TypeError):
-        try:
-            return dictionary[key]
-        except (KeyError, TypeError):
-            return None
+    """Получает значение из словаря по ключу"""
+    if dictionary is None:
+        return None
+    return dictionary.get(key)

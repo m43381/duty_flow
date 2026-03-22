@@ -14,6 +14,7 @@
 @import 'components/navigation.css';
 @import 'components/theme-toggle.css';
 @import 'components/person-detail.css';
+@import 'components/schedule-table.css';
 
 /* Макеты */
 @import 'layouts/landing.css';

@@ -1,0 +1,148 @@
+/* ===== КОМПОНЕНТ: Таблица планирования ===== */
+
+.schedule-table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+}
+
+/* Заголовки */
+.schedule-table th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-header);
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text);
+    border-bottom: 2px solid var(--border);
+    z-index: 10;
+}
+
+.schedule-table th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background: var(--bg-header);
+}
+
+/* Ячейки */
+.schedule-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+    transition: background-color 0.2s ease;
+}
+
+.schedule-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--bg-card);
+    font-weight: 500;
+    border-right: 1px solid var(--border);
+    z-index: 5;
+}
+
+/* Состояния ячеек */
+.schedule-cell {
+    min-width: 120px;
+    text-align: center;
+}
+
+.schedule-cell--assigned {
+    background-color: var(--success-bg);
+}
+
+.schedule-cell--empty {
+    background-color: var(--bg-card);
+}
+
+/* Карточка назначения */
+.assignment-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.assignment-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    background: var(--success);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.assignment-remove {
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 0.7rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.assignment-remove:hover {
+    background: var(--danger);
+    color: white;
+}
+
+/* Select для пустых ячеек */
+.schedule-select {
+    width: 100%;
+    min-width: 110px;
+    padding: 6px 8px;
+    background: var(--bg-body);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.schedule-select:hover {
+    border-color: var(--primary);
+}
+
+.schedule-select.changed {
+    background-color: var(--warning-bg);
+}
+
+/* Фиксированный первый столбец при скролле */
+.schedule-table td:first-child,
+.schedule-table th:first-child {
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Темная тема */
+[data-theme="dark"] .schedule-cell--assigned {
+    background-color: rgba(34, 197, 94, 0.15);
+}
+
+[data-theme="dark"] .assignment-badge {
+    background: var(--success);
+}
+
+[data-theme="dark"] .schedule-select.changed {
+    background-color: rgba(234, 179, 8, 0.2);
+}
+
+[data-theme="dark"] .schedule-table td:first-child {
+    background: var(--bg-card);
+}

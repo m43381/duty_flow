@@ -19,32 +19,30 @@
                     <tr>
                         <th>Месяц</th>
                         <th>Название</th>
-                        <th>Подразделение</th>
                         <th>Статус</th>
                         <th>Создан</th>
                         <th>Действия</th>
                     </thead>
                 <tbody>
-                    {% for schedule in items %}
+                    {% for item in items %}
                     <tr>
-                        <td>{{ schedule.month|date:"F Y" }}</td>
-                        <td>{{ schedule.name|default:"—" }}</td>
-                        <td>{{ schedule.unit.name }}</td>
+                        <td>{{ item.month|date:"F Y" }}</td>
+                        <td>{{ item.name|default:"—" }}</td>
                         <td>
-                            {% if schedule.status == 'draft' %}
-                                <span class="badge warning">Черновик</span>
-                            {% elif schedule.status == 'published' %}
+                            {% if item.status == 'draft' %}
+                                <span class="badge">Черновик</span>
+                            {% elif item.status == 'published' %}
                                 <span class="badge success">Опубликовано</span>
                             {% else %}
                                 <span class="badge">Архив</span>
                             {% endif %}
                         </td>
-                        <td>{{ schedule.created_at|date:"d.m.Y" }}</td>
+                        <td>{{ item.created_at|date:"d.m.Y" }}</td>
                         <td>
-                            <a href="{% url 'plan:detail' schedule.pk %}" class="action-btn" title="Просмотр">👁️</a>
-                            <a href="{% url 'plan:days' schedule.pk %}" class="action-btn" title="Редактировать дни">📅</a>
-                            <a href="{% url 'plan:edit' schedule.pk %}" class="action-btn" title="Редактировать">✏️</a>
-                            <a href="{% url 'plan:delete' schedule.pk %}" class="action-btn action-btn-delete" title="Удалить">🗑️</a>
+                            <a href="{% url 'plan:detail' item.pk %}" class="action-btn" title="Просмотр">👁️</a>
+                            <a href="{% url 'plan:edit' item.pk %}" class="action-btn" title="Редактировать">✏️</a>
+                            <a href="{% url 'plan:days' item.pk %}" class="action-btn" title="Дни">📅</a>
+                            <a href="{% url 'plan:delete' item.pk %}" class="action-btn action-btn-delete" title="Удалить">🗑️</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -53,7 +51,7 @@
         </div>
         {% else %}
         <div class="empty-state">
-            <p class="empty-state__text">📅 Нет созданных расписаний</p>
+            <p class="empty-state__text">📅 Нет расписаний</p>
             <a href="{% url 'plan:add' %}" class="btn btn-primary">➕ Создать первое расписание</a>
         </div>
         {% endif %}
