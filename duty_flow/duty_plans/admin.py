@@ -4,14 +4,14 @@ from .models import MonthlySchedule, DayPlan, DutyAssignment
 
 @admin.register(MonthlySchedule)
 class MonthlyScheduleAdmin(admin.ModelAdmin):
-    list_display = ('month', 'name', 'unit', 'status', 'created_by', 'created_at')
-    list_filter = ('status', 'month', 'unit')
-    search_fields = ('name', 'unit__name')
+    list_display = ('month', 'name', 'status', 'created_by', 'created_at')
+    list_filter = ('status', 'month')
+    search_fields = ('name',)
     readonly_fields = ('created_by', 'created_at', 'updated_at')
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('month', 'name', 'status', 'unit')
+            'fields': ('month', 'name', 'status')
         }),
         ('Иерархия', {
             'fields': ('parent_schedule',),

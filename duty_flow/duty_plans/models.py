@@ -24,14 +24,6 @@ class MonthlySchedule(models.Model):
         verbose_name="Статус"
     )
     
-    # Подразделение, для которого создано расписание
-    unit = models.ForeignKey(
-        Unit,
-        on_delete=models.CASCADE,
-        related_name='schedules',
-        verbose_name="Подразделение"
-    )
-    
     # Иерархия
     parent_schedule = models.ForeignKey(
         'self',

@@ -7,18 +7,13 @@ class MonthlyScheduleForm(forms.ModelForm):
     
     class Meta:
         model = MonthlySchedule
-        fields = ['month', 'name', 'status', 'unit', 'parent_schedule']
+        fields = ['month', 'name', 'status', 'parent_schedule']
         widgets = {
-            'month': forms.DateInput(attrs={
-                'class': 'form-input',
-                'type': 'month',
-            }),
             'name': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Например: Март 2026'
+                'placeholder': 'Например: Июнь 2026'
             }),
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'unit': forms.Select(attrs={'class': 'form-select'}),
             'parent_schedule': forms.Select(attrs={'class': 'form-select'}),
         }
     
@@ -26,10 +21,16 @@ class MonthlyScheduleForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        if self.user:
-            from users_app.access_service import AccessService
-            access = AccessService(self.user)
-            self.fields['unit'].queryset = access.get_visible_units()
+        # Поле month создается вручную
+        self.fields['month'] = forms.DateField(
+            label='Месяц',
+            widget=forms.DateInput(attrs={
+                'class': 'form-input',
+                'type': 'month',
+            }),
+            required=True,
+            help_text='Выберите месяц (например, 2026-06)'
+        )
         
         self.fields['parent_schedule'].queryset = MonthlySchedule.objects.filter(
             status='published'
