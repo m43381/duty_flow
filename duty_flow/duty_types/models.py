@@ -21,6 +21,8 @@ class DutyType(models.Model):
     unit = models.ForeignKey(
         Unit,
         on_delete=models.PROTECT,  # PROTECT чтобы нельзя было удалить подразделение, если есть закрепленные наряды
+        null=True,
+        blank=True,
         related_name='duty_types',
         verbose_name="Закрепленное подразделение"
     )

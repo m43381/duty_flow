@@ -5,6 +5,17 @@ from .models import MonthlySchedule, DayPlan
 class MonthlyScheduleForm(forms.ModelForm):
     """Форма для расписания на месяц"""
     
+    month = forms.DateField(
+        label='Месяц',
+        widget=forms.DateInput(attrs={
+            'class': 'form-input',
+            'type': 'month',
+        }),
+        required=True,
+        help_text='Выберите месяц из календаря (формат: ГГГГ-ММ)',
+        input_formats=['%Y-%m']
+    )
+    
     class Meta:
         model = MonthlySchedule
         fields = ['month', 'name', 'status', 'parent_schedule']
@@ -21,16 +32,9 @@ class MonthlyScheduleForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        # Поле month создается вручную
-        self.fields['month'] = forms.DateField(
-            label='Месяц',
-            widget=forms.DateInput(attrs={
-                'class': 'form-input',
-                'type': 'month',
-            }),
-            required=True,
-            help_text='Выберите месяц (например, 2026-06)'
-        )
+        # Если есть начальное значение и это date, преобразуем для отображения
+        if self.instance and self.instance.pk and self.instance.month:
+            self.initial['month'] = self.instance.month.strftime('%Y-%m')
         
         self.fields['parent_schedule'].queryset = MonthlySchedule.objects.filter(
             status='published'
@@ -41,6 +45,7 @@ class MonthlyScheduleForm(forms.ModelForm):
     def clean_month(self):
         month = self.cleaned_data.get('month')
         if month:
+            # Приводим к первому числу месяца
             month = month.replace(day=1)
         return month
 
