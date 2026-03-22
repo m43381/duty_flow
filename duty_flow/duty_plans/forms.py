@@ -12,7 +12,6 @@ class MonthlyScheduleForm(forms.ModelForm):
             'type': 'month',
         }),
         required=True,
-        help_text='Выберите месяц из календаря (формат: ГГГГ-ММ)',
         input_formats=['%Y-%m']
     )
     
@@ -22,7 +21,7 @@ class MonthlyScheduleForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-input',
-                'placeholder': 'Например: Июнь 2026'
+                'placeholder': 'Например: Март 2026'
             }),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'parent_schedule': forms.Select(attrs={'class': 'form-select'}),
@@ -32,22 +31,41 @@ class MonthlyScheduleForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        # Если есть начальное значение и это date, преобразуем для отображения
         if self.instance and self.instance.pk and self.instance.month:
             self.initial['month'] = self.instance.month.strftime('%Y-%m')
         
-        self.fields['parent_schedule'].queryset = MonthlySchedule.objects.filter(
-            status='published'
-        ).order_by('-month')
-        self.fields['parent_schedule'].required = False
-        self.fields['parent_schedule'].empty_label = "— Корневое расписание —"
+        if self.user:
+            from users_app.access_service import AccessService
+            access = AccessService(self.user)
+            user_unit = access.user_unit
+            
+            # Доступные родительские расписания: опубликованные, вышестоящие подразделения
+            parent_units = user_unit.get_ancestors()
+            self.fields['parent_schedule'].queryset = MonthlySchedule.objects.filter(
+                status='published',
+                created_by__profile__unit__in=parent_units
+            ).order_by('-month')
+            self.fields['parent_schedule'].required = False
+            self.fields['parent_schedule'].empty_label = "— Корневое расписание —"
     
     def clean_month(self):
         month = self.cleaned_data.get('month')
         if month:
-            # Приводим к первому числу месяца
             month = month.replace(day=1)
         return month
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        month = cleaned_data.get('month')
+        parent = cleaned_data.get('parent_schedule')
+        
+        if parent and month and parent.month != month:
+            raise forms.ValidationError(
+                f'Родительское расписание "{parent}" создано на другой месяц. '
+                f'Выберите расписание за тот же месяц или оставьте поле пустым.'
+            )
+        
+        return cleaned_data
 
 
 class DayPlanForm(forms.ModelForm):
@@ -55,4 +73,10 @@ class DayPlanForm(forms.ModelForm):
     
     class Meta:
         model = DayPlan
-        fields = ['date', 'unit', 'duty_type']
+        fields = ['date', 'duty_type', 'unit', 'execution_type']
+        widgets = {
+            'date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'duty_type': forms.Select(attrs={'class': 'form-select'}),
+            'unit': forms.Select(attrs={'class': 'form-select'}),
+            'execution_type': forms.Select(attrs={'class': 'form-select'}),
+        }
