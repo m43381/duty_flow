@@ -31,28 +31,27 @@ class MonthlyScheduleAdmin(admin.ModelAdmin):
 
 @admin.register(DayPlan)
 class DayPlanAdmin(admin.ModelAdmin):
-    list_display = ('schedule', 'date', 'unit', 'duty_type', 'created_by', 'created_at')
-    list_filter = ('schedule__month', 'schedule__status', 'unit', 'duty_type')
+    list_display = ('schedule', 'date', 'duty_type', 'unit', 'execution_type', 'created_at')
+    list_filter = ('schedule__month', 'schedule__status', 'duty_type', 'execution_type')
     search_fields = ('unit__name', 'duty_type__name')
-    readonly_fields = ('created_by', 'created_at', 'updated_at')
+    readonly_fields = ('created_at', 'updated_at')
     
     fieldsets = (
         ('Расписание', {
             'fields': ('schedule', 'date')
         }),
         ('Назначение', {
-            'fields': ('unit', 'duty_type')
+            'fields': ('duty_type', 'unit', 'execution_type')
+        }),
+        ('Иерархия', {
+            'fields': ('parent_day_plan',),
+            'classes': ('wide',),
         }),
         ('Аудит', {
-            'fields': ('created_by', 'created_at', 'updated_at'),
+            'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',),
         }),
     )
-    
-    def save_model(self, request, obj, form, change):
-        if not obj.pk:
-            obj.created_by = request.user
-        super().save_model(request, obj, form, change)
 
 
 @admin.register(DutyAssignment)
