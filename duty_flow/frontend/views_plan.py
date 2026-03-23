@@ -92,14 +92,11 @@ def days(request, pk):
     all_plans = schedule.days.all()
     
     # Собираем ID типов нарядов, которые нужно показывать:
-    # 1. Свои наряды (type='own')
-    # 2. Принятые входящие (type='incoming', status='accepted')
     duty_ids = set()
     for p in all_plans:
         if p.type == 'own' or (p.type == 'incoming' and p.status == 'accepted'):
             duty_ids.add(p.duty_type_id)
     
-    # Добавляем типы, созданные этим подразделением (для пустых ячеек своих нарядов)
     own_duty_types = DutyType.objects.filter(created_by_unit=user_unit)
     for dt in own_duty_types:
         duty_ids.add(dt.id)
@@ -205,8 +202,15 @@ def days(request, pk):
                             parent=existing
                         )
             
-            for (date, duty_id), p in list(plans_dict.items()):
-                if (date, duty_id) not in post_data:
+            # Удаляем записи, которых нет в POST (без list(items()))
+            keys_to_delete = []
+            for key in plans_dict.keys():
+                if key not in post_data:
+                    keys_to_delete.append(key)
+            
+            for key in keys_to_delete:
+                p = plans_dict.get(key)
+                if p:
                     p.delete()
                     for child in p.children.all():
                         child.delete()
