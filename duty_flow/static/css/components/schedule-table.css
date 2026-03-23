@@ -85,3 +85,20 @@
 .legend-color--incoming-active { background: rgba(245, 158, 11, 0.2); border-left: 3px solid #f59e0b; }
 .legend-color--inactive { background: var(--bg-hover); border: 1px solid var(--border); }
 .legend-color--empty { background: var(--bg-card); border: 1px solid var(--border); }
+
+/* Добавить в schedule-table.css */
+
+.schedule-cell--incoming_delegated_pending {
+    background-color: rgba(139, 92, 246, 0.15);
+    border-left: 3px solid #8b5cf6;
+}
+
+.schedule-cell--incoming_delegated_accepted {
+    background-color: rgba(34, 197, 94, 0.15);
+    border-left: 3px solid #22c55e;
+}
+
+.schedule-cell--incoming_pending {
+    background-color: rgba(156, 163, 175, 0.15);
+    border-left: 3px solid #9ca3af;
+}

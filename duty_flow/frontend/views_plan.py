@@ -73,12 +73,21 @@ def delete(request, pk):
     return render(request, 'plan/delete.html', {'schedule': schedule, 'active_tab': 'plans'})
 
 
+import logging
+logger = logging.getLogger(__name__)
+
 @login_required
 def days(request, pk):
     schedule = get_object_or_404(MonthlySchedule, pk=pk)
     user_unit = request.user.profile.unit
     
+    logger.info("\n" + "=" * 70)
+    logger.info("=== DAYS() START ===")
+    logger.info(f"Расписание: id={schedule.id}, month={schedule.month}, unit={schedule.unit.name}")
+    logger.info(f"Пользователь: {request.user.username}, подразделение: {user_unit.name}")
+    
     if schedule.unit != user_unit:
+        logger.warning(f"Нет прав: расписание принадлежит {schedule.unit.name}")
         messages.error(request, 'Нет прав')
         return redirect('plan:list')
     
@@ -87,21 +96,31 @@ def days(request, pk):
     month = schedule.month.month
     last_day = calendar.monthrange(year, month)[1]
     dates = [datetime(year, month, day).date() for day in range(1, last_day + 1)]
+    logger.info(f"Дни месяца: {[d.strftime('%Y-%m-%d') for d in dates]}")
     
     # Получаем все назначения
     all_plans = schedule.days.all()
+    logger.info(f"\n--- ВСЕ НАЗНАЧЕНИЯ В РАСПИСАНИИ ({all_plans.count()}) ---")
+    for p in all_plans:
+        logger.info(f"  id={p.id}: date={p.date}, duty={p.duty_type.name}, unit={p.unit.name if p.unit else 'None'}, type={p.type}, status={p.status}, child_status={p.child_status}")
     
-    # Собираем ID типов нарядов, которые нужно показывать:
+    # Собираем ID типов нарядов для отображения
     duty_ids = set()
     for p in all_plans:
         if p.type == 'own' or (p.type == 'incoming' and p.status == 'accepted'):
             duty_ids.add(p.duty_type_id)
+            logger.info(f"  Добавлен duty_id={p.duty_type_id} ({p.duty_type.name}) - type={p.type}, status={p.status}")
     
     own_duty_types = DutyType.objects.filter(created_by_unit=user_unit)
+    logger.info(f"\n--- СВОИ ТИПЫ НАРЯДОВ (created_by_unit={user_unit.name}) ---")
     for dt in own_duty_types:
         duty_ids.add(dt.id)
+        logger.info(f"  id={dt.id}, name={dt.name}")
     
     duty_types = DutyType.objects.filter(id__in=duty_ids).order_by('name')
+    logger.info(f"\n--- ИТОГОВЫЕ ТИПЫ ДЛЯ ОТОБРАЖЕНИЯ ({duty_types.count()}) ---")
+    for dt in duty_types:
+        logger.info(f"  id={dt.id}, name={dt.name}")
     
     # Словарь для быстрого доступа
     plans_dict = {}
@@ -114,62 +133,116 @@ def days(request, pk):
     for p in all_plans:
         if p.type == 'incoming' and p.status == 'accepted':
             incoming_day[p.duty_type_id] = p.date
+            logger.info(f"\n  Входящий наряд: duty_id={p.duty_type_id} ({p.duty_type.name}), date={p.date}, child_status={p.child_status}")
     
     children = user_unit.children.all()
+    logger.info(f"\n--- ДОЧЕРНИЕ ПОДРАЗДЕЛЕНИЯ ---")
+    for c in children:
+        logger.info(f"  id={c.id}, name={c.name}")
     
     if request.method == 'POST':
+        logger.info("\n--- ОБРАБОТКА POST ЗАПРОСА ---")
+        post_data = {}
+        for key, value in request.POST.items():
+            if key.startswith('day_') and value:
+                parts = key.split('_')
+                if len(parts) == 3:
+                    date_str = parts[1]
+                    duty_id = int(parts[2])
+                    date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    unit_id = int(value)
+                    post_data[(date, duty_id)] = unit_id
+                    logger.info(f"  POST: date={date}, duty_id={duty_id}, unit_id={unit_id}")
+        
         with transaction.atomic():
-            post_data = {}
-            for key, value in request.POST.items():
-                if key.startswith('day_') and value:
-                    parts = key.split('_')
-                    if len(parts) == 3:
-                        date_str = parts[1]
-                        duty_id = int(parts[2])
-                        date = datetime.strptime(date_str, '%Y-%m-%d').date()
-                        unit_id = int(value)
-                        post_data[(date, duty_id)] = unit_id
-            
             for (date, duty_id), unit_id in post_data.items():
                 existing = plans_dict.get((date, duty_id))
+                is_incoming = duty_id in incoming_day
+                logger.info(f"\n  Обработка: date={date}, duty_id={duty_id}, unit_id={unit_id}, existing={existing is not None}, is_incoming={is_incoming}")
                 
                 if unit_id == user_unit.id:
+                    # Оставили себе
+                    logger.info(f"    -> Оставили себе")
                     if existing:
+                        if is_incoming:
+                            logger.info(f"       Это входящий наряд, сохраняем как incoming/accepted")
+                            existing.type = 'incoming'
+                            existing.status = 'accepted'
+                            existing.child_status = 'none'
+                        else:
+                            logger.info(f"       Свой наряд, сохраняем как own")
+                            existing.type = 'own'
+                            existing.status = None
+                            existing.child_status = 'none'
                         existing.unit_id = unit_id
-                        existing.type = 'own'
-                        existing.status = None
-                        existing.child_status = 'none'
                         existing.save()
                         for child in existing.children.all():
                             child.delete()
+                            logger.info(f"         Удалена дочерняя запись id={child.id}")
                     else:
-                        DayPlan.objects.create(
-                            schedule=schedule,
-                            date=date,
-                            duty_type_id=duty_id,
-                            unit_id=unit_id,
-                            type='own',
-                            status=None,
-                            child_status='none'
-                        )
+                        if is_incoming:
+                            logger.info(f"       Создаем новый incoming/accepted")
+                            DayPlan.objects.create(
+                                schedule=schedule,
+                                date=date,
+                                duty_type_id=duty_id,
+                                unit_id=unit_id,
+                                type='incoming',
+                                status='accepted',
+                                child_status='none'
+                            )
+                        else:
+                            logger.info(f"       Создаем новый own")
+                            DayPlan.objects.create(
+                                schedule=schedule,
+                                date=date,
+                                duty_type_id=duty_id,
+                                unit_id=unit_id,
+                                type='own',
+                                status=None,
+                                child_status='none'
+                            )
                 else:
+                    # Делегируем дальше
+                    logger.info(f"    -> Делегируем подразделению id={unit_id}")
                     if existing:
+                        if is_incoming:
+                            logger.info(f"       Входящий наряд, сохраняем как incoming/accepted/pending")
+                            existing.type = 'incoming'
+                            existing.status = 'accepted'
+                            existing.child_status = 'pending'
+                        else:
+                            logger.info(f"       Свой наряд, сохраняем как own/pending")
+                            existing.type = 'own'
+                            existing.status = None
+                            existing.child_status = 'pending'
                         existing.unit_id = unit_id
-                        existing.type = 'own'
-                        existing.status = None
-                        existing.child_status = 'pending'
                         existing.save()
                     else:
-                        existing = DayPlan.objects.create(
-                            schedule=schedule,
-                            date=date,
-                            duty_type_id=duty_id,
-                            unit_id=unit_id,
-                            type='own',
-                            status=None,
-                            child_status='pending'
-                        )
+                        if is_incoming:
+                            logger.info(f"       Создаем новый incoming/accepted/pending")
+                            existing = DayPlan.objects.create(
+                                schedule=schedule,
+                                date=date,
+                                duty_type_id=duty_id,
+                                unit_id=unit_id,
+                                type='incoming',
+                                status='accepted',
+                                child_status='pending'
+                            )
+                        else:
+                            logger.info(f"       Создаем новый own/pending")
+                            existing = DayPlan.objects.create(
+                                schedule=schedule,
+                                date=date,
+                                duty_type_id=duty_id,
+                                unit_id=unit_id,
+                                type='own',
+                                status=None,
+                                child_status='pending'
+                            )
                     
+                    # Создаем дочернюю запись
                     child_schedule, _ = MonthlySchedule.objects.get_or_create(
                         month=schedule.month,
                         unit_id=unit_id,
@@ -180,9 +253,11 @@ def days(request, pk):
                             'created_by': request.user
                         }
                     )
+                    logger.info(f"       child_schedule: id={child_schedule.id}")
                     
                     child_plan = existing.children.first()
                     if child_plan:
+                        logger.info(f"       Обновляем существующую дочернюю запись id={child_plan.id}")
                         child_plan.schedule = child_schedule
                         child_plan.unit_id = unit_id
                         child_plan.type = 'incoming'
@@ -191,6 +266,7 @@ def days(request, pk):
                         child_plan.parent = existing
                         child_plan.save()
                     else:
+                        logger.info(f"       Создаем новую дочернюю запись")
                         DayPlan.objects.create(
                             schedule=child_schedule,
                             date=date,
@@ -202,27 +278,32 @@ def days(request, pk):
                             parent=existing
                         )
             
-            # Удаляем записи, которых нет в POST (без list(items()))
+            # Удаляем записи, которых нет в POST
             keys_to_delete = []
             for key in plans_dict.keys():
                 if key not in post_data:
                     keys_to_delete.append(key)
             
+            logger.info(f"\n--- УДАЛЕНИЕ ЗАПИСЕЙ ---")
             for key in keys_to_delete:
                 p = plans_dict.get(key)
                 if p:
+                    logger.info(f"  Удаляем: date={key[0]}, duty_id={key[1]}, id={p.id}")
                     p.delete()
                     for child in p.children.all():
+                        logger.info(f"    Удаляем дочернюю: id={child.id}")
                         child.delete()
             
             messages.success(request, 'Сохранено')
             return redirect('plan:days', pk=schedule.pk)
     
     # Строим таблицу
+    logger.info("\n--- ПОСТРОЕНИЕ ТАБЛИЦЫ ---")
     table = []
     for duty in duty_types:
         row = {'duty': duty, 'cells': []}
         inc_date = incoming_day.get(duty.id)
+        logger.info(f"\nТип наряда: {duty.name}, inc_date={inc_date}")
         
         for date in dates:
             p = plans_dict.get((date, duty.id))
@@ -240,33 +321,41 @@ def days(request, pk):
                         cell_class = 'delegated_accepted'
                         status_text = 'Делегировано, принято'
                     can_edit = True
-                else:
+                    logger.info(f"  {date}: СВОЙ наряд, child_status={p.child_status}, класс={cell_class}")
+                else:  # type == 'incoming'
                     if p.status == 'accepted':
-                        if is_incoming_day:
-                            cell_class = 'incoming_active'
-                            status_text = 'Принято'
-                            can_edit = True
+                        if p.child_status == 'pending':
+                            cell_class = 'incoming_delegated_pending'
+                            status_text = 'Получен, делегирован, ждет'
+                        elif p.child_status == 'accepted':
+                            cell_class = 'incoming_delegated_accepted'
+                            status_text = 'Получен, делегирован, принят'
                         else:
-                            cell_class = 'inactive'
-                            status_text = ''
-                            can_edit = False
+                            cell_class = 'incoming_active'
+                            status_text = 'Принят, исполняем'
+                        can_edit = True
+                        logger.info(f"  {date}: ВХОДЯЩИЙ ПРИНЯТЫЙ, child_status={p.child_status}, класс={cell_class}")
                     else:
-                        cell_class = 'empty'
-                        status_text = ''
+                        cell_class = 'incoming_pending'
+                        status_text = 'Ожидает принятия'
                         can_edit = False
+                        logger.info(f"  {date}: ВХОДЯЩИЙ НЕ ПРИНЯТ, status={p.status}")
             else:
                 if duty.created_by_unit_id == user_unit.id:
                     can_edit = True
                     cell_class = 'empty'
                     status_text = ''
+                    logger.info(f"  {date}: ПУСТАЯ (свой тип), можно редактировать")
                 elif is_incoming_day:
                     can_edit = True
                     cell_class = 'incoming_active'
                     status_text = 'Входящий'
+                    logger.info(f"  {date}: ПУСТАЯ (входящий день), можно редактировать")
                 else:
                     can_edit = False
                     cell_class = 'inactive'
                     status_text = ''
+                    logger.info(f"  {date}: ПУСТАЯ (неактивна)")
             
             row['cells'].append({
                 'date': date,
@@ -277,6 +366,9 @@ def days(request, pk):
                 'can_edit': can_edit
             })
         table.append(row)
+    
+    logger.info(f"\n--- ИТОГО СТРОК В ТАБЛИЦЕ: {len(table)} ---")
+    logger.info("=" * 70 + "\n")
     
     return render(request, 'plan/days.html', {
         'schedule': schedule,
@@ -310,12 +402,18 @@ def accept(request, plan_id):
     source = get_object_or_404(DayPlan, pk=plan_id)
     user_unit = request.user.profile.unit
     
+    logger.info(f"\n=== ACCEPT ===")
+    logger.info(f"source: id={source.id}, date={source.date}, duty={source.duty_type.name}")
+    logger.info(f"source.unit={source.unit.name if source.unit else 'None'}, type={source.type}, status={source.status}")
+    
     if source.unit != user_unit or source.type != 'incoming' or source.status != 'pending':
-        messages.error(request, 'Не может быть принято')
+        logger.warning(f"Не может быть принято")
+        messages.error(request, 'Это назначение не может быть принято')
         return redirect('plan:incoming')
     
     with transaction.atomic():
-        schedule, _ = MonthlySchedule.objects.get_or_create(
+        # Получаем или создаем расписание для этого подразделения
+        schedule, created = MonthlySchedule.objects.get_or_create(
             month=source.schedule.month,
             unit=user_unit,
             defaults={
@@ -325,26 +423,33 @@ def accept(request, plan_id):
                 'created_by': request.user
             }
         )
+        logger.info(f"Расписание: {'создано' if created else 'найдено'} id={schedule.id}")
         
-        DayPlan.objects.update_or_create(
+        # Создаем принятую запись в своем расписании (ВАЖНО: type='incoming', status='accepted')
+        day_plan, created = DayPlan.objects.get_or_create(
             schedule=schedule,
             date=source.date,
             duty_type=source.duty_type,
             defaults={
                 'unit': user_unit,
-                'type': 'incoming',
-                'status': 'accepted',
+                'type': 'incoming',      # ДОЛЖНО БЫТЬ incoming!
+                'status': 'accepted',    # ДОЛЖНО БЫТЬ accepted!
                 'child_status': 'none',
                 'parent': source
             }
         )
+        logger.info(f"Создана запись: id={day_plan.id}, type={day_plan.type}, status={day_plan.status}")
         
+        # Обновляем исходное назначение (оно в расписании родителя)
         source.status = 'accepted'
         source.save()
+        logger.info(f"Исходное назначение обновлено: status={source.status}")
         
+        # Обновляем родительскую запись (если есть)
         if source.parent:
             source.parent.child_status = 'accepted'
             source.parent.save()
+            logger.info(f"Родительская запись обновлена: id={source.parent.id}, child_status={source.parent.child_status}")
     
     messages.success(request, f'Назначение на {source.date} принято')
     return redirect('plan:days', pk=schedule.pk)
