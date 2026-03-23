@@ -14,7 +14,11 @@ from users_app.access_service import AccessService
 @login_required
 def list(request):
     schedules = MonthlySchedule.objects.filter(unit=request.user.profile.unit).order_by('-month')
-    return render(request, 'plan/list.html', {'schedules': schedules, 'active_tab': 'plans'})
+    return render(request, 'plan/list.html', {
+        'schedules': schedules, 
+        'active_tab': 'plans',
+        'title': 'Мои типы нарядов',
+        })
 
 
 @login_required
@@ -84,31 +88,31 @@ def days(request, pk):
     last_day = calendar.monthrange(year, month)[1]
     dates = [datetime(year, month, day).date() for day in range(1, last_day + 1)]
     
-    # Все типы нарядов, которые есть в назначениях
+    # Получаем все назначения
     all_plans = schedule.days.all()
     
-    # Собираем ID типов нарядов из:
-    # 1. Своих нарядов (type='own')
-    # 2. Принятых входящих (type='incoming', status='accepted')
+    # Собираем ID типов нарядов, которые нужно показывать:
+    # 1. Свои наряды (type='own')
+    # 2. Принятые входящие (type='incoming', status='accepted')
     duty_ids = set()
     for p in all_plans:
         if p.type == 'own' or (p.type == 'incoming' and p.status == 'accepted'):
             duty_ids.add(p.duty_type_id)
     
-    # Добавляем типы, созданные этим подразделением (для пустых ячеек)
+    # Добавляем типы, созданные этим подразделением (для пустых ячеек своих нарядов)
     own_duty_types = DutyType.objects.filter(created_by_unit=user_unit)
     for dt in own_duty_types:
         duty_ids.add(dt.id)
     
     duty_types = DutyType.objects.filter(id__in=duty_ids).order_by('name')
     
-    # Словарь существующих назначений
-    existing = {}
+    # Словарь для быстрого доступа
+    plans_dict = {}
     for p in all_plans:
         if p.type == 'own' or (p.type == 'incoming' and p.status == 'accepted'):
-            existing[(p.date, p.duty_type_id)] = p
+            plans_dict[(p.date, p.duty_type_id)] = p
     
-    # День входящего назначения для каждого типа наряда
+    # День входящего назначения
     incoming_day = {}
     for p in all_plans:
         if p.type == 'incoming' and p.status == 'accepted':
@@ -118,9 +122,7 @@ def days(request, pk):
     
     if request.method == 'POST':
         with transaction.atomic():
-            # Удаляем все старые назначения
-            schedule.days.all().delete()
-            
+            post_data = {}
             for key, value in request.POST.items():
                 if key.startswith('day_') and value:
                     parts = key.split('_')
@@ -129,57 +131,85 @@ def days(request, pk):
                         duty_id = int(parts[2])
                         date = datetime.strptime(date_str, '%Y-%m-%d').date()
                         unit_id = int(value)
-                        
-                        if unit_id == user_unit.id:
-                            DayPlan.objects.create(
-                                schedule=schedule,
-                                date=date,
-                                duty_type_id=duty_id,
-                                unit_id=unit_id,
-                                type='own',
-                                status=None,
-                                child_status='none'
-                            )
-                        else:
-                            parent_plan, created = DayPlan.objects.get_or_create(
-                                schedule=schedule,
-                                date=date,
-                                duty_type_id=duty_id,
-                                defaults={
-                                    'unit_id': unit_id,
-                                    'type': 'own',
-                                    'status': None,
-                                    'child_status': 'pending'
-                                }
-                            )
-                            if not created:
-                                parent_plan.unit_id = unit_id
-                                parent_plan.child_status = 'pending'
-                                parent_plan.save()
-                            
-                            child_schedule, _ = MonthlySchedule.objects.get_or_create(
-                                month=schedule.month,
-                                unit_id=unit_id,
-                                defaults={
-                                    'name': f"Расписание {schedule.month.strftime('%B %Y')}",
-                                    'status': 'draft',
-                                    'parent_schedule': schedule,
-                                    'created_by': request.user
-                                }
-                            )
-                            
-                            DayPlan.objects.update_or_create(
-                                schedule=child_schedule,
-                                date=date,
-                                duty_type_id=duty_id,
-                                defaults={
-                                    'unit_id': unit_id,
-                                    'type': 'incoming',
-                                    'status': 'pending',
-                                    'child_status': 'none',
-                                    'parent': parent_plan
-                                }
-                            )
+                        post_data[(date, duty_id)] = unit_id
+            
+            for (date, duty_id), unit_id in post_data.items():
+                existing = plans_dict.get((date, duty_id))
+                
+                if unit_id == user_unit.id:
+                    if existing:
+                        existing.unit_id = unit_id
+                        existing.type = 'own'
+                        existing.status = None
+                        existing.child_status = 'none'
+                        existing.save()
+                        for child in existing.children.all():
+                            child.delete()
+                    else:
+                        DayPlan.objects.create(
+                            schedule=schedule,
+                            date=date,
+                            duty_type_id=duty_id,
+                            unit_id=unit_id,
+                            type='own',
+                            status=None,
+                            child_status='none'
+                        )
+                else:
+                    if existing:
+                        existing.unit_id = unit_id
+                        existing.type = 'own'
+                        existing.status = None
+                        existing.child_status = 'pending'
+                        existing.save()
+                    else:
+                        existing = DayPlan.objects.create(
+                            schedule=schedule,
+                            date=date,
+                            duty_type_id=duty_id,
+                            unit_id=unit_id,
+                            type='own',
+                            status=None,
+                            child_status='pending'
+                        )
+                    
+                    child_schedule, _ = MonthlySchedule.objects.get_or_create(
+                        month=schedule.month,
+                        unit_id=unit_id,
+                        defaults={
+                            'name': f"Расписание {schedule.month.strftime('%B %Y')}",
+                            'status': 'draft',
+                            'parent_schedule': schedule,
+                            'created_by': request.user
+                        }
+                    )
+                    
+                    child_plan = existing.children.first()
+                    if child_plan:
+                        child_plan.schedule = child_schedule
+                        child_plan.unit_id = unit_id
+                        child_plan.type = 'incoming'
+                        child_plan.status = 'pending'
+                        child_plan.child_status = 'none'
+                        child_plan.parent = existing
+                        child_plan.save()
+                    else:
+                        DayPlan.objects.create(
+                            schedule=child_schedule,
+                            date=date,
+                            duty_type_id=duty_id,
+                            unit_id=unit_id,
+                            type='incoming',
+                            status='pending',
+                            child_status='none',
+                            parent=existing
+                        )
+            
+            for (date, duty_id), p in list(plans_dict.items()):
+                if (date, duty_id) not in post_data:
+                    p.delete()
+                    for child in p.children.all():
+                        child.delete()
             
             messages.success(request, 'Сохранено')
             return redirect('plan:days', pk=schedule.pk)
@@ -191,27 +221,56 @@ def days(request, pk):
         inc_date = incoming_day.get(duty.id)
         
         for date in dates:
-            p = existing.get((date, duty.id))
+            p = plans_dict.get((date, duty.id))
             is_incoming_day = (inc_date == date)
             
-            # Определяем, можно ли редактировать
             if p:
                 if p.type == 'own':
-                    can_edit = True
-                elif p.type == 'incoming' and p.status == 'accepted':
+                    if p.child_status == 'none':
+                        cell_class = 'own'
+                        status_text = 'Своими силами'
+                    elif p.child_status == 'pending':
+                        cell_class = 'delegated_pending'
+                        status_text = 'Делегировано, ждет'
+                    else:
+                        cell_class = 'delegated_accepted'
+                        status_text = 'Делегировано, принято'
                     can_edit = True
                 else:
-                    can_edit = False
+                    if p.status == 'accepted':
+                        if is_incoming_day:
+                            cell_class = 'incoming_active'
+                            status_text = 'Принято'
+                            can_edit = True
+                        else:
+                            cell_class = 'inactive'
+                            status_text = ''
+                            can_edit = False
+                    else:
+                        cell_class = 'empty'
+                        status_text = ''
+                        can_edit = False
             else:
-                # Пустая ячейка — активна только если это свой наряд или день входящего
-                can_edit = (duty.created_by_unit_id == user_unit.id) or is_incoming_day
+                if duty.created_by_unit_id == user_unit.id:
+                    can_edit = True
+                    cell_class = 'empty'
+                    status_text = ''
+                elif is_incoming_day:
+                    can_edit = True
+                    cell_class = 'incoming_active'
+                    status_text = 'Входящий'
+                else:
+                    can_edit = False
+                    cell_class = 'inactive'
+                    status_text = ''
             
             row['cells'].append({
                 'date': date,
                 'unit_id': p.unit_id if p else None,
                 'unit_name': p.unit.name if p and p.unit else None,
-                'can_edit': can_edit,
-                'is_incoming_day': is_incoming_day
+                'cell_class': cell_class,
+                'status_text': status_text,
+                'can_edit': can_edit
             })
         table.append(row)
     
