@@ -5,14 +5,15 @@
     <div class="card-header">
         <div class="card-header-content">
             <h2 class="card-title">📅 {{ title }}</h2>
-            {% if can_add %}
-            <a href="{% url 'plan:add' %}" class="btn btn-primary">➕ Создать расписание</a>
-            {% endif %}
+            <div class="card-actions">
+                <a href="{% url 'plan:incoming' %}" class="btn btn-secondary">📥 Входящие</a>
+                <a href="{% url 'plan:add' %}" class="btn btn-primary">➕ Создать расписание</a>
+            </div>
         </div>
     </div>
     
     <div class="card-body">
-        {% if items %}
+        {% if schedules %}
         <div class="table-container">
             <table class="table">
                 <thead>
@@ -22,9 +23,10 @@
                         <th>Статус</th>
                         <th>Создан</th>
                         <th>Действия</th>
-                    </thead>
+                    </tr>
+                </thead>
                 <tbody>
-                    {% for item in items %}
+                    {% for item in schedules %}
                     <tr>
                         <td>{{ item.month|date:"F Y" }}</td>
                         <td>{{ item.name|default:"—" }}</td>

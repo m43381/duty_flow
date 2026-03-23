@@ -3,24 +3,48 @@
 {% block cabinet_content %}
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">{% if item %}✏️ Редактировать{% else %}➕ Создать{% endif %} расписание</h2>
+        <h2 class="card-title">{% if schedule %}✏️ Редактировать{% else %}➕ Создать{% endif %} расписание</h2>
     </div>
     <div class="card-body">
         <form method="post">
             {% csrf_token %}
             
-            {% for field in form %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+            
             <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                <div class="form-error">{{ field.errors }}</div>
+                <label for="id_month">Месяц *</label>
+                <input type="month" 
+                       name="month" 
+                       id="id_month" 
+                       class="form-input" 
+                       value="{% if form.month.value %}{{ form.month.value|date:'Y-m' }}{% endif %}"
+                       required>
+                {% if form.month.errors %}
+                <div class="form-error">{{ form.month.errors }}</div>
                 {% endif %}
-                {% if field.help_text %}
-                <small class="form-text text-muted">{{ field.help_text }}</small>
-                {% endif %}
+                <small class="form-text text-muted">Выберите месяц (например, 2026-03)</small>
             </div>
-            {% endfor %}
+            
+            <div class="form-group">
+                <label for="id_name">Название (опционально)</label>
+                <input type="text" name="name" id="id_name" class="form-input" value="{{ form.name.value|default:'' }}" placeholder="Например: Март 2026">
+            </div>
+            
+            <div class="form-group">
+                <label for="id_status">Статус *</label>
+                {{ form.status }}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_parent_schedule">Основано на расписании (опционально)</label>
+                {{ form.parent_schedule }}
+                <small class="form-text text-muted">
+                    Выберите расписание вышестоящего подразделения, чтобы создать на его основе.
+                    Расписание будет создано для вашего подразделения.
+                </small>
+            </div>
             
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">💾 Сохранить</button>

@@ -4,18 +4,17 @@ from .models import MonthlySchedule, DayPlan, DutyAssignment
 
 @admin.register(MonthlySchedule)
 class MonthlyScheduleAdmin(admin.ModelAdmin):
-    list_display = ('month', 'name', 'status', 'created_by', 'created_at')
-    list_filter = ('status', 'month')
+    list_display = ('month', 'name', 'unit', 'status', 'created_by', 'created_at')
+    list_filter = ('status', 'month', 'unit')
     search_fields = ('name',)
     readonly_fields = ('created_by', 'created_at', 'updated_at')
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('month', 'name', 'status')
+            'fields': ('month', 'name', 'status', 'unit')
         }),
         ('Иерархия', {
             'fields': ('parent_schedule',),
-            'classes': ('wide',),
         }),
         ('Аудит', {
             'fields': ('created_by', 'created_at', 'updated_at'),
@@ -31,8 +30,8 @@ class MonthlyScheduleAdmin(admin.ModelAdmin):
 
 @admin.register(DayPlan)
 class DayPlanAdmin(admin.ModelAdmin):
-    list_display = ('schedule', 'date', 'duty_type', 'unit', 'execution_type', 'created_at')
-    list_filter = ('schedule__month', 'schedule__status', 'duty_type', 'execution_type')
+    list_display = ('schedule', 'date', 'duty_type', 'unit', 'status', 'created_at')
+    list_filter = ('schedule__month', 'schedule__unit', 'duty_type', 'status')
     search_fields = ('unit__name', 'duty_type__name')
     readonly_fields = ('created_at', 'updated_at')
     
@@ -41,11 +40,10 @@ class DayPlanAdmin(admin.ModelAdmin):
             'fields': ('schedule', 'date')
         }),
         ('Назначение', {
-            'fields': ('duty_type', 'unit', 'execution_type')
+            'fields': ('duty_type', 'unit', 'status')
         }),
         ('Иерархия', {
-            'fields': ('parent_day_plan',),
-            'classes': ('wide',),
+            'fields': ('parent',),
         }),
         ('Аудит', {
             'fields': ('created_at', 'updated_at'),
@@ -58,7 +56,7 @@ class DayPlanAdmin(admin.ModelAdmin):
 class DutyAssignmentAdmin(admin.ModelAdmin):
     list_display = ('day_plan', 'person', 'assigned_by', 'assigned_at')
     list_filter = ('day_plan__schedule__month', 'day_plan__duty_type')
-    search_fields = ('person__last_name', 'person__first_name')
+    search_fields = ('person__last_name',)
     readonly_fields = ('assigned_by', 'assigned_at')
     
     fieldsets = (

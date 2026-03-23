@@ -99,3 +99,20 @@ STATICFILES_DIRS = [
 # Перенаправления после входа/выхода
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
+# Добавьте в конце settings.py
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'frontend.views_plan': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}
