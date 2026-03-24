@@ -16,6 +16,12 @@
 @import 'components/person-detail.css';
 @import 'components/schedule-table.css';
 
+/* Компоненты подразделений (новые) */
+@import 'components/units-tree.css';
+@import 'components/unit-info.css';
+@import 'components/unit-form.css';
+@import 'components/unit-list.css';
+
 /* Макеты */
 @import 'layouts/landing.css';
 @import 'layouts/auth.css';

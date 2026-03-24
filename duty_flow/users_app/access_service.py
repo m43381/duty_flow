@@ -1,6 +1,6 @@
 from django.db import models
 from units.models import Unit
-from duty_plans.models import MonthlySchedule, DayPlan  # исправлено
+from duty_plans.models import MonthlySchedule, DayPlan
 from duty_types.models import DutyType
 
 
@@ -30,17 +30,83 @@ class AccessService:
     def get_editable_units(self):
         """
         Подразделения, которые пользователь может редактировать:
-        - Только своё подразделение
+        - Для академии (level=0): все подразделения
+        - Для остальных: своё подразделение + дочерние (на уровень ниже)
         """
-        return Unit.objects.filter(id=self.user_unit.id)
+        if self.user_level == 0:
+            # Академия может редактировать всё
+            return Unit.objects.all()
+        else:
+            # Остальные: своё + дочерние
+            editable_ids = [self.user_unit.id]
+            for child in self.user_unit.children.all():
+                editable_ids.append(child.id)
+            return Unit.objects.filter(id__in=editable_ids)
     
     def can_view_unit(self, unit):
         """Может ли просматривать подразделение"""
+        if self.user_level == 0:
+            # Академия видит всё
+            return True
+        # Остальные видят только свои и дочерние
         return unit.id in self.user_unit.get_descendants_ids(include_self=True)
     
     def can_edit_unit(self, unit):
-        """Может ли редактировать подразделение"""
-        return unit.id == self.user_unit.id
+        """
+        Может ли редактировать подразделение:
+        - Академия (level=0): любые подразделения
+        - Остальные: своё подразделение + дочерние (прямые потомки)
+        """
+        if self.user_level == 0:
+            return True
+        
+        # Своё подразделение
+        if unit.id == self.user_unit.id:
+            return True
+        
+        # Прямые дочерние подразделения
+        if unit.parent and unit.parent.id == self.user_unit.id:
+            return True
+        
+        return False
+    
+    def can_delete_unit(self, unit):
+        """
+        Может ли удалять подразделение:
+        - Академия (level=0): любые подразделения
+        - Остальные: только свои дочерние подразделения (на уровень ниже)
+        """
+        if self.user_level == 0:
+            # Академия может удалять любые подразделения
+            return True
+        
+        # Нельзя удалять своё подразделение
+        if unit.id == self.user_unit.id:
+            return False
+        
+        # Можно удалять только прямые дочерние подразделения
+        if unit.parent and unit.parent.id == self.user_unit.id:
+            return True
+        
+        return False
+    
+    def can_create_unit(self, parent_unit=None):
+        """
+        Может ли создавать подразделения:
+        - Академия (level=0): может создавать любые
+        - Факультет (level=1): может создавать только в своём подразделении
+        - Кафедра (level=2): не может создавать
+        """
+        if self.user_level == 0:
+            return True
+        
+        if self.user_level == 1:
+            # Факультет может создавать только в своём подразделении
+            if parent_unit:
+                return parent_unit.id == self.user_unit.id
+            return True
+        
+        return False
     
     # ========== ТИПЫ НАРЯДОВ ==========
     
@@ -51,10 +117,8 @@ class AccessService:
         - Типы, закрепленные за своим подразделением
         - Типы, закрепленные за вышестоящими подразделениями (для кафедр)
         """
-        # Свои типы
         own_types = DutyType.objects.filter(unit=self.user_unit)
         
-        # Типы вышестоящих (если есть)
         parent_types = DutyType.objects.none()
         if self.user_unit.parent:
             parent_types = DutyType.objects.filter(unit=self.user_unit.parent)
@@ -64,21 +128,12 @@ class AccessService:
     # ========== РАСПИСАНИЯ ==========
     
     def get_visible_schedules(self):
-        """
-        Расписания, которые пользователь может видеть:
-        - Свои расписания (где unit в расписании = своё подразделение)
-        - Расписания дочерних подразделений
-        """
+        """Расписания, которые пользователь может видеть"""
         visible_units = self.get_visible_units()
-        
-        # Получаем все расписания, где подразделение в visible_units
-        # TODO: нужно добавить связь между MonthlySchedule и Unit
-        # Пока возвращаем пустой queryset
         return MonthlySchedule.objects.none()
     
     def can_view_schedule(self, schedule):
         """Может ли просматривать расписание"""
-        # TODO: реализовать после добавления связи с Unit
         return True
     
     def can_edit_schedule(self, schedule):
@@ -92,30 +147,22 @@ class AccessService:
     # ========== ПЛАНЫ НА ДЕНЬ ==========
     
     def get_visible_day_plans(self):
-        """
-        Планы на день, которые пользователь может видеть
-        """
+        """Планы на день, которые пользователь может видеть"""
         visible_units = self.get_visible_units()
         return DayPlan.objects.filter(unit__in=visible_units)
     
     def can_edit_day_plan(self, plan):
-        """
-        Может ли пользователь редактировать план на день
-        """
+        """Может ли пользователь редактировать план на день"""
         return plan.unit.id == self.user_unit.id or plan.created_by_id == self.user.id
     
     def can_delete_day_plan(self, plan):
-        """
-        Может ли пользователь удалять план на день
-        """
+        """Может ли пользователь удалять план на день"""
         return plan.created_by_id == self.user.id
     
     # ========== НАЗНАЧЕНИЯ ==========
     
     def can_assign_person(self, day_plan, person):
-        """
-        Может ли пользователь назначить сотрудника на план дня
-        """
+        """Может ли пользователь назначить сотрудника на план дня"""
         if day_plan.unit.id != self.user_unit.id:
             return False
         
@@ -154,6 +201,8 @@ class AccessService:
     
     def can_create_in_unit(self, unit_id):
         """Может ли создавать объекты в указанном подразделении"""
+        if self.user_level == 0:
+            return True
         return int(unit_id) == self.user_unit.id
     
     # ========== КОНТЕКСТ ДЛЯ ШАБЛОНОВ ==========

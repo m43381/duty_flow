@@ -1,0 +1,36 @@
+{% for item in items %}
+<div class="unit-item">
+    <div class="unit-header">
+        <span class="unit-icon">
+            {% if item.children %}
+                📂
+            {% else %}
+                📁
+            {% endif %}
+        </span>
+        <span class="unit-name">
+            <a href="{% url 'units:detail' item.id %}">{{ item.name }}</a>
+        </span>
+        <span class="unit-type-badge">{{ item.unit_type.name }}</span>
+        <span class="unit-level-badge">ур. {{ item.level }}</span>
+        {% if item.people_count > 0 %}
+        <span class="unit-count-badge" title="Сотрудников">
+            👥 {{ item.people_count }}
+        </span>
+        {% endif %}
+        <span class="unit-actions">
+            {% if item.is_editable %}
+                <a href="{% url 'units:edit' item.id %}" class="action-btn" title="Редактировать">✏️</a>
+            {% endif %}
+            {% if can_add %}
+                <a href="{% url 'units:add' %}?parent={{ item.id }}" class="action-btn" title="Добавить дочернее">➕</a>
+            {% endif %}
+        </span>
+    </div>
+    {% if item.children %}
+        <div class="unit-children">
+            {% include 'units/_tree_simple.html' with items=item.children %}
+        </div>
+    {% endif %}
+</div>
+{% endfor %}
