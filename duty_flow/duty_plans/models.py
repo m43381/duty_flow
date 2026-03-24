@@ -23,6 +23,7 @@ class MonthlySchedule(models.Model):
     
     class Meta:
         ordering = ['-month']
+        unique_together = ['month', 'unit']  # ← уникальность: один месяц + одно подразделение
     
     def __str__(self):
         return self.name or f"{self.month.strftime('%B %Y')} - {self.unit.name}"

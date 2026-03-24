@@ -10,7 +10,9 @@
             {% csrf_token %}
             
             {% if form.non_field_errors %}
-            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
             {% endif %}
             
             <div class="form-group">
@@ -24,25 +26,27 @@
                 {% if form.month.errors %}
                 <div class="form-error">{{ form.month.errors }}</div>
                 {% endif %}
-                <small class="form-text text-muted">Выберите месяц (например, 2026-03)</small>
+                <small class="form-text text-muted">Выберите месяц для планирования</small>
             </div>
             
             <div class="form-group">
                 <label for="id_name">Название (опционально)</label>
-                <input type="text" name="name" id="id_name" class="form-input" value="{{ form.name.value|default:'' }}" placeholder="Например: Март 2026">
+                <input type="text" 
+                       name="name" 
+                       id="id_name" 
+                       class="form-input" 
+                       value="{{ form.name.value|default:'' }}" 
+                       placeholder="Например: Март 2026">
+                <small class="form-text text-muted">Если не указать, будет сформировано автоматически</small>
             </div>
             
             <div class="form-group">
                 <label for="id_status">Статус *</label>
                 {{ form.status }}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_parent_schedule">Основано на расписании (опционально)</label>
-                {{ form.parent_schedule }}
                 <small class="form-text text-muted">
-                    Выберите расписание вышестоящего подразделения, чтобы создать на его основе.
-                    Расписание будет создано для вашего подразделения.
+                    <strong>Черновик</strong> — только для вас, можно редактировать<br>
+                    <strong>Опубликовано</strong> — доступно для просмотра и принятия нижестоящими подразделениями<br>
+                    <strong>Архив</strong> — завершенное расписание
                 </small>
             </div>
             

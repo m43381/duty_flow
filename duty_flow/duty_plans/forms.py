@@ -15,11 +15,13 @@ class MonthlyScheduleForm(forms.ModelForm):
     
     class Meta:
         model = MonthlySchedule
-        fields = ['month', 'name', 'status', 'parent_schedule']
+        fields = ['month', 'name', 'status']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Название (опционально)'}),
+            'name': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'Например: Март 2026'
+            }),
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'parent_schedule': forms.Select(attrs={'class': 'form-select'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -28,24 +30,30 @@ class MonthlyScheduleForm(forms.ModelForm):
         
         if self.instance and self.instance.pk and self.instance.month:
             self.initial['month'] = self.instance.month.strftime('%Y-%m')
-        
-        if self.user and hasattr(self.user, 'profile'):
-            from users_app.access_service import AccessService
-            access = AccessService(self.user)
-            
-            parent_units = access.user_unit.get_ancestors()
-            self.fields['parent_schedule'].queryset = MonthlySchedule.objects.filter(
-                status='published',
-                unit__in=parent_units
-            )
-            self.fields['parent_schedule'].empty_label = "— Корневое расписание —"
-            self.fields['parent_schedule'].required = False
     
     def clean_month(self):
         month = self.cleaned_data.get('month')
         if month:
             return month.replace(day=1)
         return month
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        month = cleaned_data.get('month')
+        
+        # Проверка уникальности: одно расписание на месяц для подразделения
+        if self.user and month:
+            existing = MonthlySchedule.objects.filter(
+                month=month,
+                unit=self.user.profile.unit
+            ).exclude(pk=self.instance.pk if self.instance else None)
+            
+            if existing.exists():
+                raise forms.ValidationError(
+                    f'Расписание на {month.strftime("%B %Y")} уже существует.'
+                )
+        
+        return cleaned_data
     
     def save(self, commit=True):
         instance = super().save(commit=False)

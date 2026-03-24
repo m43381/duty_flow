@@ -63,14 +63,40 @@ def edit(request, pk):
 @login_required
 def delete(request, pk):
     schedule = get_object_or_404(MonthlySchedule, pk=pk)
-    if schedule.unit != request.user.profile.unit:
-        messages.error(request, 'Нет прав')
+    access = AccessService(request.user)
+    
+    if schedule.unit != access.user_unit:
+        messages.error(request, 'Нет прав для удаления')
         return redirect('plan:list')
+    
     if request.method == 'POST':
-        schedule.delete()
-        messages.success(request, 'Удалено')
+        with transaction.atomic():
+            # Рекурсивная функция для удаления расписания и всех его потомков
+            def delete_schedule_with_children(sched):
+                # Находим все дочерние расписания
+                children = MonthlySchedule.objects.filter(parent_schedule=sched)
+                
+                # Рекурсивно удаляем дочерние
+                for child in children:
+                    delete_schedule_with_children(child)
+                
+                # Удаляем все DayPlan текущего расписания
+                sched.days.all().delete()
+                
+                # Удаляем само расписание
+                sched.delete()
+            
+            # Запускаем рекурсивное удаление
+            delete_schedule_with_children(schedule)
+        
+        messages.success(request, 'Расписание и все связанные данные удалены')
         return redirect('plan:list')
-    return render(request, 'plan/delete.html', {'schedule': schedule, 'active_tab': 'plans'})
+    
+    return render(request, 'plan/delete.html', {
+        'schedule': schedule,
+        'active_tab': 'plans',
+        'title': 'Удаление расписания'
+    })
 
 
 import logging
@@ -176,9 +202,13 @@ def days(request, pk):
                             existing.child_status = 'none'
                         existing.unit_id = unit_id
                         existing.save()
-                        for child in existing.children.all():
-                            child.delete()
-                            logger.info(f"         Удалена дочерняя запись id={child.id}")
+                        # Удаляем всех потомков
+                        def delete_children(plan):
+                            for child in plan.children.all():
+                                delete_children(child)
+                                logger.info(f"         Удалена дочерняя запись id={child.id}")
+                                child.delete()
+                        delete_children(existing)
                     else:
                         if is_incoming:
                             logger.info(f"       Создаем новый incoming/accepted")
@@ -278,21 +308,27 @@ def days(request, pk):
                             parent=existing
                         )
             
-            # Удаляем записи, которых нет в POST
+            # Удаляем записи, которых нет в POST (рекурсивно)
             keys_to_delete = []
             for key in plans_dict.keys():
                 if key not in post_data:
                     keys_to_delete.append(key)
             
-            logger.info(f"\n--- УДАЛЕНИЕ ЗАПИСЕЙ ---")
+            logger.info(f"\n--- УДАЛЕНИЕ ЗАПИСЕЙ ({len(keys_to_delete)}) ---")
+            
+            def delete_with_children(plan, depth=0):
+                indent = "  " * depth
+                logger.info(f"{indent}Удаляем запись id={plan.id}: date={plan.date}, duty={plan.duty_type.name}")
+                for child in plan.children.all():
+                    delete_with_children(child, depth + 1)
+                logger.info(f"{indent}  Удалена")
+                plan.delete()
+            
             for key in keys_to_delete:
                 p = plans_dict.get(key)
                 if p:
-                    logger.info(f"  Удаляем: date={key[0]}, duty_id={key[1]}, id={p.id}")
-                    p.delete()
-                    for child in p.children.all():
-                        logger.info(f"    Удаляем дочернюю: id={child.id}")
-                        child.delete()
+                    logger.info(f"\n  Ключ: date={key[0]}, duty_id={key[1]}")
+                    delete_with_children(p)
             
             messages.success(request, 'Сохранено')
             return redirect('plan:days', pk=schedule.pk)
