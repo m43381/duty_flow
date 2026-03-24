@@ -1,0 +1,45 @@
+{% extends 'cabinets/base_cabinet.html' %}
+
+{% block cabinet_content %}
+<div class="card" style="border-color: var(--danger);">
+    <div class="card-header" style="background: var(--danger-bg);">
+        <h2 class="card-title" style="color: var(--danger);">⚠️ {{ title }}</h2>
+    </div>
+    <div class="card-body">
+        <p>Вы уверены, что хотите удалить подразделение?</p>
+        
+        <div class="info-grid" style="background: var(--bg-hover); padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+            <div class="info-row">
+                <span class="info-label">Название:</span>
+                <span class="info-value">{{ unit.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Тип:</span>
+                <span class="info-value">{{ unit.unit_type.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Уровень:</span>
+                <span class="info-value">{{ unit.get_level }}</span>
+            </div>
+            {% if unit.parent %}
+            <div class="info-row">
+                <span class="info-label">Родитель:</span>
+                <span class="info-value">{{ unit.parent.name }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <p style="color: var(--danger); margin-bottom: 1rem;">
+            ⚠️ Это действие нельзя будет отменить!
+        </p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">🗑️ Да, удалить</button>
+                <a href="{% url 'units:detail' unit.pk %}" class="btn btn-secondary">↩️ Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

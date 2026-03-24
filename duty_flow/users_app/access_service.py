@@ -1,6 +1,6 @@
 from django.db import models
 from units.models import Unit
-from duty_plans.models import MonthlySchedule, DayPlan  # исправлено
+from duty_plans.models import MonthlySchedule, DayPlan
 from duty_types.models import DutyType
 
 
@@ -30,17 +30,106 @@ class AccessService:
     def get_editable_units(self):
         """
         Подразделения, которые пользователь может редактировать:
-        - Только своё подразделение
+        - Для академии (level=0): все подразделения
+        - Для остальных: своё подразделение + дочерние (на уровень ниже)
         """
-        return Unit.objects.filter(id=self.user_unit.id)
+        if self.user_level == 0:
+            # Академия может редактировать всё
+            return Unit.objects.all()
+        else:
+            # Остальные: своё + дочерние
+            editable_ids = [self.user_unit.id]
+            for child in self.user_unit.children.all():
+                editable_ids.append(child.id)
+            return Unit.objects.filter(id__in=editable_ids)
     
     def can_view_unit(self, unit):
         """Может ли просматривать подразделение"""
+        if self.user_level == 0:
+            # Академия видит всё
+            return True
+        # Остальные видят только свои и дочерние
         return unit.id in self.user_unit.get_descendants_ids(include_self=True)
     
     def can_edit_unit(self, unit):
-        """Может ли редактировать подразделение"""
-        return unit.id == self.user_unit.id
+        """
+        Может ли редактировать подразделение:
+        - Академия (level=0): любые подразделения
+        - Остальные: своё подразделение + дочерние (прямые потомки)
+        """
+        if self.user_level == 0:
+            return True
+        
+        # Своё подразделение
+        if unit.id == self.user_unit.id:
+            return True
+        
+        # Прямые дочерние подразделения
+        if unit.parent and unit.parent.id == self.user_unit.id:
+            return True
+        
+        return False
+    
+    def can_delete_unit(self, unit):
+        """
+        Может ли удалять подразделение:
+        - Академия (level=0): любые подразделения
+        - Остальные: только свои дочерние подразделения (на уровень ниже)
+        """
+        if self.user_level == 0:
+            # Академия может удалять любые подразделения
+            return True
+        
+        # Нельзя удалять своё подразделение
+        if unit.id == self.user_unit.id:
+            return False
+        
+        # Можно удалять только прямые дочерние подразделения
+        if unit.parent and unit.parent.id == self.user_unit.id:
+            return True
+        
+        return False
+    
+    def can_create_in_unit(self, unit):
+        """
+        Может ли пользователь создавать дочерние подразделения в указанном подразделении.
+        
+        Логика:
+        - Пользователь может создавать в любом подразделении, которое:
+          1. Находится в иерархии его подразделения (себя или потомки)
+          2. Может иметь детей (can_have_children=True)
+        """
+        if not unit:
+            return False
+        
+        # Проверка: подразделение должно быть видимым
+        if not self.can_view_unit(unit):
+            return False
+        
+        # Проверка: подразделение должно иметь возможность иметь детей
+        if not unit.unit_type.can_have_children:
+            return False
+        
+        return True
+    
+    def get_available_parents_for_creation(self):
+        """
+        Получить список подразделений, в которых пользователь может создавать дочерние.
+        
+        Логика:
+        - Пользователь может создавать в любом подразделении, которое:
+          1. Находится в иерархии его подразделения (себя или потомки)
+          2. Может иметь детей (can_have_children=True)
+        """
+        # Получаем все видимые подразделения (себя и всех потомков)
+        visible_units = self.get_visible_units()
+        
+        # Фильтруем только те, которые могут иметь детей
+        available_parents = visible_units.filter(
+            unit_type__can_have_children=True
+        )
+        
+        return available_parents
     
     # ========== ТИПЫ НАРЯДОВ ==========
     
@@ -152,9 +241,13 @@ class AccessService:
             return self.can_edit_unit(obj.unit)
         return False
     
-    def can_create_in_unit(self, unit_id):
-        """Может ли создавать объекты в указанном подразделении"""
-        return int(unit_id) == self.user_unit.id
+    def can_create_in_unit_by_id(self, unit_id):
+        """Может ли создавать объекты в указанном подразделении (по ID)"""
+        try:
+            unit = Unit.objects.get(pk=unit_id)
+            return self.can_create_in_unit(unit)
+        except Unit.DoesNotExist:
+            return False
     
     # ========== КОНТЕКСТ ДЛЯ ШАБЛОНОВ ==========
     

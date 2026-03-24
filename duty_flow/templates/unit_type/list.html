@@ -1,0 +1,59 @@
+{% extends 'cabinets/base_cabinet.html' %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-content">
+            <h2 class="card-title">🏷️ {{ title }}</h2>
+            {% if can_add %}
+            <a href="{% url 'unit_type:add' %}" class="btn btn-primary">➕ Создать тип</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card-body">
+        {% if items %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Слаг</th>
+                        <th>Уровень</th>
+                        <th>Может иметь детей</th>
+                        <th>Подразделений</th>
+                        <th>Действия</th>
+                    </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td><strong>{{ item.name }}</strong><br><small>ID: {{ item.id }}</small>  </td>
+                        <td><code>{{ item.slug }}</code></td>
+                        <td class="text-center">{{ item.level }}</td>
+                        <td class="text-center">
+                            {% if item.can_have_children %}
+                                <span class="badge success">✓</span>
+                            {% else %}
+                                <span class="badge">✗</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ item.units.count }}</td>
+                        <td class="action-cell">
+                            <a href="{% url 'unit_type:detail' item.pk %}" class="action-btn" title="Просмотр">👁️</a>
+                            <a href="{% url 'unit_type:edit' item.pk %}" class="action-btn" title="Редактировать">✏️</a>
+                            <a href="{% url 'unit_type:delete' item.pk %}" class="action-btn action-btn-delete" title="Удалить">🗑️</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p class="empty-state__text">🏷️ Нет типов подразделений</p>
+            <a href="{% url 'unit_type:add' %}" class="btn btn-primary">➕ Создать первый тип</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

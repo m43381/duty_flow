@@ -1,0 +1,51 @@
+{% for item in items %}
+<div class="unit-item" style="margin-bottom: 0.25rem;">
+    <div class="unit-header" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; border-radius: 0.5rem; transition: background 0.2s;">
+        <span class="unit-icon" style="font-size: 1.2rem;">
+            {% if item.children %}
+                📂
+            {% else %}
+                📁
+            {% endif %}
+        </span>
+        <span class="unit-name" style="flex: 1;">
+            <a href="{% url 'units:detail' item.id %}" style="color: var(--text); text-decoration: none; font-weight: 500;">
+                {{ item.name }}
+            </a>
+        </span>
+        <span class="unit-type-badge" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: var(--bg-light); border-radius: 0.25rem; color: var(--text-muted);">
+            {{ item.unit_type.name }}
+        </span>
+        <span class="unit-level-badge" style="font-size: 0.7rem; padding: 0.2rem 0.4rem; background: var(--primary-bg); border-radius: 0.25rem; color: var(--primary);">
+            ур. {{ item.level }}
+        </span>
+        {% if item.people_count > 0 %}
+        <span class="unit-count-badge" title="Сотрудников" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background-color: var(--primary-bg); color: var(--primary); border-radius: 1rem;">
+            👥 {{ item.people_count }}
+        </span>
+        {% endif %}
+        <span class="unit-actions" style="display: flex; gap: 0.5rem; opacity: 0; transition: opacity 0.2s;">
+            {% if item.is_editable %}
+                <a href="{% url 'units:edit' item.id %}" class="action-btn" title="Редактировать" style="display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; text-decoration: none; color: var(--primary);">✏️</a>
+            {% endif %}
+            {% if can_add %}
+                <a href="{% url 'units:add' %}?parent={{ item.id }}" class="action-btn" title="Добавить дочернее" style="display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; text-decoration: none; color: var(--success);">➕</a>
+            {% endif %}
+        </span>
+    </div>
+    {% if item.children %}
+        <div class="unit-children" style="margin-left: 2rem; padding-left: 1rem; border-left: 1px solid var(--border);">
+            {% include 'units/_tree_simple.html' with items=item.children %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.unit-header:hover .unit-actions {
+    opacity: 1;
+}
+.action-btn:hover {
+    background-color: var(--bg-hover);
+}
+</style>
+{% endfor %}

@@ -18,13 +18,17 @@
         </a>
         {% endif %}
         
-        {% if user.profile.unit.unit_type.level == 0 %}  {# только академия #}
-        <a href="{% url 'unit_list' %}" class="nav-link {% if active_tab == 'units' %}active{% endif %}">
+        {# Только для академии #}
+        {% if user.profile.unit.unit_type.level == 0 %}
+        <a href="{% url 'unit_type:list' %}" class="nav-link {% if active_tab == 'unit_type' %}active{% endif %}">
+            🏷️ Типы подразделений
+        </a>
+        {% endif %}
+        <a href="{% url 'units:list' %}" class="nav-link {% if active_tab == 'units' %}active{% endif %}">
             🏛️ Подразделения
         </a>
         <a href="{% url 'user_list' %}" class="nav-link {% if active_tab == 'users' %}active{% endif %}">
             👤 Пользователи
         </a>
-        {% endif %}
     </div>
 </div>
