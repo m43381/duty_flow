@@ -109,7 +109,8 @@ def add(request):
         messages.error(http_request, f'Ошибка доступа: {str(e)}')
         return redirect('dashboard')
     
-    if not access.can_create_unit():
+    # Проверка: может ли пользователь создавать
+    if not access.get_available_parents_for_creation().exists():
         messages.error(http_request, 'У вас нет прав на создание подразделений')
         return redirect('units:list')
     
@@ -123,16 +124,19 @@ def add(request):
             except IntegrityError as e:
                 messages.error(http_request, f'Ошибка при создании подразделения: {str(e)}')
     else:
+        # Получаем предустановленного родителя из GET параметра
         parent_id = http_request.GET.get('parent')
         initial = {}
+        
         if parent_id:
             try:
                 parent = Unit.objects.get(pk=parent_id)
-                # Проверяем, может ли пользователь создавать в этом родителе
-                if access.can_create_unit(parent):
+                # Проверяем, можно ли создавать в этом родителе
+                if access.can_create_in_unit(parent):
                     initial['parent'] = parent
             except Unit.DoesNotExist:
                 pass
+        
         form = UnitForm(user=http_request.user, initial=initial)
     
     return render(http_request, 'units/form.html', {
