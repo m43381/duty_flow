@@ -8,8 +8,9 @@ urlpatterns = [
     # Основные разделы
     path('persons/', include('frontend.urls_person')),
     path('plans/', include('frontend.urls_plan')),
-    path('types/', include('frontend.urls_type')),
-    path('units/', views.unit_list, name='unit_list'),
+    path('types/', include('frontend.urls_type')),              # DutyType (типы нарядов)
+    path('unit-types/', include('frontend.urls_unit_type')),    # UnitType (типы подразделений)
+    path('units/', views.unit_list, name='unit_list'),          # Unit (подразделения)
     path('users/', views.user_list, name='user_list'),
     
     # Кабинеты (опционально)
