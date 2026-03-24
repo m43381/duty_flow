@@ -16,29 +16,36 @@
             <div class="form-group">
                 <label for="id_name">Название *</label>
                 {{ form.name }}
+                <small class="form-text text-muted">Название подразделения</small>
                 {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_unit_type">Тип подразделения *</label>
-                {{ form.unit_type }}
-                <small class="form-text text-muted">
-                    {% if user.profile.unit.unit_type.level == 0 %}
-                        Доступны все типы
-                    {% else %}
-                        Доступны типы уровня {{ user.profile.unit.unit_type.level }} и выше
-                    {% endif %}
-                </small>
-                {% if form.unit_type.errors %}<div class="form-error">{{ form.unit_type.errors }}</div>{% endif %}
             </div>
             
             <div class="form-group">
                 <label for="id_parent">Родительское подразделение</label>
                 {{ form.parent }}
                 <small class="form-text text-muted">
-                    Если не выбрано, подразделение будет корневым
+                    {% if user.profile.unit.unit_type.level == 0 %}
+                        Можно выбрать любое подразделение, которое может иметь детей
+                    {% else %}
+                        Вы можете создавать подразделения только в "{{ user.profile.unit.name }}"
+                    {% endif %}
+                    <br>
+                    💡 Уровень дочернего подразделения должен быть выше уровня родителя
                 </small>
                 {% if form.parent.errors %}<div class="form-error">{{ form.parent.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_unit_type">Тип подразделения *</label>
+                {{ form.unit_type }}
+                <small class="form-text text-muted">
+                    {% if form.parent.value %}
+                        Доступны типы с уровнем выше, чем у выбранного родителя
+                    {% else %}
+                        Для корневого подразделения доступны только типы с уровнем 0
+                    {% endif %}
+                </small>
+                {% if form.unit_type.errors %}<div class="form-error">{{ form.unit_type.errors }}</div>{% endif %}
             </div>
             
             <div class="form-actions">
@@ -48,4 +55,32 @@
         </form>
     </div>
 </div>
+
+<script>
+    // Динамическое обновление типов при изменении родителя
+    document.addEventListener('DOMContentLoaded', function() {
+        const parentSelect = document.getElementById('id_parent');
+        const unitTypeSelect = document.getElementById('id_unit_type');
+        
+        if (parentSelect && unitTypeSelect) {
+            parentSelect.addEventListener('change', function() {
+                const parentId = this.value;
+                if (parentId) {
+                    // Отправляем AJAX запрос для получения доступных типов
+                    fetch(`/api/unit-types-for-parent/?parent_id=${parentId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            unitTypeSelect.innerHTML = '';
+                            data.types.forEach(type => {
+                                const option = document.createElement('option');
+                                option.value = type.id;
+                                option.textContent = `${type.name} (уровень ${type.level})`;
+                                unitTypeSelect.appendChild(option);
+                            });
+                        });
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
