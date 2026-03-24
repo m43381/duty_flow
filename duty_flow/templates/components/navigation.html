@@ -17,7 +17,11 @@
             📌 Типы нарядов
         </a>
         {% endif %}
-        
+        {# Только для академии #}
+        {% if user.profile.unit.unit_type.level == 0 %}
+        <a href="{% url 'unit_type:list' %}" class="nav-link {% if active_tab == 'unit_type' %}active{% endif %}">
+            🏷️ Типы подразделений
+        </a>
         {% if user.profile.unit.unit_type.level == 0 %}  {# только академия #}
         <a href="{% url 'unit_list' %}" class="nav-link {% if active_tab == 'units' %}active{% endif %}">
             🏛️ Подразделения
