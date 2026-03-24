@@ -31,6 +31,8 @@
                     {% endif %}
                     <br>
                     💡 Уровень дочернего подразделения должен быть выше уровня родителя
+                    <br>
+                    💡 После выбора родителя нажмите "Сохранить" - доступные типы будут обновлены автоматически
                 </small>
                 {% if form.parent.errors %}<div class="form-error">{{ form.parent.errors }}</div>{% endif %}
             </div>
@@ -55,32 +57,4 @@
         </form>
     </div>
 </div>
-
-<script>
-    // Динамическое обновление типов при изменении родителя
-    document.addEventListener('DOMContentLoaded', function() {
-        const parentSelect = document.getElementById('id_parent');
-        const unitTypeSelect = document.getElementById('id_unit_type');
-        
-        if (parentSelect && unitTypeSelect) {
-            parentSelect.addEventListener('change', function() {
-                const parentId = this.value;
-                if (parentId) {
-                    // Отправляем AJAX запрос для получения доступных типов
-                    fetch(`/api/unit-types-for-parent/?parent_id=${parentId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            unitTypeSelect.innerHTML = '';
-                            data.types.forEach(type => {
-                                const option = document.createElement('option');
-                                option.value = type.id;
-                                option.textContent = `${type.name} (уровень ${type.level})`;
-                                unitTypeSelect.appendChild(option);
-                            });
-                        });
-                }
-            });
-        }
-    });
-</script>
 {% endblock %}
