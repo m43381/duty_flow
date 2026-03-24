@@ -64,96 +64,83 @@ class UnitForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        if self.user:
-            access = AccessService(self.user)
+        if not self.user:
+            return
             
-            # Получаем подразделения, в которых можно создавать
-            available_parents = access.get_available_parents_for_creation()
-            
-            # Формируем выбор родителя с отображением иерархии
-            parent_choices = []
-            
-            for parent in available_parents:
-                # Формируем отображаемое имя с учетом иерархии
-                display_name = self._get_parent_display_name(parent)
-                parent_choices.append((parent.id, display_name))
-            
-            # Добавляем пустой вариант для корневых подразделений
-            self.fields['parent'].choices = [('', '— Корневое (без родителя) —')] + parent_choices
-            
-            # Если редактируем существующее подразделение
-            if self.instance and self.instance.pk:
-                # Нельзя выбрать себя или потомков в качестве родителя
-                descendants_ids = self.instance.get_descendants_ids()
-                forbidden_ids = descendants_ids + [self.instance.id]
-                
-                # Фильтруем доступных родителей
-                self.fields['parent'].queryset = available_parents.exclude(
-                    id__in=forbidden_ids
-                )
-                
-                # Перестраиваем choices
-                self._update_parent_choices()
-            
-            # Фильтрация типов подразделений
-            self._filter_unit_types()
-    
-    def _get_parent_display_name(self, unit, level=0, max_level=3):
-        """
-        Формирует отображаемое имя родителя с учетом иерархии
-        """
-        indent = '　' * level  # Используем японский пробел для отступа
-        ancestors = unit.get_ancestors()
+        self.access = AccessService(self.user)
         
-        if ancestors:
-            path = ' → '.join([a.name for a in reversed(ancestors)])
-            return f"{indent}{unit.name} ({unit.unit_type.name}) [ {path} ]"
-        else:
-            return f"{indent}{unit.name} ({unit.unit_type.name})"
+        # Настраиваем поле родителя
+        self._setup_parent_field()
+        
+        # Настраиваем поле типа подразделения
+        self._setup_unit_type_field()
     
-    def _update_parent_choices(self):
-        """Обновляет choices для поля parent"""
+    def _setup_parent_field(self):
+        """
+        Настройка поля выбора родителя.
+        """
+        # Получаем все подразделения, в которых можно создавать
+        available_parents = self.access.get_available_parents_for_creation()
+        
+        # Формируем список выбора
         parent_choices = []
         
-        for parent in self.fields['parent'].queryset:
-            display_name = self._get_parent_display_name(parent)
+        # Только академия может создавать корневые подразделения (без родителя)
+        if self.access.user_level == 0:
+            parent_choices.append(('', '— Корневое (без родителя) —'))
+        
+        # Добавляем все доступные родители
+        for parent in available_parents:
+            display_name = f"{parent.name} ({parent.unit_type.name})"
+            if parent.parent:
+                ancestors = parent.get_ancestors()
+                if ancestors:
+                    path = ' → '.join([a.name for a in reversed(ancestors)])
+                    display_name = f"{display_name} [ {path} ]"
             parent_choices.append((parent.id, display_name))
         
-        self.fields['parent'].choices = [('', '— Корневое (без родителя) —')] + parent_choices
+        self.fields['parent'].choices = parent_choices
+        
+        # Если редактируем существующее подразделение
+        if self.instance and self.instance.pk:
+            descendants_ids = self.instance.get_descendants_ids()
+            forbidden_ids = descendants_ids + [self.instance.id]
+            
+            filtered_choices = []
+            if self.access.user_level == 0:
+                filtered_choices.append(('', '— Корневое (без родителя) —'))
+            
+            for choice in parent_choices:
+                if choice[0] and int(choice[0]) not in forbidden_ids:
+                    filtered_choices.append(choice)
+            
+            self.fields['parent'].choices = filtered_choices
     
-    def _filter_unit_types(self):
+    def _setup_unit_type_field(self):
         """
-        Фильтрация доступных типов подразделений:
-        - Можно создавать только типы с уровнем ВЫШЕ, чем у родителя
+        Настройка поля выбора типа подразделения.
+        Показываем все типы с уровнем выше уровня пользователя
         """
-        parent = self.cleaned_data.get('parent') if self.is_bound else self.initial.get('parent')
+        min_level = self.access.user_level + 1
+        types_qs = UnitType.objects.filter(level__gte=min_level).order_by('level', 'name')
         
-        if parent and isinstance(parent, Unit):
-            # Если родитель выбран, показываем только типы с уровнем > уровня родителя
-            allowed_levels = range(parent.get_level() + 1, 100)
-            self.fields['unit_type'].queryset = UnitType.objects.filter(
-                level__in=allowed_levels
-            )
-        else:
-            # Если родитель не выбран (корневое), показываем типы с уровнем 0
-            self.fields['unit_type'].queryset = UnitType.objects.filter(level=0)
+        self.fields['unit_type'].queryset = types_qs
         
-        # Если пользователь не академия, ограничиваем также уровнем пользователя
-        if self.user:
-            access = AccessService(self.user)
-            if access.user_level != 0:
-                # Не-академия может создавать только типы с уровнем выше своего
-                allowed_levels = range(access.user_level + 1, 100)
-                self.fields['unit_type'].queryset = self.fields['unit_type'].queryset.filter(
-                    level__in=allowed_levels
-                )
+        help_text = f"Доступны типы с уровнем выше вашего ({self.access.user_level}): "
+        help_text += ", ".join([f"{t.name} (ур. {t.level})" for t in types_qs])
+        self.fields['unit_type'].help_text = help_text
+        
+        if not types_qs.exists():
+            self.fields['unit_type'].empty_label = '— Нет доступных типов —'
+            self.fields['unit_type'].widget.attrs['disabled'] = 'disabled'
     
     def clean_parent(self):
-        """Валидация родителя"""
+        """
+        Валидация родителя
+        """
         parent = self.cleaned_data.get('parent')
-        unit_type = self.cleaned_data.get('unit_type')
         
-        if parent and unit_type:
+        if parent:
             # Проверка: родитель должен иметь возможность иметь детей
             if not parent.unit_type.can_have_children:
                 raise forms.ValidationError(
@@ -161,28 +148,109 @@ class UnitForm(forms.ModelForm):
                     f'не может иметь дочерние подразделения'
                 )
             
-            # Проверка: уровень родителя должен быть меньше уровня дочернего
-            if parent.get_level() >= unit_type.level:
+            # Проверка: родитель должен быть видимым для пользователя
+            if not self.access.can_view_unit(parent):
                 raise forms.ValidationError(
-                    f'Нельзя создать подразделение типа "{unit_type.name}" (уровень {unit_type.level}) '
-                    f'в подразделении "{parent.name}" (уровень {parent.get_level()}). '
-                    f'Уровень дочернего подразделения должен быть выше уровня родителя.'
+                    f'У вас нет доступа к подразделению "{parent.name}"'
                 )
         
         return parent
     
+    def clean_unit_type(self):
+        """
+        Валидация типа подразделения
+        """
+        unit_type = self.cleaned_data.get('unit_type')
+        
+        if not unit_type:
+            raise forms.ValidationError('Выберите тип подразделения')
+        
+        # Проверка: тип должен быть выше уровня пользователя
+        if unit_type.level <= self.access.user_level:
+            raise forms.ValidationError(
+                f'Нельзя создать подразделение типа "{unit_type.name}" (уровень {unit_type.level}). '
+                f'Ваш уровень {self.access.user_level}. Можно создавать только подразделения '
+                f'с уровнем выше вашего.'
+            )
+        
+        return unit_type
+    
     def clean(self):
-        """Общая валидация формы"""
+        """
+        Общая валидация формы - проверка соответствия родителя и типа
+        """
         cleaned_data = super().clean()
         parent = cleaned_data.get('parent')
         unit_type = cleaned_data.get('unit_type')
         
-        if not parent and unit_type:
-            # Корневое подразделение - проверяем, что тип имеет уровень 0
-            if unit_type.level != 0:
+        if not unit_type:
+            return cleaned_data
+        
+        # ========== ОСНОВНЫЕ ПРОВЕРКИ ==========
+        
+        # Проверка 1: Нельзя создать подразделение своего уровня
+        if unit_type.level <= self.access.user_level:
+            raise forms.ValidationError(
+                f'Нельзя создать подразделение уровня {unit_type.level}, '
+                f'так как ваш уровень {self.access.user_level}. '
+                f'Можно создавать только подразделения более низкого уровня.'
+            )
+        
+        # Проверка 2: Проверка относительно родителя
+        if parent:
+            # 2.1: Уровень дочернего должен быть строго выше уровня родителя
+            if unit_type.level <= parent.get_level():
                 raise forms.ValidationError(
-                    f'Корневое подразделение может быть только типа с уровнем 0. '
-                    f'Выбран тип "{unit_type.name}" (уровень {unit_type.level})'
+                    f'Нельзя создать подразделение типа "{unit_type.name}" (уровень {unit_type.level}) '
+                    f'в подразделении "{parent.name}" (уровень {parent.get_level()}). '
+                    f'Уровень дочернего подразделения должен быть ВЫШЕ уровня родителя.'
+                )
+            
+            # 2.2: Проверка иерархической корректности
+            # Например: Факультет (level=1) не может быть дочерним для Кафедры (level=2)
+            # То есть уровень родителя должен быть МЕНЬШЕ уровня дочернего
+            if parent.get_level() >= unit_type.level:
+                raise forms.ValidationError(
+                    f'Некорректная иерархия: нельзя создать подразделение типа "{unit_type.name}" '
+                    f'(уровень {unit_type.level}) в подразделении "{parent.name}" '
+                    f'(уровень {parent.get_level()}). Уровень родителя должен быть меньше.'
+                )
+            
+            # 2.3: Проверка типов (дополнительная логическая проверка)
+            # Например: Факультет (тип level=1) не может быть дочерним для другого Факультета
+            if parent.unit_type.level >= unit_type.level:
+                raise forms.ValidationError(
+                    f'Некорректная иерархия: тип "{parent.unit_type.name}" (уровень {parent.unit_type.level}) '
+                    f'не может быть родителем для типа "{unit_type.name}" (уровень {unit_type.level}). '
+                    f'Родительский тип должен иметь более низкий уровень.'
+                )
+        
+        else:
+            # Проверка 3: Корневое подразделение (без родителя)
+            # Корневое подразделение НЕ МОЖЕТ быть уровня 0
+            if unit_type.level == 0:
+                raise forms.ValidationError(
+                    f'Нельзя создать корневое подразделение типа "{unit_type.name}" (уровень 0). '
+                    f'Корневые подразделения могут создаваться только с уровнем 1 и выше.'
+                )
+            
+            # Проверка 4: Только академия может создавать корневые подразделения
+            if self.access.user_level != 0:
+                raise forms.ValidationError(
+                    f'Только администратор (академия) может создавать корневые подразделения.'
+                )
+        
+        # Проверка 5: Дополнительная проверка на циклические ссылки (только для редактирования)
+        if self.instance and self.instance.pk and parent:
+            if parent.id == self.instance.id:
+                raise forms.ValidationError('Подразделение не может быть родителем самого себя.')
+            
+            # Проверка, что родитель не является потомком текущего подразделения
+            descendants_ids = self.instance.get_descendants_ids()
+            if parent.id in descendants_ids:
+                raise forms.ValidationError(
+                    f'Нельзя сделать "{parent.name}" родителем, так как оно является потомком '
+                    f'текущего подразделения. Это создаст циклическую ссылку.'
                 )
         
         return cleaned_data

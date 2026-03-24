@@ -77,19 +77,20 @@ def list(request):
     # Строим дерево для каждого корневого узла
     units_tree = []
     for root_unit in root_units_data:
-        # Получаем актуальные данные с аннотацией
         try:
             root_with_count = units_with_counts.get(id=root_unit.id)
             units_tree.append(build_tree(root_with_count))
         except Unit.DoesNotExist:
-            # Если подразделение не входит в visible_units_qs (например, при поиске)
-            # добавляем его без аннотации
             units_tree.append(build_tree(root_unit))
+    
+    # Проверяем, может ли пользователь создавать подразделения
+    # Используем get_available_parents_for_creation() для проверки
+    can_create = access.get_available_parents_for_creation().exists()
     
     return render(request, 'units/list.html', {
         'units_tree': units_tree,
         'show_as_tree': True,
-        'can_add': access.can_create_unit(),
+        'can_add': can_create,
         'active_tab': 'units',
         'title': 'Подразделения',
         'search_query': search_query,
@@ -109,7 +110,7 @@ def add(request):
         messages.error(http_request, f'Ошибка доступа: {str(e)}')
         return redirect('dashboard')
     
-    # Проверка: может ли пользователь создавать
+    # Проверка: есть ли где создавать
     if not access.get_available_parents_for_creation().exists():
         messages.error(http_request, 'У вас нет прав на создание подразделений')
         return redirect('units:list')
@@ -124,14 +125,13 @@ def add(request):
             except IntegrityError as e:
                 messages.error(http_request, f'Ошибка при создании подразделения: {str(e)}')
     else:
-        # Получаем предустановленного родителя из GET параметра
+        # Передаем parent из GET параметра, если он есть
         parent_id = http_request.GET.get('parent')
         initial = {}
         
         if parent_id:
             try:
                 parent = Unit.objects.get(pk=parent_id)
-                # Проверяем, можно ли создавать в этом родителе
                 if access.can_create_in_unit(parent):
                     initial['parent'] = parent
             except Unit.DoesNotExist:

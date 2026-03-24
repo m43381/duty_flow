@@ -92,45 +92,44 @@ class AccessService:
     
     def can_create_in_unit(self, unit):
         """
-        Может ли пользователь создавать дочерние подразделения в указанном подразделении:
-        - Подразделение должно существовать
-        - Пользователь должен иметь право видеть это подразделение
-        - Подразделение должно иметь can_have_children=True
-        - Пользователь должен иметь право создавать
+        Может ли пользователь создавать дочерние подразделения в указанном подразделении.
+        
+        Логика:
+        - Пользователь может создавать в любом подразделении, которое:
+          1. Находится в иерархии его подразделения (себя или потомки)
+          2. Может иметь детей (can_have_children=True)
         """
         if not unit:
             return False
         
-        # Проверка видимости
+        # Проверка: подразделение должно быть видимым
         if not self.can_view_unit(unit):
             return False
         
-        # Проверка, может ли подразделение иметь детей
+        # Проверка: подразделение должно иметь возможность иметь детей
         if not unit.unit_type.can_have_children:
             return False
         
-        # Проверка прав пользователя на создание
-        if self.user_level == 0:
-            # Академия может создавать в любом видимом подразделении
-            return True
-        
-        # Остальные могут создавать только в своём подразделении
-        return unit.id == self.user_unit.id
+        return True
     
     def get_available_parents_for_creation(self):
         """
-        Получить список подразделений, в которых пользователь может создавать дочерние
+        Получить список подразделений, в которых пользователь может создавать дочерние.
+        
+        Логика:
+        - Пользователь может создавать в любом подразделении, которое:
+          1. Находится в иерархии его подразделения (себя или потомки)
+          2. Может иметь детей (can_have_children=True)
         """
-        if self.user_level == 0:
-            # Академия: все подразделения с can_have_children=True
-            return Unit.objects.filter(
-                unit_type__can_have_children=True
-            )
-        else:
-            # Остальные: только своё подразделение (если может иметь детей)
-            if self.user_unit.unit_type.can_have_children:
-                return Unit.objects.filter(id=self.user_unit.id)
-            return Unit.objects.none()
+        # Получаем все видимые подразделения (себя и всех потомков)
+        visible_units = self.get_visible_units()
+        
+        # Фильтруем только те, которые могут иметь детей
+        available_parents = visible_units.filter(
+            unit_type__can_have_children=True
+        )
+        
+        return available_parents
     
     # ========== ТИПЫ НАРЯДОВ ==========
     

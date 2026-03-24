@@ -10,13 +10,16 @@
             {% csrf_token %}
             
             {% if form.non_field_errors %}
-            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}<br>
+                {% endfor %}
+            </div>
             {% endif %}
             
             <div class="form-group">
                 <label for="id_name">Название *</label>
                 {{ form.name }}
-                <small class="form-text text-muted">Название подразделения</small>
                 {% if form.name.errors %}<div class="form-error">{{ form.name.errors }}</div>{% endif %}
             </div>
             
@@ -25,14 +28,10 @@
                 {{ form.parent }}
                 <small class="form-text text-muted">
                     {% if user.profile.unit.unit_type.level == 0 %}
-                        Можно выбрать любое подразделение, которое может иметь детей
+                        Можно выбрать любое подразделение или создать корневое (без родителя)
                     {% else %}
-                        Вы можете создавать подразделения только в "{{ user.profile.unit.name }}"
+                        Можно выбрать только подразделения, в которых вы можете создавать
                     {% endif %}
-                    <br>
-                    💡 Уровень дочернего подразделения должен быть выше уровня родителя
-                    <br>
-                    💡 После выбора родителя нажмите "Сохранить" - доступные типы будут обновлены автоматически
                 </small>
                 {% if form.parent.errors %}<div class="form-error">{{ form.parent.errors }}</div>{% endif %}
             </div>
@@ -41,11 +40,7 @@
                 <label for="id_unit_type">Тип подразделения *</label>
                 {{ form.unit_type }}
                 <small class="form-text text-muted">
-                    {% if form.parent.value %}
-                        Доступны типы с уровнем выше, чем у выбранного родителя
-                    {% else %}
-                        Для корневого подразделения доступны только типы с уровнем 0
-                    {% endif %}
+                    {{ form.unit_type.help_text|safe }}
                 </small>
                 {% if form.unit_type.errors %}<div class="form-error">{{ form.unit_type.errors }}</div>{% endif %}
             </div>
