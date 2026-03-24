@@ -1,0 +1,34 @@
+{% extends 'cabinets/base_cabinet.html' %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-content">
+            <h2 class="card-title">📅 {{ schedule.name|default:schedule.month|date:"F Y" }}</h2>
+            <div class="card-actions">
+                <a href="{% url 'plan:edit' schedule.pk %}" class="btn btn-primary">✏️ Редактировать</a>
+                <a href="{% url 'plan:days' schedule.pk %}" class="btn btn-primary">📅 Дни</a>
+                <a href="{% url 'plan:delete' schedule.pk %}" class="btn btn-danger">🗑️ Удалить</a>
+                <a href="{% url 'plan:list' %}" class="btn btn-secondary">← Назад</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <div class="info-grid">
+            <div class="info-row"><span class="info-label">Месяц:</span><span class="info-value">{{ schedule.month|date:"F Y" }}</span></div>
+            <div class="info-row"><span class="info-label">Название:</span><span class="info-value">{{ schedule.name|default:"—" }}</span></div>
+            <div class="info-row"><span class="info-label">Подразделение:</span><span class="info-value">{{ schedule.unit.name }}</span></div>
+            <div class="info-row"><span class="info-label">Статус:</span><span class="info-value">
+                {% if schedule.status == 'draft' %}Черновик
+                {% elif schedule.status == 'published' %}Опубликовано
+                {% else %}Архив{% endif %}
+            </span></div>
+            <div class="info-row"><span class="info-label">Создан:</span><span class="info-value">{{ schedule.created_at|date:"d.m.Y H:i" }}</span></div>
+            {% if schedule.parent_schedule %}
+            <div class="info-row"><span class="info-label">Основано на:</span><span class="info-value">{{ schedule.parent_schedule }}</span></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

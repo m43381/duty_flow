@@ -1,0 +1,104 @@
+.schedule-table-container { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); }
+.schedule-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+.schedule-table th { position: sticky; top: 0; background: var(--bg-header); padding: 12px 8px; text-align: center; border-bottom: 2px solid var(--border); }
+.schedule-table th:first-child { position: sticky; left: 0; z-index: 20; background: var(--bg-header); }
+.schedule-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+.schedule-table td:first-child { position: sticky; left: 0; background: var(--bg-card); font-weight: 500; border-right: 1px solid var(--border); }
+.schedule-cell { text-align: center; vertical-align: middle; min-width: 120px; }
+
+.schedule-cell--own { background-color: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; }
+.schedule-cell--delegated-pending { background-color: rgba(139, 92, 246, 0.1); border-left: 3px solid #8b5cf6; }
+.schedule-cell--delegated-accepted { background-color: rgba(34, 197, 94, 0.1); border-left: 3px solid #22c55e; }
+.schedule-cell--incoming-active { background-color: rgba(245, 158, 11, 0.15); border-left: 3px solid #f59e0b; }
+.schedule-cell--inactive { background-color: var(--bg-hover); opacity: 0.6; }
+.schedule-cell--empty { background-color: var(--bg-card); }
+
+.schedule-select { width: 100%; min-width: 120px; padding: 6px 8px; background: var(--bg-body); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+.schedule-select.changed { border-color: #f59e0b; background-color: rgba(245, 158, 11, 0.1); }
+
+.schedule-legend { display: flex; gap: 1.5rem; flex-wrap: wrap; padding: 1rem; background: var(--bg-hover); border-radius: 8px; margin-bottom: 2rem; }
+.legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.legend-color { width: 24px; height: 24px; border-radius: 4px; }
+.legend-color--own { background: rgba(59, 130, 246, 0.2); border-left: 3px solid #3b82f6; }
+.legend-color--delegated-pending { background: rgba(139, 92, 246, 0.2); border-left: 3px solid #8b5cf6; }
+.legend-color--delegated-accepted { background: rgba(34, 197, 94, 0.2); border-left: 3px solid #22c55e; }
+.legend-color--incoming-active { background: rgba(245, 158, 11, 0.2); border-left: 3px solid #f59e0b; }
+.legend-color--inactive { background: var(--bg-hover); border: 1px solid var(--border); }
+.legend-color--empty { background: var(--bg-card); border: 1px solid var(--border); }
+
+.info-grid { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
+.info-row { display: flex; padding: 0.5rem 0; border-bottom: 1px solid var(--border-light); }
+.info-label { width: 180px; font-weight: 600; color: var(--text-muted); }
+.info-value { flex: 1; }
+.badge { display: inline-block; padding: 0.25rem 0.75rem; background: var(--bg-hover); border-radius: 1rem; font-size: 0.8rem; }
+.form-actions { display: flex; justify-content: flex-end; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.btn-primary { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+.btn-secondary { background: var(--bg-hover); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; text-decoration: none; }
+.card-header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.card-title { margin: 0; font-size: 1.5rem; font-weight: 600; color: var(--text); }
+.card-actions { display: flex; gap: 0.5rem; }
+
+[data-theme="dark"] .schedule-cell--own { background-color: rgba(59, 130, 246, 0.2); }
+[data-theme="dark"] .schedule-cell--delegated-pending { background-color: rgba(139, 92, 246, 0.2); }
+[data-theme="dark"] .schedule-cell--delegated-accepted { background-color: rgba(34, 197, 94, 0.2); }
+[data-theme="dark"] .schedule-cell--incoming-active { background-color: rgba(245, 158, 11, 0.2); }
+
+/* Цвета для статусов */
+.schedule-cell--own { background-color: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; }
+.schedule-cell--delegated_pending { background-color: rgba(139, 92, 246, 0.1); border-left: 3px solid #8b5cf6; }
+.schedule-cell--delegated_accepted { background-color: rgba(34, 197, 94, 0.1); border-left: 3px solid #22c55e; }
+.schedule-cell--incoming_active { background-color: rgba(245, 158, 11, 0.15); border-left: 3px solid #f59e0b; }
+.schedule-cell--inactive { background-color: var(--bg-hover); opacity: 0.6; }
+.schedule-cell--empty { background-color: var(--bg-card); }
+
+/* Текст статуса */
+.status-text {
+    font-size: 0.7rem;
+    margin-top: 4px;
+    color: var(--text-muted);
+}
+
+/* Легенда */
+.schedule-legend {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1rem;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+.legend-color {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+}
+.legend-color--own { background: rgba(59, 130, 246, 0.2); border-left: 3px solid #3b82f6; }
+.legend-color--delegated-pending { background: rgba(139, 92, 246, 0.2); border-left: 3px solid #8b5cf6; }
+.legend-color--delegated-accepted { background: rgba(34, 197, 94, 0.2); border-left: 3px solid #22c55e; }
+.legend-color--incoming-active { background: rgba(245, 158, 11, 0.2); border-left: 3px solid #f59e0b; }
+.legend-color--inactive { background: var(--bg-hover); border: 1px solid var(--border); }
+.legend-color--empty { background: var(--bg-card); border: 1px solid var(--border); }
+
+/* Добавить в schedule-table.css */
+
+.schedule-cell--incoming_delegated_pending {
+    background-color: rgba(139, 92, 246, 0.15);
+    border-left: 3px solid #8b5cf6;
+}
+
+.schedule-cell--incoming_delegated_accepted {
+    background-color: rgba(34, 197, 94, 0.15);
+    border-left: 3px solid #22c55e;
+}
+
+.schedule-cell--incoming_pending {
+    background-color: rgba(156, 163, 175, 0.15);
+    border-left: 3px solid #9ca3af;
+}

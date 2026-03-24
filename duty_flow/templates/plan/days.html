@@ -1,0 +1,84 @@
+{% extends 'cabinets/base_cabinet.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/schedule-table.css' %}">
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-content">
+            <h2 class="card-title">📅 {% if schedule.name %}{{ schedule.name }}{% else %}{{ schedule.month|date:"F Y" }}{% endif %}</h2>
+            <div class="card-actions">
+                <a href="{% url 'plan:detail' schedule.pk %}" class="btn btn-secondary">← Назад</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <!-- Легенда -->
+        <div class="schedule-legend">
+            <div class="legend-item"><div class="legend-color legend-color--own"></div><span>Свой наряд</span></div>
+            <div class="legend-item"><div class="legend-color legend-color--delegated-pending"></div><span>Делегировано (ждет)</span></div>
+            <div class="legend-item"><div class="legend-color legend-color--delegated-accepted"></div><span>Делегировано (принято)</span></div>
+            <div class="legend-item"><div class="legend-color legend-color--incoming-active"></div><span>Входящий наряд</span></div>
+            <div class="legend-item"><div class="legend-color legend-color--inactive"></div><span>Неактивно</span></div>
+            <div class="legend-item"><div class="legend-color legend-color--empty"></div><span>Не назначено</span></div>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-row"><span class="info-label">Ваше подразделение:</span><span class="info-value">{{ user_unit.name }}</span></div>
+            <div class="info-row"><span class="info-label">Дочерние подразделения:</span>
+                <span class="info-value">{% for u in children %}<span class="badge">{{ u.name }}</span>{% empty %}—{% endfor %}</span>
+            </div>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="schedule-table-container">
+                <table class="schedule-table">
+                    <thead>
+                        <tr>
+                            <th>Тип наряда</th>
+                            {% for d in dates %}
+                            <th style="text-align: center;">{{ d|date:"d.m" }}<br><small>{{ d|date:"D" }}</small></th>
+                            {% endfor %}
+                        </thead>
+                    <tbody>
+                        {% for row in table %}
+                        <tr>
+                            <td style="background: var(--bg-header); font-weight: 500;">
+                                <strong>{{ row.duty.name }}</strong>
+                                <br><small>({{ row.duty.required_people }} чел)</small>
+                             </td>
+                            {% for cell in row.cells %}
+                            <td class="schedule-cell schedule-cell--{{ cell.cell_class }}">
+                                {% if cell.can_edit %}
+                                    <select name="day_{{ cell.date|date:'Y-m-d' }}_{{ row.duty.id }}" class="schedule-select">
+                                        <option value="">— Не назначено —</option>
+                                        <option value="{{ user_unit.id }}" {% if cell.unit_id == user_unit.id %}selected{% endif %}>👥 {{ user_unit.name }}</option>
+                                        {% for u in children %}<option value="{{ u.id }}" {% if cell.unit_id == u.id %}selected{% endif %}>⬇️ {{ u.name }}</option>{% endfor %}
+                                    </select>
+                                    {% if cell.status_text %}<div class="status-text">{{ cell.status_text }}</div>{% endif %}
+                                {% elif cell.unit_id %}
+                                    <div>
+                                        <strong>{% if cell.unit_id == user_unit.id %}👥{% else %}⬇️{% endif %} {{ cell.unit_name }}</strong>
+                                        <input type="hidden" name="day_{{ cell.date|date:'Y-m-d' }}_{{ row.duty.id }}" value="{{ cell.unit_id }}">
+                                    </div>
+                                    {% if cell.status_text %}<div class="status-text">{{ cell.status_text }}</div>{% endif %}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                             </td>
+                            {% endfor %}
+                         </tr>
+                        {% endfor %}
+                    </tbody>
+                 </table>
+            </div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">💾 Сохранить</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}

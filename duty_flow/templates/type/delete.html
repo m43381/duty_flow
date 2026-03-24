@@ -3,37 +3,23 @@
 {% block cabinet_content %}
 <div class="card" style="border-color: var(--danger);">
     <div class="card-header" style="background: var(--danger-bg);">
-        <h2 style="color: var(--danger);">⚠️ {{ title }}</h2>
+        <h2 class="card-title" style="color: var(--danger);">⚠️ Удаление</h2>
     </div>
     <div class="card-body">
-        <p style="font-size: 1.1rem; margin-bottom: 2rem;">
-            Вы уверены, что хотите удалить тип наряда:
-        </p>
+        <p>Вы уверены, что хотите удалить тип наряда?</p>
         
-        <div class="info-grid" style="background: var(--bg-hover); padding: 1.5rem; border-radius: 0.5rem;">
-            <div class="info-row">
-                <span class="info-label">Название:</span>
-                <span class="info-value"><strong>{{ item.name }}</strong></span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Подразделение:</span>
-                <span class="info-value">{{ item.unit.name }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Требуется человек:</span>
-                <span class="info-value">{{ item.required_people }}</span>
-            </div>
+        <div class="info-grid" style="background: var(--bg-hover); padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+            <div class="info-row"><span class="info-label">Название:</span><span class="info-value">{{ item.name }}</span></div>
+            <div class="info-row"><span class="info-label">Закреплено за:</span><span class="info-value">{{ item.unit.name }}</span></div>
         </div>
         
-        <p style="color: var(--danger); margin: 1.5rem 0;">
-            ⚠️ Это действие нельзя будет отменить!
-        </p>
+        <p style="color: var(--danger);">Это действие нельзя будет отменить!</p>
         
         <form method="post">
             {% csrf_token %}
             <div class="form-actions">
                 <button type="submit" class="btn btn-danger">🗑️ Да, удалить</button>
-                <a href="{% url 'type:type_detail' item.id %}" class="btn btn-secondary">↩️ Отмена</a>
+                <a href="{% url 'type:detail' item.pk %}" class="btn btn-secondary">↩️ Отмена</a>
             </div>
         </form>
     </div>

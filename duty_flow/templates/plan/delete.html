@@ -1,0 +1,28 @@
+{% extends 'cabinets/base_cabinet.html' %}
+
+{% block cabinet_content %}
+<div class="card" style="border-color: var(--danger);">
+    <div class="card-header" style="background: var(--danger-bg);">
+        <h2 class="card-title" style="color: var(--danger);">⚠️ Удаление расписания</h2>
+    </div>
+    <div class="card-body">
+        <p>Вы уверены, что хотите удалить это расписание?</p>
+        
+        <div class="info-grid" style="background: var(--bg-hover); padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+            <div class="info-row"><span class="info-label">Месяц:</span><span class="info-value">{{ schedule.month|date:"F Y" }}</span></div>
+            <div class="info-row"><span class="info-label">Название:</span><span class="info-value">{{ schedule.name|default:"—" }}</span></div>
+            <div class="info-row"><span class="info-label">Подразделение:</span><span class="info-value">{{ schedule.unit.name }}</span></div>
+        </div>
+        
+        <p style="color: var(--danger);">Это действие нельзя будет отменить!</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">🗑️ Да, удалить</button>
+                <a href="{% url 'plan:detail' schedule.pk %}" class="btn btn-secondary">↩️ Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

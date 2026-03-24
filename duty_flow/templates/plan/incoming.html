@@ -1,0 +1,36 @@
+{% extends 'cabinets/base_cabinet.html' %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-content">
+            <h2 class="card-title">📥 Входящие назначения</h2>
+            <a href="{% url 'plan:list' %}" class="btn btn-secondary">← К списку</a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if incoming %}
+            {% for src, plans in incoming.items %}
+            <div class="incoming-group" style="margin-bottom: 2rem;">
+                <h3>📋 {{ src.name|default:"Вышестоящее подразделение" }}</h3>
+                <p class="text-muted">{{ src.month|date:"F Y" }}</p>
+                <table class="table">
+                    <thead><tr><th>Дата</th><th>Тип наряда</th><th></th></tr></thead>
+                    <tbody>
+                        {% for p in plans %}
+                        <tr>
+                            <td>{{ p.date|date:"d.m.Y" }} ({{ p.date|date:"D" }})</td>
+                            <td><strong>{{ p.duty_type.name }}</strong><br><small>{{ p.duty_type.description|truncatechars:50 }}</small></td>
+                            <td><a href="{% url 'plan:accept' p.id %}" class="btn btn-sm btn-primary">✅ Принять</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="empty-state"><div class="empty-icon">📭</div><h3>Нет входящих назначений</h3></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
