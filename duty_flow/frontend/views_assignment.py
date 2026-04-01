@@ -1,10 +1,10 @@
+import calendar as cal  # Переименовываем импорт
 from datetime import datetime, date
-import calendar
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
+from django.db.models import Q
 
 from duty_plans.models import MonthlySchedule, DayPlan, DutyAssignment
 from duty_types.models import DutyType
@@ -69,8 +69,8 @@ def calendar(request):
 
 def build_calendar_data(day_plans, year, month, access):
     """Строит данные для календаря"""
-    # Дни месяца
-    last_day = calendar.monthrange(year, month)[1]
+    # Используем cal вместо calendar
+    last_day = cal.monthrange(year, month)[1]
     dates = [date(year, month, day) for day in range(1, last_day + 1)]
     
     # Получаем все типы нарядов
