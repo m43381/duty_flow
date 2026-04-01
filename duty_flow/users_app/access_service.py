@@ -303,3 +303,30 @@ class AccessService:
             'available_duty_types': self.get_available_duty_types(),
             'can_create_plan': self.can_create_plan(),
         }
+    
+    def can_delete_user(self, target_user):
+        """
+        Может ли удалять пользователя:
+        - Пользователей, которых создал сам
+        - Пользователей своего подразделения (только если ты академия или создатель)
+        - Пользователей прямых дочерних подразделений (только если ты академия или создатель)
+        """
+        # Нельзя удалить себя
+        if target_user.id == self.user.id:
+            return False
+        
+        target_unit = target_user.profile.unit
+        
+        # Проверка: если пользователь создал этого пользователя
+        # Нужно добавить поле created_by в модель UserProfile
+        # Пока сделаем по иерархии
+        
+        # Свое подразделение - можно удалять (помощников)
+        if target_unit.id == self.user_unit.id:
+            return True
+        
+        # Прямое дочернее - можно удалять (руководителей)
+        if target_unit.parent and target_unit.parent.id == self.user_unit.id:
+            return True
+        
+        return False

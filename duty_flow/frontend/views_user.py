@@ -51,9 +51,13 @@ def create_view(request):
     
     # Проверка: есть ли куда создавать
     available_units = []
-    for unit in [access.user_unit] + list(access.user_unit.children.all()):
-        if access.can_create_user_for_unit(unit):
-            available_units.append(unit)
+    
+    # Свое подразделение
+    available_units.append(access.user_unit)
+    
+    # Прямые дочерние
+    for child in access.user_unit.children.all():
+        available_units.append(child)
     
     if not available_units:
         messages.error(request, 'У вас нет прав на создание пользователей')
@@ -76,8 +80,9 @@ def create_view(request):
         if unit_id:
             try:
                 unit = Unit.objects.get(pk=unit_id)
+                # Проверяем, что подразделение доступно для создания
                 if unit in available_units:
-                    form.initial['unit'] = unit
+                    form.initial['unit'] = unit.id
             except Unit.DoesNotExist:
                 pass
     

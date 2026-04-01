@@ -18,8 +18,8 @@ class UserCreateForm(forms.ModelForm):
         widget=forms.PasswordInput(attrs={'class': 'form-input'}),
         label="Подтверждение пароля"
     )
-    unit = forms.ModelChoiceField(
-        queryset=Unit.objects.none(),
+    unit = forms.ChoiceField(
+        choices=[],
         widget=forms.Select(attrs={'class': 'form-select'}),
         label="Подразделение"
     )
@@ -40,12 +40,55 @@ class UserCreateForm(forms.ModelForm):
         
         if self.request_user:
             access = AccessService(self.request_user)
-            # Показываем подразделения, в которых можно создавать пользователей
-            # Это: свое и прямые дочерние
-            available_units = [access.user_unit]
-            available_units.extend(access.user_unit.children.all())
-            self.fields['unit'].queryset = Unit.objects.filter(id__in=[u.id for u in available_units])
-            self.fields['unit'].help_text = "Вы можете создать пользователя в своем подразделении или в прямом дочернем"
+            
+            # Собираем доступные подразделения: свое и прямые дочерние
+            available_units = []
+            
+            # Свое подразделение (можно создать помощника)
+            available_units.append(access.user_unit)
+            
+            # Прямые дочерние подразделения (можно создать руководителя)
+            for child in access.user_unit.children.all():
+                available_units.append(child)
+            
+            # Формируем choices с понятными названиями
+            choices = []
+            for unit in available_units:
+                if unit.id == access.user_unit.id:
+                    label = f"{unit.name} ({unit.unit_type.name}) - ваше подразделение (создать помощника)"
+                else:
+                    label = f"{unit.name} ({unit.unit_type.name}) - дочернее подразделение (создать руководителя)"
+                choices.append((unit.id, label))
+            
+            self.fields['unit'].choices = choices
+            
+            # Устанавливаем значение по умолчанию - свое подразделение
+            if choices:
+                self.initial['unit'] = access.user_unit.id
+            
+            self.fields['unit'].help_text = "Выберите подразделение для нового пользователя"
+    
+    def clean_unit(self):
+        """Проверка, что выбранное подразделение допустимо"""
+        unit_id = self.cleaned_data.get('unit')
+        if not unit_id:
+            raise forms.ValidationError('Выберите подразделение')
+        
+        try:
+            unit = Unit.objects.get(pk=unit_id)
+        except Unit.DoesNotExist:
+            raise forms.ValidationError('Выбранное подразделение не существует')
+        
+        # Проверяем, что пользователь может создавать в этом подразделении
+        if self.request_user:
+            access = AccessService(self.request_user)
+            if not access.can_create_user_for_unit(unit):
+                raise forms.ValidationError(
+                    'Вы не можете создать пользователя в этом подразделении. '
+                    'Доступны только ваше подразделение и прямые дочерние.'
+                )
+        
+        return unit_id
     
     def clean_username(self):
         username = self.cleaned_data.get('username')
@@ -78,7 +121,8 @@ class UserCreateForm(forms.ModelForm):
             from users_app.models import UserProfile
             UserProfile.objects.create(
                 user=user,
-                unit=self.cleaned_data['unit']
+                unit_id=self.cleaned_data['unit'],
+                created_by=self.request_user
             )
         
         return user
@@ -86,13 +130,6 @@ class UserCreateForm(forms.ModelForm):
 
 class UserEditForm(forms.ModelForm):
     """Форма редактирования пользователя"""
-    
-    unit = forms.ModelChoiceField(
-        queryset=Unit.objects.none(),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Подразделение",
-        required=True
-    )
     
     class Meta:
         model = User
@@ -112,13 +149,8 @@ class UserEditForm(forms.ModelForm):
         if self.request_user:
             access = AccessService(self.request_user)
             
-            # Для редактирования показываем все подразделения, которые может видеть пользователь
-            visible_units = access.get_visible_units()
-            self.fields['unit'].queryset = visible_units
-            
-            # Устанавливаем текущее подразделение
-            if self.instance and hasattr(self.instance, 'profile'):
-                self.initial['unit'] = self.instance.profile.unit_id
+            # Убираем поле подразделения - нельзя менять
+            self.fields.pop('unit', None)
             
             # Если пользователь не академия, нельзя менять is_active
             if access.user_level != 0:
@@ -130,9 +162,6 @@ class UserEditForm(forms.ModelForm):
         
         if commit:
             user.save()
-            if hasattr(user, 'profile'):
-                user.profile.unit = self.cleaned_data['unit']
-                user.profile.save()
         
         return user
 
@@ -143,7 +172,8 @@ class UserChangePasswordForm(forms.Form):
     new_password = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-input'}),
         validators=[validate_password],
-        label="Новый пароль"
+        label="Новый пароль",
+        help_text="Минимум 8 символов, не должен быть слишком простым"
     )
     new_password_confirm = forms.CharField(
         widget=forms.PasswordInput(attrs={'class': 'form-input'}),

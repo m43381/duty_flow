@@ -37,10 +37,17 @@
             <div class="info-row">
                 <span class="info-label">Подразделение:</span>
                 <span class="info-value">
-                    <a href="{% url 'units:detail' user_obj.profile.unit.pk %}">
+                    <a href="{% url 'units:detail' user_obj.profile.unit.pk %}" class="unit-link">
                         {{ user_obj.profile.unit.name }}
                     </a>
-                    <span class="badge" style="font-size: 0.7rem;">ур. {{ user_obj.profile.unit.get_level }}</span>
+                    <span class="unit-type-badge" style="margin-left: 0.5rem;">
+                        {{ user_obj.profile.unit.unit_type.name }}
+                    </span>
+                    {% if user_obj.profile.unit.parent %}
+                    <span class="parent-path" style="color: var(--text-muted); margin-left: 0.5rem;">
+                        (в {{ user_obj.profile.unit.parent.name }})
+                    </span>
+                    {% endif %}
                 </span>
             </div>
             <div class="info-row">
@@ -50,6 +57,17 @@
                         <span class="badge success">Активен</span>
                     {% else %}
                         <span class="badge danger">Заблокирован</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Создан:</span>
+                <span class="info-value">
+                    {% if user_obj.profile.created_by %}
+                        {{ user_obj.profile.created_by.get_full_name|default:user_obj.profile.created_by.username }}
+                        ({{ user_obj.profile.created_at|date:"d.m.Y H:i" }})
+                    {% else %}
+                        Системой ({{ user_obj.profile.created_at|date:"d.m.Y H:i" }})
                     {% endif %}
                 </span>
             </div>
@@ -78,4 +96,24 @@
         {% endif %}
     </div>
 </div>
+
+<style>
+.unit-link {
+    color: var(--primary);
+    text-decoration: none;
+}
+.unit-link:hover {
+    text-decoration: underline;
+}
+.unit-type-badge {
+    background: var(--bg-light);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+.parent-path {
+    font-size: 0.75rem;
+}
+</style>
 {% endblock %}

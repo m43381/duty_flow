@@ -37,20 +37,28 @@
                         <th>Email</th>
                         <th>Подразделение</th>
                         <th>Статус</th>
-                        <th>Действия</th>
+                        <th style="width: 120px;">Действия</th>
                     </thead>
                 <tbody>
                     {% for user in users %}
+                    {% with access=user_access %}
                     <tr>
-                        <td><strong>{{ user.username }}</strong>  </td>
-                        <td>{{ user.get_full_name|default:"—" }}   </td>
-                        <td>{{ user.email|default:"—" }}   </td>
+                        <td><strong>{{ user.username }}</strong></td>
+                        <td>{{ user.get_full_name|default:"—" }}</td>
+                        <td>{{ user.email|default:"—" }}</td>
                         <td>
-                            <a href="{% url 'units:detail' user.profile.unit.pk %}">
+                            <a href="{% url 'units:detail' user.profile.unit.pk %}" class="unit-link">
                                 {{ user.profile.unit.name }}
                             </a>
-                            <span class="badge" style="font-size: 0.7rem;">ур. {{ user.profile.unit.get_level }}</span>
-                         </td>
+                            <span class="unit-type-badge" style="font-size: 0.7rem; margin-left: 0.5rem;">
+                                {{ user.profile.unit.unit_type.name }}
+                            </span>
+                            {% if user.profile.unit.parent %}
+                            <span class="parent-path" style="font-size: 0.7rem; color: var(--text-muted); margin-left: 0.25rem;">
+                                (в {{ user.profile.unit.parent.name }})
+                            </span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if user.is_active %}
                                 <span class="badge success">Активен</span>
@@ -58,13 +66,26 @@
                                 <span class="badge danger">Заблокирован</span>
                             {% endif %}
                         </td>
-                        <td class="action-cell">
+                        <td class="action-cell" style="white-space: nowrap;">
                             <a href="{% url 'users:detail' user.pk %}" class="action-btn" title="Просмотр">👁️</a>
-                            {% if user.id == request.user.id or user.profile.unit.id == request.user.profile.unit.id %}
+                            
+                            {# Кнопка редактирования: только если пользователь может редактировать #}
+                            {% if user.id == request.user.id or user.profile.created_by_id == request.user.id or request.user.profile.unit.unit_type.level == 0 and user.profile.unit.id == request.user.profile.unit.id %}
                             <a href="{% url 'users:edit' user.pk %}" class="action-btn" title="Редактировать">✏️</a>
+                            {% endif %}
+                            
+                            {# Кнопка смены пароля: только если пользователь может менять пароль #}
+                            {% if user.id == request.user.id or user.profile.created_by_id == request.user.id or request.user.profile.unit.unit_type.level == 0 and user.profile.unit.id == request.user.profile.unit.id %}
+                            <a href="{% url 'users:change_password' user.pk %}" class="action-btn" title="Сменить пароль">🔑</a>
+                            {% endif %}
+                            
+                            {# Кнопка удаления: только если пользователь может удалять #}
+                            {% if user.id != request.user.id and user.profile.created_by_id == request.user.id or request.user.profile.unit.unit_type.level == 0 and user.profile.unit.id == request.user.profile.unit.id %}
+                            <a href="{% url 'users:delete' user.pk %}" class="action-btn action-btn-delete" title="Удалить" onclick="return confirm('Вы уверены, что хотите удалить пользователя {{ user.username }}?');">🗑️</a>
                             {% endif %}
                         </td>
                     </tr>
+                    {% endwith %}
                     {% endfor %}
                 </tbody>
             </table>
@@ -86,4 +107,50 @@
         {% endif %}
     </div>
 </div>
+
+<style>
+.unit-link {
+    color: var(--primary);
+    text-decoration: none;
+}
+.unit-link:hover {
+    text-decoration: underline;
+}
+.unit-type-badge {
+    background: var(--bg-light);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+}
+.parent-path {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+.action-cell {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    text-decoration: none;
+    font-size: 1.125rem;
+    transition: background-color 0.2s ease;
+}
+.action-btn:hover {
+    background-color: var(--bg-hover);
+}
+.action-btn-delete {
+    color: var(--danger);
+}
+.action-btn-delete:hover {
+    background-color: var(--danger-bg);
+}
+</style>
 {% endblock %}

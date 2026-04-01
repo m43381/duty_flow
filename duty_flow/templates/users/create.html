@@ -47,7 +47,17 @@
             <div class="form-group">
                 <label for="id_unit">Подразделение *</label>
                 {{ form.unit }}
-                <small class="form-text text-muted">{{ form.unit.help_text }}</small>
+                <small class="form-text text-muted">
+                    {% if user.profile.unit.children.exists %}
+                        💡 Вы можете создать:
+                        <ul style="margin-top: 0.25rem; margin-bottom: 0;">
+                            <li>• Помощника в своем подразделении</li>
+                            <li>• Руководителя в дочерних подразделениях</li>
+                        </ul>
+                    {% else %}
+                        💡 Вы можете создать помощника в своем подразделении
+                    {% endif %}
+                </small>
                 {% if form.unit.errors %}<div class="form-error">{{ form.unit.errors }}</div>{% endif %}
             </div>
             
