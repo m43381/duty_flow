@@ -36,3 +36,5 @@ pyproject.toml
 .coverage  
 htmlcov/  
 .pytest_cache/  
+
+.sqlite3
