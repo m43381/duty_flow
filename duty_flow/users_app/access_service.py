@@ -7,7 +7,7 @@ from duty_types.models import DutyType
 class AccessService:
     """
     Универсальный сервис для проверки прав доступа
-    Основан на уровнях иерархии подразделений
+    Основан на иерархии подразделений
     """
     
     def __init__(self, user):
@@ -34,10 +34,8 @@ class AccessService:
         - Для остальных: своё подразделение + дочерние (на уровень ниже)
         """
         if self.user_level == 0:
-            # Академия может редактировать всё
             return Unit.objects.all()
         else:
-            # Остальные: своё + дочерние
             editable_ids = [self.user_unit.id]
             for child in self.user_unit.children.all():
                 editable_ids.append(child.id)
@@ -46,104 +44,145 @@ class AccessService:
     def can_view_unit(self, unit):
         """Может ли просматривать подразделение"""
         if self.user_level == 0:
-            # Академия видит всё
             return True
-        # Остальные видят только свои и дочерние
         return unit.id in self.user_unit.get_descendants_ids(include_self=True)
     
     def can_edit_unit(self, unit):
-        """
-        Может ли редактировать подразделение:
-        - Академия (level=0): любые подразделения
-        - Остальные: своё подразделение + дочерние (прямые потомки)
-        """
+        """Может ли редактировать подразделение"""
         if self.user_level == 0:
             return True
         
-        # Своё подразделение
         if unit.id == self.user_unit.id:
             return True
         
-        # Прямые дочерние подразделения
         if unit.parent and unit.parent.id == self.user_unit.id:
             return True
         
         return False
     
     def can_delete_unit(self, unit):
-        """
-        Может ли удалять подразделение:
-        - Академия (level=0): любые подразделения
-        - Остальные: только свои дочерние подразделения (на уровень ниже)
-        """
+        """Может ли удалять подразделение"""
         if self.user_level == 0:
-            # Академия может удалять любые подразделения
             return True
         
-        # Нельзя удалять своё подразделение
         if unit.id == self.user_unit.id:
             return False
         
-        # Можно удалять только прямые дочерние подразделения
         if unit.parent and unit.parent.id == self.user_unit.id:
             return True
         
         return False
     
     def can_create_in_unit(self, unit):
-        """
-        Может ли пользователь создавать дочерние подразделения в указанном подразделении.
-        
-        Логика:
-        - Пользователь может создавать в любом подразделении, которое:
-          1. Находится в иерархии его подразделения (себя или потомки)
-          2. Может иметь детей (can_have_children=True)
-        """
+        """Может ли создавать дочерние подразделения в указанном подразделении"""
         if not unit:
             return False
         
-        # Проверка: подразделение должно быть видимым
         if not self.can_view_unit(unit):
             return False
         
-        # Проверка: подразделение должно иметь возможность иметь детей
         if not unit.unit_type.can_have_children:
             return False
         
-        return True
+        if self.user_level == 0:
+            return True
+        
+        return unit.id == self.user_unit.id
     
     def get_available_parents_for_creation(self):
+        """Список подразделений, в которых можно создавать дочерние"""
+        if self.user_level == 0:
+            return Unit.objects.filter(unit_type__can_have_children=True)
+        else:
+            if self.user_unit.unit_type.can_have_children:
+                return Unit.objects.filter(id=self.user_unit.id)
+            return Unit.objects.none()
+    
+    # ========== ПОЛЬЗОВАТЕЛИ ==========
+    
+    def get_visible_users(self):
         """
-        Получить список подразделений, в которых пользователь может создавать дочерние.
+        Все пользователи, которых может видеть:
+        - Себя
+        - Пользователей своего подразделения
+        - Пользователей всех дочерних подразделений (любой глубины)
+        """
+        from django.contrib.auth.models import User
         
-        Логика:
-        - Пользователь может создавать в любом подразделении, которое:
-          1. Находится в иерархии его подразделения (себя или потомки)
-          2. Может иметь детей (can_have_children=True)
-        """
-        # Получаем все видимые подразделения (себя и всех потомков)
         visible_units = self.get_visible_units()
+        return User.objects.filter(profile__unit__in=visible_units).select_related('profile')
+    
+    def can_create_user_for_unit(self, target_unit):
+        """
+        Может ли создать пользователя для подразделения:
+        - Свое подразделение (помощник)
+        - Прямое дочернее (руководитель)
+        """
+        if not target_unit:
+            return False
         
-        # Фильтруем только те, которые могут иметь детей
-        available_parents = visible_units.filter(
-            unit_type__can_have_children=True
-        )
+        # Свое подразделение
+        if target_unit.id == self.user_unit.id:
+            return True
         
-        return available_parents
+        # Прямое дочернее
+        if target_unit.parent and target_unit.parent.id == self.user_unit.id:
+            return True
+        
+        return False
+    
+    def can_edit_user(self, target_user):
+        """
+        Может ли редактировать пользователя:
+        - Себя
+        - Пользователей своего подразделения
+        """
+        if target_user.id == self.user.id:
+            return True
+        
+        target_unit = target_user.profile.unit
+        return target_unit.id == self.user_unit.id
+    
+    def can_delete_user(self, target_user):
+        """
+        Может ли удалять пользователя:
+        - Пользователей своего подразделения
+        - Пользователей прямых дочерних подразделений
+        """
+        # Нельзя удалить себя
+        if target_user.id == self.user.id:
+            return False
+        
+        target_unit = target_user.profile.unit
+        
+        # Свое подразделение
+        if target_unit.id == self.user_unit.id:
+            return True
+        
+        # Прямое дочернее
+        if target_unit.parent and target_unit.parent.id == self.user_unit.id:
+            return True
+        
+        return False
+    
+    def can_change_password(self, target_user):
+        """
+        Может ли менять пароль пользователя:
+        - Себе
+        - Пользователям своего подразделения
+        """
+        if target_user.id == self.user.id:
+            return True
+        
+        target_unit = target_user.profile.unit
+        return target_unit.id == self.user_unit.id
     
     # ========== ТИПЫ НАРЯДОВ ==========
     
     def get_available_duty_types(self):
-        """
-        Типы нарядов, которые пользователь может использовать для планирования.
-        Правила:
-        - Типы, закрепленные за своим подразделением
-        - Типы, закрепленные за вышестоящими подразделениями (для кафедр)
-        """
-        # Свои типы
+        """Типы нарядов, доступные для планирования"""
         own_types = DutyType.objects.filter(unit=self.user_unit)
         
-        # Типы вышестоящих (если есть)
         parent_types = DutyType.objects.none()
         if self.user_unit.parent:
             parent_types = DutyType.objects.filter(unit=self.user_unit.parent)
@@ -153,58 +192,35 @@ class AccessService:
     # ========== РАСПИСАНИЯ ==========
     
     def get_visible_schedules(self):
-        """
-        Расписания, которые пользователь может видеть:
-        - Свои расписания (где unit в расписании = своё подразделение)
-        - Расписания дочерних подразделений
-        """
-        visible_units = self.get_visible_units()
-        
-        # Получаем все расписания, где подразделение в visible_units
-        # TODO: нужно добавить связь между MonthlySchedule и Unit
-        # Пока возвращаем пустой queryset
+        """Расписания, которые пользователь может видеть"""
         return MonthlySchedule.objects.none()
     
     def can_view_schedule(self, schedule):
-        """Может ли просматривать расписание"""
-        # TODO: реализовать после добавления связи с Unit
         return True
     
     def can_edit_schedule(self, schedule):
-        """Может ли редактировать расписание"""
         return schedule.created_by_id == self.user.id
     
     def can_delete_schedule(self, schedule):
-        """Может ли удалять расписание"""
         return schedule.created_by_id == self.user.id
     
     # ========== ПЛАНЫ НА ДЕНЬ ==========
     
     def get_visible_day_plans(self):
-        """
-        Планы на день, которые пользователь может видеть
-        """
+        """Планы на день, которые пользователь может видеть"""
         visible_units = self.get_visible_units()
         return DayPlan.objects.filter(unit__in=visible_units)
     
     def can_edit_day_plan(self, plan):
-        """
-        Может ли пользователь редактировать план на день
-        """
         return plan.unit.id == self.user_unit.id or plan.created_by_id == self.user.id
     
     def can_delete_day_plan(self, plan):
-        """
-        Может ли пользователь удалять план на день
-        """
         return plan.created_by_id == self.user.id
     
     # ========== НАЗНАЧЕНИЯ ==========
     
     def can_assign_person(self, day_plan, person):
-        """
-        Может ли пользователь назначить сотрудника на план дня
-        """
+        """Может ли назначить сотрудника на план дня"""
         if day_plan.unit.id != self.user_unit.id:
             return False
         
@@ -230,19 +246,21 @@ class AccessService:
         return queryset.filter(unit__in=visible_units)
     
     def can_view_object(self, obj):
-        """Может ли просматривать объект"""
         if hasattr(obj, 'unit'):
             return self.can_view_unit(obj.unit)
         return True
     
     def can_edit_object(self, obj):
-        """Может ли редактировать объект"""
         if hasattr(obj, 'unit'):
             return self.can_edit_unit(obj.unit)
         return False
     
+    def can_delete_object(self, obj):
+        if hasattr(obj, 'unit'):
+            return self.can_delete_unit(obj.unit)
+        return False
+    
     def can_create_in_unit_by_id(self, unit_id):
-        """Может ли создавать объекты в указанном подразделении (по ID)"""
         try:
             unit = Unit.objects.get(pk=unit_id)
             return self.can_create_in_unit(unit)
@@ -280,9 +298,35 @@ class AccessService:
         }
     
     def get_planning_context(self):
-        """Контекст для страницы планирования"""
         return {
             'available_units': self.get_visible_units(),
             'available_duty_types': self.get_available_duty_types(),
             'can_create_plan': self.can_create_plan(),
         }
+    
+    def can_delete_user(self, target_user):
+        """
+        Может ли удалять пользователя:
+        - Пользователей, которых создал сам
+        - Пользователей своего подразделения (только если ты академия или создатель)
+        - Пользователей прямых дочерних подразделений (только если ты академия или создатель)
+        """
+        # Нельзя удалить себя
+        if target_user.id == self.user.id:
+            return False
+        
+        target_unit = target_user.profile.unit
+        
+        # Проверка: если пользователь создал этого пользователя
+        # Нужно добавить поле created_by в модель UserProfile
+        # Пока сделаем по иерархии
+        
+        # Свое подразделение - можно удалять (помощников)
+        if target_unit.id == self.user_unit.id:
+            return True
+        
+        # Прямое дочернее - можно удалять (руководителей)
+        if target_unit.parent and target_unit.parent.id == self.user_unit.id:
+            return True
+        
+        return False
