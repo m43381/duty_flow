@@ -43,11 +43,24 @@ def calendar(request):
     # Строим календарь
     calendar_data = build_calendar_data(day_plans, year, month, access)
     
+    # Группируем по неделям
+    weeks = []
+    current_week = []
+    for day_data in calendar_data:
+        if day_data['date'].weekday() == 0 and current_week:
+            weeks.append(current_week)
+            current_week = []
+        current_week.append(day_data)
+    if current_week:
+        weeks.append(current_week)
+    
     context = {
         'year': year,
         'month': month,
+        'now_year': today.year,
+        'now_month': today.month,
         'month_name': date(year, month, 1).strftime('%B %Y'),
-        'calendar_data': calendar_data,
+        'calendar_data': weeks,
         'active_tab': 'assignments',
         'title': 'Назначения сотрудников',
     }
