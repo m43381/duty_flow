@@ -129,17 +129,16 @@ class UserCreateForm(forms.ModelForm):
 
 
 class UserEditForm(forms.ModelForm):
-    """Форма редактирования пользователя"""
+    """Форма редактирования пользователя - без поля is_active"""
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'is_active']
+        fields = ['username', 'email', 'first_name', 'last_name']  # Убрали is_active
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-input', 'readonly': 'readonly'}),
             'email': forms.EmailInput(attrs={'class': 'form-input'}),
             'first_name': forms.TextInput(attrs={'class': 'form-input'}),
             'last_name': forms.TextInput(attrs={'class': 'form-input'}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -147,23 +146,11 @@ class UserEditForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         if self.request_user:
-            access = AccessService(self.request_user)
-            
             # Убираем поле подразделения - нельзя менять
             self.fields.pop('unit', None)
             
-            # Если пользователь не академия, нельзя менять is_active
-            if access.user_level != 0:
-                self.fields['is_active'].widget.attrs['disabled'] = 'disabled'
-                self.fields['is_active'].help_text = "Только администратор может активировать/деактивировать пользователей"
-    
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        
-        if commit:
-            user.save()
-        
-        return user
+            # Добавляем подсказку
+            self.fields['username'].help_text = "Логин нельзя изменить"
 
 
 class UserChangePasswordForm(forms.Form):

@@ -20,6 +20,7 @@
             <div class="form-group">
                 <label for="id_username">Логин</label>
                 {{ form.username }}
+                <small class="form-text text-muted">{{ form.username.help_text }}</small>
                 {% if form.username.errors %}<div class="form-error">{{ form.username.errors }}</div>{% endif %}
             </div>
             
@@ -44,17 +45,19 @@
             </div>
             
             <div class="form-group">
-                <label for="id_unit">Подразделение</label>
-                {{ form.unit }}
-                {% if form.unit.errors %}<div class="form-error">{{ form.unit.errors }}</div>{% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_is_active">
-                    {{ form.is_active }} Активен
-                </label>
-                <small class="form-text text-muted">{{ form.is_active.help_text }}</small>
-                {% if form.is_active.errors %}<div class="form-error">{{ form.is_active.errors }}</div>{% endif %}
+                <label>Подразделение</label>
+                <div class="info-value" style="padding: 0.625rem 0.75rem; background: var(--bg-hover); border-radius: 0.5rem;">
+                    {{ user_obj.profile.unit.name }}
+                    <span class="unit-type-badge" style="margin-left: 0.5rem;">
+                        {{ user_obj.profile.unit.unit_type.name }}
+                    </span>
+                    {% if user_obj.profile.unit.parent %}
+                    <span class="parent-path" style="margin-left: 0.5rem;">
+                        (в {{ user_obj.profile.unit.parent.name }})
+                    </span>
+                    {% endif %}
+                </div>
+                <small class="form-text text-muted">Подразделение нельзя изменить</small>
             </div>
             
             <div class="form-actions">
@@ -64,4 +67,18 @@
         </form>
     </div>
 </div>
+
+<style>
+.unit-type-badge {
+    background: var(--bg-light);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+.parent-path {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+</style>
 {% endblock %}
