@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from functools import wraps
+from django.core.paginator import Paginator
+from django.db.models import Q
+
 from users_app.access_service import AccessService
+
 
 def crud_views(model, form_class, template_prefix,
                list_url_name=None, 
@@ -19,33 +22,39 @@ def crud_views(model, form_class, template_prefix,
         has_unit_field: имеет ли модель поле 'unit' для фильтрации
     """
     
-    def get_access_service(request):
-        return AccessService(request.user)
-    
     if list_url_name is None:
         list_url_name = f'{template_prefix}_list'
     
     @login_required
     def list_view(request):
         """Список объектов"""
-        access = get_access_service(request)
+        access = AccessService(request.user)
         
+        # Получаем queryset с фильтрацией по подразделениям
         if has_unit_field:
             queryset = access.get_visible_queryset(model.objects.all())
+            # Исправлено: передаем объект Unit, а не ID
+            can_add = access.can_create_in_unit(access.user_unit)
         else:
             queryset = model.objects.all()
+            can_add = True
         
-        # Применяем фильтры из запроса
-        if has_unit_field and 'unit' in request.GET and request.GET['unit']:
-            unit_id = request.GET['unit']
-            if unit_id and int(unit_id) in [u.id for u in access.get_visible_units()]:
-                queryset = queryset.filter(unit_id=unit_id)
+        # Поиск
+        search_query = request.GET.get('search', '')
+        if search_query and hasattr(model, 'name'):
+            queryset = queryset.filter(name__icontains=search_query)
+        
+        # Пагинация
+        paginator = Paginator(queryset, 50)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
         
         context = {
-            'items': queryset,
+            'items': page_obj,
             'active_tab': template_prefix,
             'title': f'Список {model._meta.verbose_name_plural}',
-            'can_add': access.can_create_in_unit(access.user_unit.id) if has_unit_field else True,
+            'can_add': can_add,
+            'search_query': search_query,
             'filter_context': access.get_filter_context() if has_unit_field else None,
         }
         
@@ -57,14 +66,17 @@ def crud_views(model, form_class, template_prefix,
     @login_required
     def create_view(request):
         """Создание объекта"""
-        access = get_access_service(request)
+        access = AccessService(request.user)
         
-        if has_unit_field and not access.can_create_in_unit(access.user_unit.id):
-            messages.error(request, 'Нет прав для создания')
-            return redirect(list_url_name)
+        # Проверка прав на создание
+        if has_unit_field:
+            # Исправлено: передаем объект Unit, а не ID
+            if not access.can_create_in_unit(access.user_unit):
+                messages.error(request, 'Нет прав для создания')
+                return redirect(list_url_name)
         
         if request.method == 'POST':
-            form = form_class(request.POST)
+            form = form_class(request.POST, user=request.user)
             if form.is_valid():
                 obj = form.save(commit=False)
                 if has_unit_field:
@@ -73,7 +85,7 @@ def crud_views(model, form_class, template_prefix,
                 messages.success(request, f'{model._meta.verbose_name} создан')
                 return redirect(list_url_name)
         else:
-            form = form_class()
+            form = form_class(user=request.user)
         
         return render(request, f'{template_prefix}/form.html', {
             'form': form,
@@ -84,21 +96,23 @@ def crud_views(model, form_class, template_prefix,
     @login_required
     def update_view(request, pk):
         """Редактирование объекта"""
-        access = get_access_service(request)
+        access = AccessService(request.user)
         obj = get_object_or_404(model, pk=pk)
         
-        if has_unit_field and not access.can_edit_object(obj):
-            messages.error(request, 'Нет прав для редактирования')
-            return redirect(list_url_name)
+        # Проверка прав на редактирование
+        if has_unit_field:
+            if not access.can_edit_object(obj):
+                messages.error(request, 'Нет прав для редактирования')
+                return redirect(list_url_name)
         
         if request.method == 'POST':
-            form = form_class(request.POST, instance=obj)
+            form = form_class(request.POST, instance=obj, user=request.user)
             if form.is_valid():
                 form.save()
                 messages.success(request, f'{model._meta.verbose_name} обновлен')
                 return redirect(list_url_name)
         else:
-            form = form_class(instance=obj)
+            form = form_class(instance=obj, user=request.user)
         
         return render(request, f'{template_prefix}/form.html', {
             'form': form,
@@ -110,12 +124,14 @@ def crud_views(model, form_class, template_prefix,
     @login_required
     def delete_view(request, pk):
         """Удаление объекта"""
-        access = get_access_service(request)
+        access = AccessService(request.user)
         obj = get_object_or_404(model, pk=pk)
         
-        if has_unit_field and not access.can_edit_object(obj):
-            messages.error(request, 'Нет прав для удаления')
-            return redirect(list_url_name)
+        # Проверка прав на удаление
+        if has_unit_field:
+            if not access.can_edit_object(obj):
+                messages.error(request, 'Нет прав для удаления')
+                return redirect(list_url_name)
         
         if request.method == 'POST':
             obj.delete()
@@ -131,19 +147,29 @@ def crud_views(model, form_class, template_prefix,
     @login_required
     def detail_view(request, pk):
         """Просмотр объекта"""
-        access = get_access_service(request)
+        access = AccessService(request.user)
         obj = get_object_or_404(model, pk=pk)
         
-        if has_unit_field and not access.can_view_object(obj):
-            messages.error(request, 'Нет прав для просмотра')
-            return redirect(list_url_name)
+        # Проверка прав на просмотр
+        if has_unit_field:
+            if not access.can_view_object(obj):
+                messages.error(request, 'Нет прав для просмотра')
+                return redirect(list_url_name)
         
-        return render(request, f'{template_prefix}/detail.html', {
+        context = {
             'item': obj,
             'active_tab': template_prefix,
             'title': f'Просмотр {obj}',
-            'can_edit': access.can_edit_object(obj) if has_unit_field else True,
-        })
+        }
+        
+        if has_unit_field:
+            context['can_edit'] = access.can_edit_object(obj)
+            context['can_delete'] = access.can_edit_object(obj)
+        
+        if extra_context:
+            context.update(extra_context)
+        
+        return render(request, f'{template_prefix}/detail.html', context)
     
     return {
         'list': list_view,
