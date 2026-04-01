@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from units.models import Unit
 
+
 class UserProfile(models.Model):
     """Профиль пользователя-оператора"""
     
@@ -15,6 +16,15 @@ class UserProfile(models.Model):
         on_delete=models.PROTECT, 
         related_name='users'
     )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_users',
+        verbose_name="Создал пользователь"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
 
     class Meta:
         verbose_name = "Профиль пользователя"
