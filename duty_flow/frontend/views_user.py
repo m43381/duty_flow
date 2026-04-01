@@ -35,12 +35,21 @@ def list_view(request):
             can_create = True
             break
     
+    # Для каждой записи в шаблоне будем проверять права
+    # Добавляем объект access в контекст для использования в шаблоне
+    for user in users:
+        # Добавляем атрибуты для проверки прав в шаблоне
+        user.can_edit = access.can_edit_user(user)
+        user.can_delete = access.can_delete_user(user)
+        user.can_change_password = access.can_change_password(user)
+    
     return render(request, 'users/list.html', {
         'users': users,
         'can_create': can_create,
         'search_query': search_query,
         'active_tab': 'users',
         'title': 'Пользователи',
+        'user_access': access,  # Передаем объект access в шаблон
     })
 
 
