@@ -1,0 +1,76 @@
+{% extends 'cabinets/base_cabinet.html' %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">➕ {{ title }}</h2>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}<br>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="form-group">
+                <label for="id_username">Логин *</label>
+                {{ form.username }}
+                <small class="form-text text-muted">Уникальное имя пользователя для входа</small>
+                {% if form.username.errors %}<div class="form-error">{{ form.username.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_email">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}<div class="form-error">{{ form.email.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="id_first_name">Имя</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}<div class="form-error">{{ form.first_name.errors }}</div>{% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_last_name">Фамилия</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}<div class="form-error">{{ form.last_name.errors }}</div>{% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="id_unit">Подразделение *</label>
+                {{ form.unit }}
+                <small class="form-text text-muted">{{ form.unit.help_text }}</small>
+                {% if form.unit.errors %}<div class="form-error">{{ form.unit.errors }}</div>{% endif %}
+            </div>
+            
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="id_password">Пароль *</label>
+                    {{ form.password }}
+                    <small class="form-text text-muted">{{ form.password.help_text }}</small>
+                    {% if form.password.errors %}<div class="form-error">{{ form.password.errors }}</div>{% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_password_confirm">Подтверждение пароля *</label>
+                    {{ form.password_confirm }}
+                    {% if form.password_confirm.errors %}<div class="form-error">{{ form.password_confirm.errors }}</div>{% endif %}
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">💾 Создать</button>
+                <a href="{% url 'users:list' %}" class="btn btn-secondary">↩️ Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

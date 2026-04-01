@@ -1,0 +1,81 @@
+{% extends 'cabinets/base_cabinet.html' %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-content">
+            <h2 class="card-title">👤 {{ title }}</h2>
+            <div class="card-actions" style="display: flex; gap: 0.5rem;">
+                {% if can_edit %}
+                <a href="{% url 'users:edit' user_obj.pk %}" class="btn btn-primary">✏️ Редактировать</a>
+                {% endif %}
+                {% if can_change_password %}
+                <a href="{% url 'users:change_password' user_obj.pk %}" class="btn btn-secondary">🔑 Сменить пароль</a>
+                {% endif %}
+                {% if can_delete %}
+                <a href="{% url 'users:delete' user_obj.pk %}" class="btn btn-danger" onclick="return confirm('Вы уверены?')">🗑️ Удалить</a>
+                {% endif %}
+                <a href="{% url 'users:list' %}" class="btn btn-secondary">← Назад</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <div class="info-grid">
+            <div class="info-row">
+                <span class="info-label">Логин:</span>
+                <span class="info-value">{{ user_obj.username }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">ФИО:</span>
+                <span class="info-value">{{ user_obj.get_full_name|default:"—" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email:</span>
+                <span class="info-value">{{ user_obj.email|default:"—" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Подразделение:</span>
+                <span class="info-value">
+                    <a href="{% url 'units:detail' user_obj.profile.unit.pk %}">
+                        {{ user_obj.profile.unit.name }}
+                    </a>
+                    <span class="badge" style="font-size: 0.7rem;">ур. {{ user_obj.profile.unit.get_level }}</span>
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Статус:</span>
+                <span class="info-value">
+                    {% if user_obj.is_active %}
+                        <span class="badge success">Активен</span>
+                    {% else %}
+                        <span class="badge danger">Заблокирован</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Дата регистрации:</span>
+                <span class="info-value">{{ user_obj.date_joined|date:"d.m.Y H:i" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Последний вход:</span>
+                <span class="info-value">{{ user_obj.last_login|date:"d.m.Y H:i"|default:"никогда" }}</span>
+            </div>
+        </div>
+        
+        {% if user_obj.profile.unit.children.exists %}
+        <div class="section" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+            <h3 style="margin-bottom: 1rem;">📁 Дочерние подразделения</h3>
+            <div class="list-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for child in user_obj.profile.unit.children.all %}
+                <div class="list-item" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: var(--bg-hover); border-radius: 0.5rem;">
+                    <a href="{% url 'units:detail' child.pk %}" style="color: var(--text); text-decoration: none;">{{ child.name }}</a>
+                    <span class="badge" style="font-size: 0.75rem;">{{ child.unit_type.name }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

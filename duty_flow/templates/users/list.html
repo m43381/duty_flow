@@ -1,0 +1,89 @@
+{% extends 'cabinets/base_cabinet.html' %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-content">
+            <h2 class="card-title">👤 {{ title }}</h2>
+            <div class="card-actions" style="display: flex; gap: 1rem;">
+                <form method="get" class="search-form" style="display: flex; gap: 0.5rem;">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search_query }}" 
+                           placeholder="Поиск по имени, логину, email..." 
+                           class="form-input" 
+                           style="width: 300px;">
+                    <button type="submit" class="btn btn-primary">🔍 Найти</button>
+                    {% if search_query %}
+                    <a href="{% url 'users:list' %}" class="btn btn-secondary">✖️ Сброс</a>
+                    {% endif %}
+                </form>
+                
+                {% if can_create %}
+                <a href="{% url 'users:add' %}" class="btn btn-primary">➕ Создать пользователя</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        {% if users %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Логин</th>
+                        <th>ФИО</th>
+                        <th>Email</th>
+                        <th>Подразделение</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td><strong>{{ user.username }}</strong>  </td>
+                        <td>{{ user.get_full_name|default:"—" }}   </td>
+                        <td>{{ user.email|default:"—" }}   </td>
+                        <td>
+                            <a href="{% url 'units:detail' user.profile.unit.pk %}">
+                                {{ user.profile.unit.name }}
+                            </a>
+                            <span class="badge" style="font-size: 0.7rem;">ур. {{ user.profile.unit.get_level }}</span>
+                         </td>
+                        <td>
+                            {% if user.is_active %}
+                                <span class="badge success">Активен</span>
+                            {% else %}
+                                <span class="badge danger">Заблокирован</span>
+                            {% endif %}
+                        </td>
+                        <td class="action-cell">
+                            <a href="{% url 'users:detail' user.pk %}" class="action-btn" title="Просмотр">👁️</a>
+                            {% if user.id == request.user.id or user.profile.unit.id == request.user.profile.unit.id %}
+                            <a href="{% url 'users:edit' user.pk %}" class="action-btn" title="Редактировать">✏️</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state" style="text-align: center; padding: 3rem;">
+            <div class="empty-state__icon" style="font-size: 3rem; margin-bottom: 1rem;">👤</div>
+            <p class="empty-state__text" style="color: var(--text-muted);">
+                {% if search_query %}
+                    🔍 Ничего не найдено по запросу "{{ search_query }}"
+                {% else %}
+                    Нет пользователей
+                {% endif %}
+            </p>
+            {% if can_create and not search_query %}
+            <a href="{% url 'users:add' %}" class="btn btn-primary">➕ Создать первого пользователя</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

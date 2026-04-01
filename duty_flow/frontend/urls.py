@@ -11,7 +11,7 @@ urlpatterns = [
     path('types/', include('frontend.urls_type')),              # DutyType (типы нарядов)
     path('unit-types/', include('frontend.urls_unit_type')),    # UnitType (типы подразделений)
     path('units/', include('frontend.urls_unit')),              # Unit (подразделения) - ИСПРАВЛЕНО!
-    path('users/', views.user_list, name='user_list'),
+    path('users/', include('frontend.urls_user')),
     
     # Кабинеты (опционально)
     path('cabinet/commandant/', views.commandant_cabinet, name='commandant_cabinet'),
