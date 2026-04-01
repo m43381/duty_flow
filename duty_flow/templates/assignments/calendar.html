@@ -1,0 +1,107 @@
+{% extends 'cabinets/base_cabinet.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components/assignment-calendar.css' %}">
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-content">
+            <h2 class="card-title">📅 {{ title }}</h2>
+            <div class="card-actions">
+                <div class="assignment-calendar__nav">
+                    <a href="?year={{ year }}&month={{ month|add:"-1" }}" class="btn btn-secondary">← Предыдущий</a>
+                    <span style="margin: 0 1rem;">{{ month_name }}</span>
+                    <a href="?year={{ year }}&month={{ month|add:"1" }}" class="btn btn-secondary">Следующий →</a>
+                    <a href="?year={{ now_year }}&month={{ now_month }}" class="btn btn-primary">Текущий</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <!-- Легенда -->
+        <div class="assignment-calendar__legend">
+            <div class="assignment-calendar__legend-item">
+                <div class="assignment-calendar__legend-color assignment-calendar__legend-color--assigned_own"></div>
+                <span>Назначен из своего подразделения</span>
+            </div>
+            <div class="assignment-calendar__legend-item">
+                <div class="assignment-calendar__legend-color assignment-calendar__legend-color--assigned_child"></div>
+                <span>Назначен из дочернего подразделения</span>
+            </div>
+            <div class="assignment-calendar__legend-item">
+                <div class="assignment-calendar__legend-color assignment-calendar__legend-color--unassigned"></div>
+                <span>Требуется назначение</span>
+            </div>
+            <div class="assignment-calendar__legend-item">
+                <div class="assignment-calendar__legend-color assignment-calendar__legend-color--no_plan"></div>
+                <span>Нет плана</span>
+            </div>
+        </div>
+        
+        <!-- Календарь -->
+        <div class="assignment-calendar">
+            <table class="assignment-calendar__table">
+                <thead>
+                    <tr>
+                        <th>ПН</th>
+                        <th>ВТ</th>
+                        <th>СР</th>
+                        <th>ЧТ</th>
+                        <th>ПТ</th>
+                        <th>СБ</th>
+                        <th>ВС</th>
+                    </thead>
+                <tbody>
+                    {% for week in calendar_data %}
+                    <tr>
+                        {% for day in week %}
+                        <td class="assignment-calendar__cell">
+                            {% if day %}
+                            <div class="assignment-calendar__cell-header">
+                                {{ day.date.day }} {{ day.weekday }}
+                            </div>
+                            {% for plan in day.plans %}
+                            <div class="assignment-calendar__plan assignment-calendar__plan--{{ plan.status }}"
+                                 data-plan-id="{{ plan.plan_id|default:'' }}"
+                                 data-duty-name="{{ plan.duty_name }}"
+                                 data-unit-name="{{ plan.unit_name }}"
+                                 {% if not plan.plan_id %}style="cursor: default;"{% endif %}>
+                                <div class="assignment-calendar__plan-title">{{ plan.duty_name }}</div>
+                                <div class="assignment-calendar__plan-meta">
+                                    {% if plan.unit_name %}
+                                    📍 {{ plan.unit_name }}<br>
+                                    👥 {{ plan.required_people }} чел.
+                                    {% endif %}
+                                </div>
+                                <div class="assignment-calendar__plan-status">{{ plan.status_text }}</div>
+                                {% if plan.assignments %}
+                                <div class="assignment-calendar__assigned-people">
+                                    {% for a in plan.assignments %}
+                                    <span class="assignment-calendar__assigned-person" title="{{ a.person.rank.name }} {{ a.person.full_name }}">
+                                        {{ a.person.last_name }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/components/assignment-modal.js' %}"></script>
+<script src="{% static 'js/components/assignment-calendar.js' %}"></script>
+{% endblock %}
