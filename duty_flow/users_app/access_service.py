@@ -146,8 +146,8 @@ class AccessService:
     def can_delete_user(self, target_user):
         """
         Может ли удалять пользователя:
-        - Пользователей своего подразделения
-        - Пользователей прямых дочерних подразделений
+        - Пользователей своего подразделения (помощников)
+        - Пользователей прямых дочерних подразделений (руководителей)
         """
         # Нельзя удалить себя
         if target_user.id == self.user.id:
@@ -155,11 +155,11 @@ class AccessService:
         
         target_unit = target_user.profile.unit
         
-        # Свое подразделение
+        # Свое подразделение - можно удалять (помощников)
         if target_unit.id == self.user_unit.id:
             return True
         
-        # Прямое дочернее
+        # Прямое дочернее - можно удалять (руководителей)
         if target_unit.parent and target_unit.parent.id == self.user_unit.id:
             return True
         
@@ -193,16 +193,35 @@ class AccessService:
     
     def get_visible_schedules(self):
         """Расписания, которые пользователь может видеть"""
-        return MonthlySchedule.objects.none()
+        visible_units = self.get_visible_units()
+        return MonthlySchedule.objects.filter(unit__in=visible_units)
     
     def can_view_schedule(self, schedule):
-        return True
+        """Может ли просматривать расписание"""
+        return self.can_view_unit(schedule.unit)
     
     def can_edit_schedule(self, schedule):
-        return schedule.created_by_id == self.user.id
+        """Может ли редактировать расписание"""
+        # Можно редактировать расписания своего подразделения
+        if schedule.unit.id == self.user_unit.id:
+            return True
+        
+        # Если есть поле created_by, проверяем
+        if hasattr(schedule, 'created_by_id') and schedule.created_by_id == self.user.id:
+            return True
+        
+        return False
     
     def can_delete_schedule(self, schedule):
-        return schedule.created_by_id == self.user.id
+        """Может ли удалять расписание"""
+        # Аналогично редактированию
+        if schedule.unit.id == self.user_unit.id:
+            return True
+        
+        if hasattr(schedule, 'created_by_id') and schedule.created_by_id == self.user.id:
+            return True
+        
+        return False
     
     # ========== ПЛАНЫ НА ДЕНЬ ==========
     
@@ -212,10 +231,20 @@ class AccessService:
         return DayPlan.objects.filter(unit__in=visible_units)
     
     def can_edit_day_plan(self, plan):
-        return plan.unit.id == self.user_unit.id or plan.created_by_id == self.user.id
+        """
+        Может ли редактировать план на день
+        У DayPlan нет поля created_by, поэтому проверяем только по подразделению
+        """
+        # Можно редактировать только планы своего подразделения
+        return plan.unit.id == self.user_unit.id
     
     def can_delete_day_plan(self, plan):
-        return plan.created_by_id == self.user.id
+        """
+        Может ли удалять план на день
+        У DayPlan нет поля created_by, поэтому проверяем только по подразделению
+        """
+        # Можно удалять только планы своего подразделения
+        return plan.unit.id == self.user_unit.id
     
     # ========== НАЗНАЧЕНИЯ ==========
     
@@ -304,29 +333,7 @@ class AccessService:
             'can_create_plan': self.can_create_plan(),
         }
     
-    def can_delete_user(self, target_user):
-        """
-        Может ли удалять пользователя:
-        - Пользователей, которых создал сам
-        - Пользователей своего подразделения (только если ты академия или создатель)
-        - Пользователей прямых дочерних подразделений (только если ты академия или создатель)
-        """
-        # Нельзя удалить себя
-        if target_user.id == self.user.id:
-            return False
-        
-        target_unit = target_user.profile.unit
-        
-        # Проверка: если пользователь создал этого пользователя
-        # Нужно добавить поле created_by в модель UserProfile
-        # Пока сделаем по иерархии
-        
-        # Свое подразделение - можно удалять (помощников)
-        if target_unit.id == self.user_unit.id:
-            return True
-        
-        # Прямое дочернее - можно удалять (руководителей)
-        if target_unit.parent and target_unit.parent.id == self.user_unit.id:
-            return True
-        
-        return False
+    def can_create_plan(self):
+        """Может ли создавать расписания"""
+        # Создавать расписания может любое подразделение
+        return True
