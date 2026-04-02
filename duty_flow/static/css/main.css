@@ -22,6 +22,9 @@
 @import 'components/unit-form.css';
 @import 'components/unit-list.css';
 
+@import 'components/assignment-calendar.css';
+@import 'components/assignment-modal.css';
+
 /* Макеты */
 @import 'layouts/landing.css';
 @import 'layouts/auth.css';

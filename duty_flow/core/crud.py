@@ -39,7 +39,19 @@ def crud_views(model, form_class, template_prefix,
             queryset = model.objects.all()
             can_add = True
         
-        # Поиск
+        # Применяем фильтры из запроса (дополнительно)
+        if has_unit_field and 'unit' in request.GET and request.GET['unit']:
+            unit_id = request.GET.get('unit')
+            if unit_id:
+                try:
+                    unit_id = int(unit_id)
+                    visible_units = access.get_visible_units()
+                    if any(u.id == unit_id for u in visible_units):
+                        queryset = queryset.filter(unit_id=unit_id)
+                except (ValueError, TypeError):
+                    pass
+        
+        # Поиск (если есть поле name)
         search_query = request.GET.get('search', '')
         if search_query and hasattr(model, 'name'):
             queryset = queryset.filter(name__icontains=search_query)

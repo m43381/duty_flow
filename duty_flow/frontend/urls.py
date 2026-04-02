@@ -8,12 +8,13 @@ urlpatterns = [
     # Основные разделы
     path('persons/', include('frontend.urls_person')),
     path('plans/', include('frontend.urls_plan')),
-    path('types/', include('frontend.urls_type')),              # DutyType (типы нарядов)
-    path('unit-types/', include('frontend.urls_unit_type')),    # UnitType (типы подразделений)
-    path('units/', include('frontend.urls_unit')),              # Unit (подразделения) - ИСПРАВЛЕНО!
+    path('types/', include('frontend.urls_type')),
+    path('unit-types/', include('frontend.urls_unit_type')),
+    path('units/', include('frontend.urls_unit')),
     path('users/', include('frontend.urls_user')),
+    path('assignments/', include('frontend.urls_assignment')),  # Добавляем
     
-    # Кабинеты (опционально)
+    # Кабинеты
     path('cabinet/commandant/', views.commandant_cabinet, name='commandant_cabinet'),
     path('cabinet/faculty/', views.faculty_cabinet, name='faculty_cabinet'),
     path('cabinet/department/', views.department_cabinet, name='department_cabinet'),

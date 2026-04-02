@@ -1,0 +1,287 @@
+/* components/assignment-calendar.css - Календарь назначений */
+
+.assignment-calendar {
+    overflow-x: auto;
+}
+
+/* Таблица календаря */
+.assignment-calendar__table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+}
+
+.assignment-calendar__table th,
+.assignment-calendar__table td {
+    border: 1px solid var(--border);
+    padding: 0.5rem;
+    vertical-align: top;
+}
+
+.assignment-calendar__table th {
+    background: var(--bg-header);
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Ячейка календаря */
+.assignment-calendar__cell {
+    min-height: 100px;
+    background: var(--bg-card);
+}
+
+.assignment-calendar__cell-header {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border);
+}
+
+/* Карточка плана в ячейке */
+.assignment-calendar__plan {
+    margin-bottom: 0.5rem;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.assignment-calendar__plan:hover {
+    transform: translateX(2px);
+    opacity: 0.9;
+}
+
+/* Статусы планов */
+.assignment-calendar__plan--unassigned {
+    background: #ffebee;
+    border-left: 3px solid #f44336;
+}
+
+.assignment-calendar__plan--partial {
+    background: #fff3e0;
+    border-left: 3px solid #ff9800;
+}
+
+.assignment-calendar__plan--completed {
+    background: #e8f5e9;
+    border-left: 3px solid #4caf50;
+}
+
+.assignment-calendar__plan--delegated {
+    background: #e3f2fd;
+    border-left: 3px solid #2196f3;
+}
+
+.assignment-calendar__plan--no_plan {
+    background: var(--bg-hover);
+    border-left: 3px solid var(--border);
+    cursor: default;
+}
+
+.assignment-calendar__plan--no_plan:hover {
+    transform: none;
+}
+
+.assignment-calendar__plan-title {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.assignment-calendar__plan-meta {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.assignment-calendar__plan-status {
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+/* Список назначенных сотрудников */
+.assignment-calendar__assigned-people {
+    margin-top: 0.25rem;
+    font-size: 0.7rem;
+}
+
+.assignment-calendar__assigned-person {
+    display: inline-block;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    margin: 0.125rem;
+    font-size: 0.7rem;
+}
+
+/* Легенда */
+.assignment-calendar__legend {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.assignment-calendar__legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.assignment-calendar__legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.assignment-calendar__legend-color--unassigned {
+    background: #ffebee;
+    border-left: 3px solid #f44336;
+}
+
+.assignment-calendar__legend-color--partial {
+    background: #fff3e0;
+    border-left: 3px solid #ff9800;
+}
+
+.assignment-calendar__legend-color--completed {
+    background: #e8f5e9;
+    border-left: 3px solid #4caf50;
+}
+
+.assignment-calendar__legend-color--delegated {
+    background: #e3f2fd;
+    border-left: 3px solid #2196f3;
+}
+
+/* Навигация по месяцам */
+.assignment-calendar__nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Модальное окно */
+.assignment-modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.assignment-modal__content {
+    background: var(--bg-card);
+    border-radius: 0.5rem;
+    width: 500px;
+    max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.assignment-modal__header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.assignment-modal__title {
+    margin: 0;
+    font-size: 1.125rem;
+}
+
+.assignment-modal__close {
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--text-muted);
+}
+
+.assignment-modal__close:hover {
+    color: var(--danger);
+}
+
+.assignment-modal__body {
+    padding: 1rem;
+}
+
+.assignment-modal__footer {
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+    text-align: right;
+}
+
+/* Списки сотрудников в модалке */
+.assignment-modal__people-list {
+    margin-bottom: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.assignment-modal__person-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.assignment-modal__person-item:hover {
+    background: var(--bg-hover);
+}
+
+.assignment-modal__person-name {
+    font-weight: 500;
+}
+
+.assignment-modal__person-rank {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: 0.5rem;
+}
+
+/* Кнопки в модалке */
+.assignment-modal__btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.assignment-modal__btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.assignment-modal__btn-danger:hover {
+    background: var(--danger-dark);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .assignment-calendar__table th,
+    .assignment-calendar__table td {
+        padding: 0.25rem;
+    }
+    
+    .assignment-calendar__cell-header {
+        font-size: 0.75rem;
+    }
+    
+    .assignment-calendar__legend {
+        gap: 0.5rem;
+    }
+    
+    .assignment-modal__content {
+        width: 95%;
+    }
+}
