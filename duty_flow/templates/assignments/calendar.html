@@ -25,20 +25,20 @@
         <!-- Легенда -->
         <div class="assignment-calendar__legend">
             <div class="assignment-calendar__legend-item">
-                <div class="assignment-calendar__legend-color assignment-calendar__legend-color--assigned_own"></div>
-                <span>Назначен из своего подразделения</span>
-            </div>
-            <div class="assignment-calendar__legend-item">
-                <div class="assignment-calendar__legend-color assignment-calendar__legend-color--assigned_child"></div>
-                <span>Назначен из дочернего подразделения</span>
-            </div>
-            <div class="assignment-calendar__legend-item">
                 <div class="assignment-calendar__legend-color assignment-calendar__legend-color--unassigned"></div>
-                <span>Требуется назначение</span>
+                <span>⚠️ Требуется назначение</span>
             </div>
             <div class="assignment-calendar__legend-item">
-                <div class="assignment-calendar__legend-color assignment-calendar__legend-color--no_plan"></div>
-                <span>Нет плана</span>
+                <div class="assignment-calendar__legend-color assignment-calendar__legend-color--partial"></div>
+                <span>🔄 Частично назначен</span>
+            </div>
+            <div class="assignment-calendar__legend-item">
+                <div class="assignment-calendar__legend-color assignment-calendar__legend-color--completed"></div>
+                <span>✅ Полностью назначен</span>
+            </div>
+            <div class="assignment-calendar__legend-item">
+                <div class="assignment-calendar__legend-color assignment-calendar__legend-color--delegated"></div>
+                <span>📎 Делегирован дочернему подразделению</span>
             </div>
         </div>
         
@@ -54,7 +54,8 @@
                         <th>ПТ</th>
                         <th>СБ</th>
                         <th>ВС</th>
-                    </thead>
+                    </tr>
+                </thead>
                 <tbody>
                     {% for week in calendar_data %}
                     <tr>
@@ -66,27 +67,31 @@
                             </div>
                             {% for plan in day.plans %}
                             <div class="assignment-calendar__plan assignment-calendar__plan--{{ plan.status }}"
-                                 data-plan-id="{{ plan.plan_id|default:'' }}"
-                                 data-duty-name="{{ plan.duty_name }}"
-                                 data-unit-name="{{ plan.unit_name }}"
-                                 {% if not plan.plan_id %}style="cursor: default;"{% endif %}>
-                                <div class="assignment-calendar__plan-title">{{ plan.duty_name }}</div>
+                                data-plan-id="{{ plan.plan_id }}"
+                                data-duty-name="{{ plan.duty_name }}"
+                                data-unit-name="{{ plan.unit_name }}"
+                                onclick="openAssignmentModal({{ plan.plan_id }}, '{{ plan.duty_name }}', '{{ plan.unit_name }}')">
+                                <div class="assignment-calendar__plan-title">
+                                    {{ plan.duty_name }}
+                                </div>
                                 <div class="assignment-calendar__plan-meta">
-                                    {% if plan.unit_name %}
                                     📍 {{ plan.unit_name }}<br>
-                                    👥 {{ plan.required_people }} чел.
-                                    {% endif %}
+                                    👥 {{ plan.assigned_count }}/{{ plan.required_people }} чел.
                                 </div>
                                 <div class="assignment-calendar__plan-status">{{ plan.status_text }}</div>
                                 {% if plan.assignments %}
                                 <div class="assignment-calendar__assigned-people">
                                     {% for a in plan.assignments %}
-                                    <span class="assignment-calendar__assigned-person" title="{{ a.person.rank.name }} {{ a.person.full_name }}">
+                                    <span class="assignment-calendar__assigned-person" title="{{ a.person.rank.name }} {{ a.person.full_name }} ({{ a.person.unit.name }})">
                                         {{ a.person.last_name }}
                                     </span>
                                     {% endfor %}
                                 </div>
                                 {% endif %}
+                            </div>
+                            {% empty %}
+                            <div class="assignment-calendar__empty">
+                                <span class="text-muted">—</span>
                             </div>
                             {% endfor %}
                             {% endif %}
@@ -103,5 +108,10 @@
 
 {% block extra_js %}
 <script src="{% static 'js/components/assignment-modal.js' %}"></script>
-<script src="{% static 'js/components/assignment-calendar.js' %}"></script>
+<script>
+function openAssignmentModal(planId, dutyName, unitName) {
+    if (!planId) return;
+    window.assignmentModal.open(planId, dutyName, unitName);
+}
+</script>
 {% endblock %}

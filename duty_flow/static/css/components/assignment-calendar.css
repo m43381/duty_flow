@@ -49,22 +49,28 @@
 
 .assignment-calendar__plan:hover {
     transform: translateX(2px);
+    opacity: 0.9;
 }
 
 /* Статусы планов */
-.assignment-calendar__plan--assigned_own {
-    background: var(--success-bg);
-    border-left: 3px solid var(--success);
-}
-
-.assignment-calendar__plan--assigned_child {
-    background: var(--warning-bg);
-    border-left: 3px solid var(--warning);
-}
-
 .assignment-calendar__plan--unassigned {
-    background: var(--danger-bg);
-    border-left: 3px solid var(--danger);
+    background: #ffebee;
+    border-left: 3px solid #f44336;
+}
+
+.assignment-calendar__plan--partial {
+    background: #fff3e0;
+    border-left: 3px solid #ff9800;
+}
+
+.assignment-calendar__plan--completed {
+    background: #e8f5e9;
+    border-left: 3px solid #4caf50;
+}
+
+.assignment-calendar__plan--delegated {
+    background: #e3f2fd;
+    border-left: 3px solid #2196f3;
 }
 
 .assignment-calendar__plan--no_plan {
@@ -80,6 +86,9 @@
 .assignment-calendar__plan-title {
     font-weight: 500;
     margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .assignment-calendar__plan-meta {
@@ -90,6 +99,7 @@
 .assignment-calendar__plan-status {
     font-size: 0.7rem;
     margin-top: 0.25rem;
+    font-weight: 500;
 }
 
 /* Список назначенных сотрудников */
@@ -100,7 +110,7 @@
 
 .assignment-calendar__assigned-person {
     display: inline-block;
-    background: var(--bg-light);
+    background: rgba(0, 0, 0, 0.05);
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
     margin: 0.125rem;
@@ -123,29 +133,29 @@
 }
 
 .assignment-calendar__legend-color {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     border-radius: 4px;
 }
 
-.assignment-calendar__legend-color--assigned_own {
-    background: var(--success-bg);
-    border-left: 3px solid var(--success);
-}
-
-.assignment-calendar__legend-color--assigned_child {
-    background: var(--warning-bg);
-    border-left: 3px solid var(--warning);
-}
-
 .assignment-calendar__legend-color--unassigned {
-    background: var(--danger-bg);
-    border-left: 3px solid var(--danger);
+    background: #ffebee;
+    border-left: 3px solid #f44336;
 }
 
-.assignment-calendar__legend-color--no_plan {
-    background: var(--bg-hover);
-    border-left: 3px solid var(--border);
+.assignment-calendar__legend-color--partial {
+    background: #fff3e0;
+    border-left: 3px solid #ff9800;
+}
+
+.assignment-calendar__legend-color--completed {
+    background: #e8f5e9;
+    border-left: 3px solid #4caf50;
+}
+
+.assignment-calendar__legend-color--delegated {
+    background: #e3f2fd;
+    border-left: 3px solid #2196f3;
 }
 
 /* Навигация по месяцам */
