@@ -1,20 +1,16 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
 
 from units.models import UnitType
 from units.forms import UnitTypeForm
-from users_app.access_service import AccessService
+from frontend.services.unit_service import UnitTypeService
 
 
 @login_required
-def list(request):
+def unit_type_list(request):
     """Список типов подразделений (только для академии)"""
-    access = AccessService(request.user)
-    
-    # Проверка прав: только академия
-    if access.user_level != 0:
+    if not UnitTypeService.can_manage(request.user):
         messages.error(request, 'Доступ только для администраторов')
         return redirect('dashboard')
     
@@ -29,11 +25,9 @@ def list(request):
 
 
 @login_required
-def add(request):
+def unit_type_add(request):
     """Создание типа подразделения"""
-    access = AccessService(request.user)
-    
-    if access.user_level != 0:
+    if not UnitTypeService.can_manage(request.user):
         messages.error(request, 'Доступ только для администраторов')
         return redirect('dashboard')
     
@@ -54,19 +48,14 @@ def add(request):
 
 
 @login_required
-def detail(request, pk):
+def unit_type_detail(request, pk):
     """Просмотр типа подразделения"""
-    access = AccessService(request.user)
-    
-    if access.user_level != 0:
+    if not UnitTypeService.can_manage(request.user):
         messages.error(request, 'Доступ только для администраторов')
         return redirect('dashboard')
     
     unit_type = get_object_or_404(UnitType, pk=pk)
-    
-    # Статистика использования
-    units_count = unit_type.units.count()
-    users_count = sum(u.users.count() for u in unit_type.units.all())
+    units_count, users_count = UnitTypeService.get_usage_stats(unit_type)
     
     return render(request, 'unit_type/detail.html', {
         'item': unit_type,
@@ -78,11 +67,9 @@ def detail(request, pk):
 
 
 @login_required
-def edit(request, pk):
+def unit_type_edit(request, pk):
     """Редактирование типа подразделения"""
-    access = AccessService(request.user)
-    
-    if access.user_level != 0:
+    if not UnitTypeService.can_manage(request.user):
         messages.error(request, 'Доступ только для администраторов')
         return redirect('dashboard')
     
@@ -106,25 +93,17 @@ def edit(request, pk):
 
 
 @login_required
-def delete(request, pk):
+def unit_type_delete(request, pk):
     """Удаление типа подразделения"""
-    access = AccessService(request.user)
-    
-    if access.user_level != 0:
+    if not UnitTypeService.can_manage(request.user):
         messages.error(request, 'Доступ только для администраторов')
         return redirect('dashboard')
     
     unit_type = get_object_or_404(UnitType, pk=pk)
     
-    # Проверка использования
-    units_count = unit_type.units.count()
-    if units_count > 0:
-        messages.error(
-            request,
-            f'Нельзя удалить тип "{unit_type.name}", так как существуют '
-            f'подразделения этого типа ({units_count} шт.). '
-            f'Сначала удалите или измените тип у подразделений.'
-        )
+    can_delete, error_msg = UnitTypeService.can_delete_type(unit_type)
+    if not can_delete:
+        messages.error(request, error_msg)
         return redirect('unit_type:detail', pk=unit_type.pk)
     
     if request.method == 'POST':
