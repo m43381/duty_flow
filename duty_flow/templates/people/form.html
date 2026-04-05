@@ -3,7 +3,7 @@
 {% block cabinet_content %}
 <div class="card">
     <div class="card-header">
-        <h2>🔓 {{ title }}</h2>
+        <h2>{% if item %}✏️{% else %}➕{% endif %} {{ title }}</h2>
     </div>
     <div class="card-body">
         <form method="post" class="form">
@@ -21,10 +21,13 @@
                     {{ field.label }}
                     {% if field.field.required %}<span style="color: var(--danger);">*</span>{% endif %}
                 </label>
+                
                 {{ field }}
+                
                 {% if field.help_text %}
                 <small class="form-text text-muted">{{ field.help_text }}</small>
                 {% endif %}
+                
                 {% if field.errors %}
                 <div class="form-error">
                     {% for error in field.errors %}
@@ -36,8 +39,10 @@
             {% endfor %}
             
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">💾 Сохранить</button>
-                <a href="{% url 'person:person_detail' person.pk %}?tab=exemptions" class="btn btn-secondary">↩️ Отмена</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if item %}💾 Сохранить изменения{% else %}✅ Создать{% endif %}
+                </button>
+                <a href="{% url 'people:person_list' %}" class="btn btn-secondary">↩️ Отмена</a>
             </div>
         </form>
     </div>

@@ -19,7 +19,7 @@ def person_list(request):
             first_name__icontains=search_query
         )
     
-    return render(request, 'person/list.html', {
+    return render(request, 'people/list.html', {
         'items': people,
         'active_tab': 'person',
         'title': 'Сотрудники',
@@ -47,7 +47,7 @@ def person_add(request):
     else:
         form = PersonForm(user=request.user)
     
-    return render(request, 'person/form.html', {
+    return render(request, 'people/form.html', {
         'form': form,
         'active_tab': 'person',
         'title': 'Добавление сотрудника'
@@ -78,7 +78,7 @@ def person_detail(request, pk):
     elif tab == 'clearances':
         context['clearances'] = DutyClearance.objects.filter(person=person).select_related('duty_type')
     
-    return render(request, 'person/detail.html', context)
+    return render(request, 'people/detail.html', context)
 
 
 @login_required
@@ -99,7 +99,7 @@ def person_edit(request, pk):
     else:
         form = PersonForm(instance=person, user=request.user)
     
-    return render(request, 'person/form.html', {
+    return render(request, 'people/form.html', {
         'form': form,
         'item': person,
         'active_tab': 'person',
@@ -121,7 +121,7 @@ def person_delete(request, pk):
         messages.success(request, 'Сотрудник удалён')
         return redirect('person:person_list')
     
-    return render(request, 'person/delete.html', {
+    return render(request, 'people/delete.html', {
         'item': person,
         'active_tab': 'person',
         'title': 'Удаление сотрудника'

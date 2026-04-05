@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from people.models import Person, Exemption
 from people.forms import ExemptionForm
 from users_app.access_service import AccessService
-from frontend.services.person_service import PersonService
+from frontend.services.people_service import PersonService
 
 
 @login_required
@@ -35,7 +35,7 @@ def exemption_add(request, pk):
     else:
         form = ExemptionForm()
     
-    return render(request, 'person/exemption_form.html', {
+    return render(request, 'people/exemption_form.html', {
         'form': form,
         'person': person,
         'title': f'Добавление освобождения: {person.last_name} {person.first_name}',
@@ -72,7 +72,7 @@ def exemption_edit(request, pk, exemption_id):
     else:
         form = ExemptionForm(instance=exemption)
     
-    return render(request, 'person/exemption_form.html', {
+    return render(request, 'people/exemption_form.html', {
         'form': form,
         'person': person,
         'exemption': exemption,
@@ -95,7 +95,7 @@ def exemption_delete(request, pk, exemption_id):
         messages.success(request, 'Освобождение успешно удалено')
         return redirect(f'/persons/{person.pk}/?tab=exemptions')
     
-    return render(request, 'person/exemption_confirm_delete.html', {
+    return render(request, 'people/exemption_confirm_delete.html', {
         'exemption': exemption,
         'person': person,
     })

@@ -6,7 +6,7 @@
         <h2 class="card-title" style="color: var(--danger);">⚠️ Подтверждение удаления</h2>
     </div>
     <div class="card-body">
-        <p style="margin-bottom: 1.5rem;">Вы уверены, что хотите удалить это освобождение?</p>
+        <p style="margin-bottom: 1.5rem;">Вы уверены, что хотите удалить этот допуск?</p>
         
         <div class="info-grid" style="background: var(--bg-hover); padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
             <div class="info-grid__row">
@@ -14,17 +14,13 @@
                 <span class="info-grid__value">{{ person.last_name }} {{ person.first_name }} {{ person.middle_name }}</span>
             </div>
             <div class="info-grid__row">
-                <span class="info-grid__label">Причина:</span>
-                <span class="info-grid__value">{{ exemption.get_reason_display }}</span>
+                <span class="info-grid__label">Тип наряда:</span>
+                <span class="info-grid__value">{{ clearance.duty_type.name }}</span>
             </div>
+            {% if clearance.duty_type.description %}
             <div class="info-grid__row">
-                <span class="info-grid__label">Период:</span>
-                <span class="info-grid__value">{{ exemption.date_from|date:"d.m.Y" }} — {{ exemption.date_to|date:"d.m.Y" }}</span>
-            </div>
-            {% if exemption.comment %}
-            <div class="info-grid__row">
-                <span class="info-grid__label">Комментарий:</span>
-                <span class="info-grid__value">{{ exemption.comment }}</span>
+                <span class="info-grid__label">Описание:</span>
+                <span class="info-grid__value">{{ clearance.duty_type.description }}</span>
             </div>
             {% endif %}
         </div>
@@ -35,7 +31,7 @@
             {% csrf_token %}
             <div class="form-actions">
                 <button type="submit" class="btn btn-danger">🗑️ Да, удалить</button>
-                <a href="{% url 'person:person_detail' person.pk %}?tab=exemptions" class="btn btn-secondary">↩️ Отмена</a>
+                <a href="{% url 'people:person_detail' person.pk %}?tab=clearances" class="btn btn-secondary">↩️ Отмена</a>
             </div>
         </form>
     </div>

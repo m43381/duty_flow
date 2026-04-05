@@ -86,7 +86,7 @@
                             <td>{{ person.full_name }}</td>
                             <td>{{ person.rank.name }}</td>
                             <td>
-                                <a href="{% url 'person:person_detail' person.pk %}" class="action-btn" style="display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; text-decoration: none;">👁️</a>
+                                <a href="{% url 'people:person_detail' person.pk %}" class="action-btn" style="display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; border-radius: 0.375rem; text-decoration: none;">👁️</a>
                             </td>
                         </tr>
                         {% endfor %}

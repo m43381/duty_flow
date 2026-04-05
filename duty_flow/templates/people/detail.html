@@ -13,8 +13,8 @@
         </h2>
         {% if can_edit %}
         <div class="person-card__actions">
-            <a href="{% url 'person:person_edit' person.pk %}" class="btn btn-primary">✏️ Редактировать</a>
-            <a href="{% url 'person:person_delete' person.pk %}" class="btn btn-danger">🗑️ Удалить</a>
+            <a href="{% url 'people:person_edit' person.pk %}" class="btn btn-primary">✏️ Редактировать</a>
+            <a href="{% url 'people:person_delete' person.pk %}" class="btn btn-danger">🗑️ Удалить</a>
         </div>
         {% endif %}
     </div>
@@ -82,7 +82,7 @@
             <div class="section-header">
                 <h3 class="section-header__title">🔓 Освобождения</h3>
                 {% if can_edit %}
-                <a href="{% url 'person:exemption_add' person.pk %}" class="btn btn-primary btn-sm">➕ Добавить</a>
+                <a href="{% url 'people:exemption_add' person.pk %}" class="btn btn-primary btn-sm">➕ Добавить</a>
                 {% endif %}
             </div>
             
@@ -107,8 +107,8 @@
                             <td>{{ exemption.comment|default:"—" }}</td>
                             <td>
                                 <div class="action-group">
-                                    <a href="{% url 'person:exemption_edit' person.pk exemption.pk %}" class="action-btn action-btn--edit" title="Редактировать">✏️</a>
-                                    <a href="{% url 'person:exemption_delete' person.pk exemption.pk %}" class="action-btn action-btn--delete" title="Удалить">🗑️</a>
+                                    <a href="{% url 'people:exemption_edit' person.pk exemption.pk %}" class="action-btn action-btn--edit" title="Редактировать">✏️</a>
+                                    <a href="{% url 'people:exemption_delete' person.pk exemption.pk %}" class="action-btn action-btn--delete" title="Удалить">🗑️</a>
                                 </div>
                             </td>
                         </tr>
@@ -120,7 +120,7 @@
             <div class="empty-state">
                 <p class="empty-state__text">У сотрудника нет освобождений</p>
                 {% if can_edit %}
-                <a href="{% url 'person:exemption_add' person.pk %}" class="empty-state__action btn btn-primary btn-sm">➕ Добавить освобождение</a>
+                <a href="{% url 'people:exemption_add' person.pk %}" class="empty-state__action btn btn-primary btn-sm">➕ Добавить освобождение</a>
                 {% endif %}
             </div>
             {% endif %}
@@ -132,7 +132,7 @@
             <div class="section-header">
                 <h3 class="section-header__title">✅ Допуски</h3>
                 {% if can_edit %}
-                <a href="{% url 'person:clearance_add' person.pk %}" class="btn btn-primary btn-sm">➕ Добавить</a>
+                <a href="{% url 'people:clearance_add' person.pk %}" class="btn btn-primary btn-sm">➕ Добавить</a>
                 {% endif %}
             </div>
             
@@ -153,7 +153,7 @@
                             <td>{{ clearance.duty_type.description|truncatechars:100|default:"—" }}</td>
                             <td>
                                 <div class="action-group">
-                                    <a href="{% url 'person:clearance_delete' person.pk clearance.pk %}" class="action-btn action-btn--delete" title="Удалить">🗑️</a>
+                                    <a href="{% url 'people:clearance_delete' person.pk clearance.pk %}" class="action-btn action-btn--delete" title="Удалить">🗑️</a>
                                 </div>
                             </td>
                         </tr>
@@ -165,7 +165,7 @@
             <div class="empty-state">
                 <p class="empty-state__text">У сотрудника нет допусков</p>
                 {% if can_edit %}
-                <a href="{% url 'person:clearance_add' person.pk %}" class="empty-state__action btn btn-primary btn-sm">➕ Добавить допуск</a>
+                <a href="{% url 'people:clearance_add' person.pk %}" class="empty-state__action btn btn-primary btn-sm">➕ Добавить допуск</a>
                 {% endif %}
             </div>
             {% endif %}
@@ -174,7 +174,7 @@
     </div>
     
     <div class="person-card__footer">
-        <a href="{% url 'person:person_list' %}" class="btn btn-secondary">← Назад к списку</a>
+        <a href="{% url 'people:person_list' %}" class="btn btn-secondary">← Назад к списку</a>
     </div>
 </div>
 {% endblock %}

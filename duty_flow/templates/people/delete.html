@@ -35,7 +35,7 @@
             {% csrf_token %}
             <div class="form-actions">
                 <button type="submit" class="btn btn-danger">🗑️ Да, удалить</button>
-                <a href="{% url 'person:person_detail' item.id %}" class="btn btn-secondary">↩️ Отмена</a>
+                <a href="{% url 'people:person_detail' item.id %}" class="btn btn-secondary">↩️ Отмена</a>
             </div>
         </form>
     </div>
