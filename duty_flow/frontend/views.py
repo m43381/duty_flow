@@ -69,25 +69,3 @@ def user_list(request):
         'page_title': 'Пользователи',
         'active_tab': 'users'
     })
-
-# Кабинеты для разных ролей (если нужны отдельные страницы)
-@login_required
-def commandant_cabinet(request):
-    return render(request, 'cabinets/commandant.html', {
-        'page_title': 'Кабинет коменданта',
-        'active_tab': 'dashboard'
-    })
-
-@login_required
-def faculty_cabinet(request):
-    return render(request, 'cabinets/faculty.html', {
-        'page_title': 'Кабинет факультета',
-        'active_tab': 'dashboard'
-    })
-
-@login_required
-def department_cabinet(request):
-    return render(request, 'cabinets/department.html', {
-        'page_title': 'Кабинет кафедры',
-        'active_tab': 'dashboard'
-    })
