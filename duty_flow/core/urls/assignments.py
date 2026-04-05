@@ -1,5 +1,5 @@
 from django.urls import path
-from frontend.views import assignments
+from core.views import assignments
 
 # app_name = 'assignments'
 

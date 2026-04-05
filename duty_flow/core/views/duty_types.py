@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
 from duty_types.forms import DutyTypeForm
-from frontend.services.duty_type_service import DutyTypeService
+from core.services.duty_type_service import DutyTypeService
 from duty_types.models import DutyType
 
 

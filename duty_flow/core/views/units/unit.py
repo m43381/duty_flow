@@ -6,7 +6,7 @@ from django.db import IntegrityError
 from units.models import Unit
 from units.forms import UnitForm
 from users_app.access_service import AccessService
-from frontend.services.unit_service import UnitService
+from core.services.unit_service import UnitService
 
 
 @login_required

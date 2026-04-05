@@ -1,5 +1,5 @@
 from django.urls import path
-from frontend.views import duty_types
+from core.views import duty_types
 
 # app_name = 'duty_types'
 

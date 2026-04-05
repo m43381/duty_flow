@@ -1,5 +1,5 @@
 from django.urls import path
-from frontend.views.people import (
+from core.views.people import (
     person_list, person_add, person_detail, person_edit, person_delete,
     exemption_add, exemption_edit, exemption_delete,
     clearance_add, clearance_delete

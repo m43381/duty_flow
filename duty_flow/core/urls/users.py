@@ -1,5 +1,5 @@
 from django.urls import path
-from frontend.views import users
+from core.views import users
 
 # app_name = 'users'
 

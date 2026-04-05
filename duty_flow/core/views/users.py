@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
 from users_app.forms import UserCreateForm, UserEditForm, UserChangePasswordForm
-from frontend.services.user_service import UserService
+from core.services.user_service import UserService
 from django.contrib.auth.models import User
 
 

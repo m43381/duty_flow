@@ -9,7 +9,7 @@ from duty_plans.models import MonthlySchedule, DayPlan
 from duty_plans.forms import MonthlyScheduleForm
 from duty_types.models import DutyType
 from users_app.access_service import AccessService
-from frontend.services.plan_service import PlanService
+from core.services.plan_service import PlanService
 
 import logging
 logger = logging.getLogger(__name__)

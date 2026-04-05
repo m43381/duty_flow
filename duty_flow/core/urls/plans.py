@@ -1,5 +1,5 @@
 from django.urls import path
-from frontend.views import plans
+from core.views import plans
 
 # app_name = 'plans'
 

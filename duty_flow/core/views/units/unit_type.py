@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 
 from units.models import UnitType
 from units.forms import UnitTypeForm
-from frontend.services.unit_service import UnitTypeService
+from core.services.unit_service import UnitTypeService
 
 
 @login_required

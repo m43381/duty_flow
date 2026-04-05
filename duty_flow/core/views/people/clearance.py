@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from people.models import Person, DutyClearance
 from people.forms import DutyClearanceForm
 from users_app.access_service import AccessService
-from frontend.services.people_service import PersonService
+from core.services.people_service import PersonService
 
 
 @login_required

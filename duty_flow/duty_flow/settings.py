@@ -16,14 +16,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'frontend',
+    'core',
     'units',
     'ranks',
     'duty_types',
     'people',
     'duty_plans',
     'users_app',
-    'core',
 ]
 
 MIDDLEWARE = [
@@ -110,7 +109,7 @@ LOGGING = {
         },
     },
     'loggers': {
-        'frontend.views_plan': {
+        'core.views_plan': {
             'handlers': ['console'],
             'level': 'INFO',
         },

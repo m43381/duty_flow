@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from duty_plans.models import DayPlan, DutyAssignment
 from people.models import Person
 from users_app.access_service import AccessService
-from frontend.services.assignment_service import AssignmentService
+from core.services.assignment_service import AssignmentService
 
 
 @login_required

@@ -1,5 +1,5 @@
 from django.urls import path
-from frontend.views.units import (
+from core.views.units import (
     unit_list, unit_add, unit_detail, unit_edit, unit_delete,
     unit_type_list, unit_type_add, unit_type_detail, 
     unit_type_edit, unit_type_delete
