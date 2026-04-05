@@ -1,20 +1,16 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
 
-from duty_types.models import DutyType
 from duty_types.forms import DutyTypeForm
-from users_app.access_service import AccessService
+from frontend.services.duty_type_service import DutyTypeService
+from duty_types.models import DutyType
 
 
 @login_required
-def list(request):
-    access = AccessService(request.user)
-    user_unit = access.user_unit
-    
-    # Показываем типы нарядов, созданные этим подразделением
-    duty_types = DutyType.objects.filter(created_by_unit=user_unit).order_by('name')
+def duty_type_list(request):
+    """Список типов нарядов"""
+    duty_types = DutyTypeService.get_user_duty_types(request.user)
     
     return render(request, 'type/list.html', {
         'items': duty_types,
@@ -25,12 +21,12 @@ def list(request):
 
 
 @login_required
-def add(request):
+def duty_type_add(request):
+    """Создание типа наряда"""
     if request.method == 'POST':
         form = DutyTypeForm(request.POST, user=request.user)
         if form.is_valid():
-            duty_type = form.save(commit=False, user=request.user)
-            duty_type.save()
+            duty_type = DutyTypeService.create_duty_type(form.cleaned_data, request.user)
             messages.success(request, f'Тип наряда "{duty_type.name}" создан')
             return redirect('type:list')
     else:
@@ -44,11 +40,11 @@ def add(request):
 
 
 @login_required
-def detail(request, pk):
+def duty_type_detail(request, pk):
+    """Просмотр типа наряда"""
     duty_type = get_object_or_404(DutyType, pk=pk)
-    access = AccessService(request.user)
     
-    if duty_type.created_by_unit != access.user_unit:
+    if not DutyTypeService.can_edit(request.user, duty_type):
         messages.error(request, 'Нет доступа')
         return redirect('type:list')
     
@@ -60,18 +56,18 @@ def detail(request, pk):
 
 
 @login_required
-def edit(request, pk):
+def duty_type_edit(request, pk):
+    """Редактирование типа наряда"""
     duty_type = get_object_or_404(DutyType, pk=pk)
-    access = AccessService(request.user)
     
-    if duty_type.created_by_unit != access.user_unit:
+    if not DutyTypeService.can_edit(request.user, duty_type):
         messages.error(request, 'Нет доступа')
         return redirect('type:list')
     
     if request.method == 'POST':
         form = DutyTypeForm(request.POST, instance=duty_type, user=request.user)
         if form.is_valid():
-            form.save()
+            DutyTypeService.update_duty_type(duty_type, form.cleaned_data)
             messages.success(request, 'Тип наряда обновлен')
             return redirect('type:detail', pk=duty_type.pk)
     else:
@@ -86,11 +82,11 @@ def edit(request, pk):
 
 
 @login_required
-def delete(request, pk):
+def duty_type_delete(request, pk):
+    """Удаление типа наряда"""
     duty_type = get_object_or_404(DutyType, pk=pk)
-    access = AccessService(request.user)
     
-    if duty_type.created_by_unit != access.user_unit:
+    if not DutyTypeService.can_edit(request.user, duty_type):
         messages.error(request, 'Нет доступа')
         return redirect('type:list')
     
