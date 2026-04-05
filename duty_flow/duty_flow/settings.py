@@ -97,8 +97,8 @@ STATICFILES_DIRS = [
 
 
 # Перенаправления после входа/выхода
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
+LOGIN_URL = 'auth:login'
+LOGIN_REDIRECT_URL = 'auth:dashboard'
 # Добавьте в конце settings.py
 
 LOGGING = {
