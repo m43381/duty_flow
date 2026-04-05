@@ -14,7 +14,7 @@
                     <span class="user-unit">{{ user.profile.unit.name }}</span>
                 {% endif %}
                 <!-- Форма для logout -->
-                <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                <form method="post" action="{% url 'auth:logout' %}" style="display: inline;">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm" style="background: var(--danger); border: none; cursor: pointer;">
                         Выйти
