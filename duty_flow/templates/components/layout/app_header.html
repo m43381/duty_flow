@@ -1,0 +1,36 @@
+<header class="app-header">
+    <div class="app-header__left">
+        <button class="icon-button app-header__menu-btn" type="button" data-sidebar-toggle aria-label="Открыть меню">
+            ☰
+        </button>
+
+        <div class="app-header__page">
+            <h1 class="app-header__page-title">{{ page_title|default:"Панель управления" }}</h1>
+            {% if page_subtitle %}
+                <p class="app-header__page-subtitle">{{ page_subtitle }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="app-header__right">
+        <div class="theme-switcher" data-theme-switcher>
+            <button class="theme-switcher__button" type="button" data-theme-value="light" title="Светлая тема">☀</button>
+            <button class="theme-switcher__button" type="button" data-theme-value="dark" title="Тёмная тема">🌙</button>
+            <button class="theme-switcher__button" type="button" data-theme-value="system" title="Системная тема">◐</button>
+        </div>
+
+        <div class="user-chip">
+            <div class="user-chip__content">
+                <span class="user-chip__name">{{ request.user.username }}</span>
+                {% if user.profile and user.profile.unit %}
+                    <span class="user-chip__meta">{{ user.profile.unit.name }}</span>
+                {% endif %}
+            </div>
+
+            <form method="post" action="{% url 'auth:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="button button--sm">Выйти</button>
+            </form>
+        </div>
+    </div>
+</header>

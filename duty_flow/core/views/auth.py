@@ -6,7 +6,7 @@ from django.shortcuts import redirect
 
 def index(request):
     """Главная страница"""
-    return render(request, 'index.html')
+    return render(request, 'public/index.html')
 
 
 def logout_view(request):
@@ -27,7 +27,7 @@ def dashboard(request):
         'total_assignments': 0,
         'upcoming_plans': [],
     }
-    return render(request, 'cabinets/dashboard.html', context)
+    return render(request, 'app/dashboard.html', context)
 
 # Заглушки для всех разделов
 @login_required

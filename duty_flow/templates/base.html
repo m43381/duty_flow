@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru" data-theme="system">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DutyFlow{% endblock %}</title>
+
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="app-body">
+    {% block body %}{% endblock %}
+
+    <script src="{% static 'js/core/theme.js' %}"></script>
+    <script src="{% static 'js/core/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

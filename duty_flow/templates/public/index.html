@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}DutyFlow — Система управления нарядами{% endblock %}
+
+{% block body %}
+<div class="public-layout">
+    <header class="public-header">
+        <div class="public-header__inner">
+            <a href="{% url 'auth:index' %}" class="public-brand">
+                <span class="public-brand__mark">DF</span>
+                <span class="public-brand__text">DutyFlow</span>
+            </a>
+
+            <div class="public-header__actions">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'auth:dashboard' %}" class="button button--primary">
+                        Открыть кабинет
+                    </a>
+
+                    <form method="post" action="{% url 'auth:logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="button button--danger">
+                            Выйти
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="button button--primary">
+                        Войти
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main class="public-main">
+        <section class="hero">
+            <div class="hero__content">
+                <div class="hero__badge">Локальная система управления нарядами</div>
+
+                <h1 class="hero__title">
+                    Надёжное планирование, распределение и контроль нарядов
+                </h1>
+
+                <p class="hero__subtitle">
+                    DutyFlow помогает работать с подразделениями, сотрудниками, допусками,
+                    планами и назначениями в едином интерфейсе с поддержкой светлой и тёмной темы.
+                </p>
+
+                <div class="hero__actions">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'auth:dashboard' %}" class="button button--primary">
+                            Перейти в дашборд
+                        </a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="button button--primary">
+                            Войти в систему
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="hero__panel">
+                <div class="preview-card">
+                    <div class="preview-card__header">
+                        <span class="preview-card__dot"></span>
+                        <span class="preview-card__dot"></span>
+                        <span class="preview-card__dot"></span>
+                    </div>
+
+                    <div class="preview-card__body">
+                        <div class="preview-stat-list">
+                            <div class="preview-stat">
+                                <span class="preview-stat__label">Сотрудники</span>
+                                <span class="preview-stat__value">128</span>
+                            </div>
+                            <div class="preview-stat">
+                                <span class="preview-stat__label">Планы на месяц</span>
+                                <span class="preview-stat__value">42</span>
+                            </div>
+                            <div class="preview-stat">
+                                <span class="preview-stat__label">Открытые назначения</span>
+                                <span class="preview-stat__value">17</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-table">
+                            <div class="preview-table__row preview-table__row--head">
+                                <span>Дата</span>
+                                <span>Наряд</span>
+                                <span>Статус</span>
+                            </div>
+                            <div class="preview-table__row">
+                                <span>08.04</span>
+                                <span>Дежурство</span>
+                                <span class="badge badge--success">Готово</span>
+                            </div>
+                            <div class="preview-table__row">
+                                <span>09.04</span>
+                                <span>Патруль</span>
+                                <span class="badge badge--warning">Нужно назначение</span>
+                            </div>
+                            <div class="preview-table__row">
+                                <span>10.04</span>
+                                <span>Проверка</span>
+                                <span class="badge badge--success">Готово</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="public-section">
+            <div class="public-section__header">
+                <h2 class="public-section__title">Основные возможности</h2>
+                <p class="public-section__subtitle">
+                    Интерфейс проектируется как строгая и удобная рабочая среда без визуального шума.
+                </p>
+            </div>
+
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <h3 class="feature-card__title">Подразделения и иерархия</h3>
+                    <p class="feature-card__text">
+                        Работа со структурой подразделений, типами подразделений и правами доступа по уровням.
+                    </p>
+                </article>
+
+                <article class="feature-card">
+                    <h3 class="feature-card__title">Сотрудники и допуски</h3>
+                    <p class="feature-card__text">
+                        Учет личного состава, освобождений и допусков к различным видам нарядов.
+                    </p>
+                </article>
+
+                <article class="feature-card">
+                    <h3 class="feature-card__title">Планы и назначения</h3>
+                    <p class="feature-card__text">
+                        Формирование расписаний, контроль комплектования и распределение людей по планам.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section class="public-section">
+            <div class="public-section__header">
+                <h2 class="public-section__title">Роли в системе</h2>
+            </div>
+
+            <div class="role-grid">
+                <article class="role-card">
+                    <h3 class="role-card__title">Академия</h3>
+                    <p class="role-card__text">Полный уровень контроля, работа со всеми сущностями системы.</p>
+                </article>
+
+                <article class="role-card">
+                    <h3 class="role-card__title">Факультет</h3>
+                    <p class="role-card__text">Управление своими подразделениями и планами на подчинённом уровне.</p>
+                </article>
+
+                <article class="role-card">
+                    <h3 class="role-card__title">Кафедра</h3>
+                    <p class="role-card__text">Работа с локальными сотрудниками, допусками и текущими назначениями.</p>
+                </article>
+
+                <article class="role-card">
+                    <h3 class="role-card__title">Комендант</h3>
+                    <p class="role-card__text">Контроль хозяйственных и специальных нарядов в своей зоне ответственности.</p>
+                </article>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

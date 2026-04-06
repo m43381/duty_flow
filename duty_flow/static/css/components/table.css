@@ -1,0 +1,33 @@
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border-muted);
+    vertical-align: middle;
+}
+
+.table th {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    background: var(--color-bg-subtle);
+}
+
+.table tbody tr:hover {
+    background: var(--color-surface-muted);
+}
+
+.table__empty {
+    text-align: center;
+    color: var(--color-text-muted);
+}
