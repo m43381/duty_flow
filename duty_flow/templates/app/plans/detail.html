@@ -1,0 +1,121 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ schedule.name|default:schedule }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <div class="plan-hero">
+                <div class="plan-hero__main">
+                    <h2 class="page-header__title">{{ schedule.name|default:schedule }}</h2>
+                    <div class="plan-hero__meta">
+                        <span class="badge">{{ schedule.get_status_display }}</span>
+                        <span class="plan-hero__unit">{{ schedule.unit.name }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-header__actions">
+            <a href="{% url 'plan:list' %}" class="button">Назад к списку</a>
+            <a href="{% url 'plan:days' schedule.pk %}" class="button button--primary">Открыть таблицу дней</a>
+            <a href="{% url 'plan:edit' schedule.pk %}" class="button">Изменить</a>
+            <a href="{% url 'plan:delete' schedule.pk %}" class="button button--danger">Удалить</a>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="plan-summary-grid">
+        <article class="summary-card">
+            <span class="summary-card__label">Месяц</span>
+            <span class="summary-card__value">{{ schedule.month|date:"F Y" }}</span>
+        </article>
+        <article class="summary-card">
+            <span class="summary-card__label">Статус</span>
+            <span class="summary-card__value">{{ schedule.get_status_display }}</span>
+        </article>
+        <article class="summary-card">
+            <span class="summary-card__label">Записей</span>
+            <span class="summary-card__value">{{ day_plans_count }}</span>
+        </article>
+        <article class="summary-card">
+            <span class="summary-card__label">Дочерние расписания</span>
+            <span class="summary-card__value">{{ child_schedules_count }}</span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Основная информация</h3>
+                <p class="card__subtitle">Параметры месячного расписания и текущее состояние</p>
+            </div>
+        </div>
+        <div class="card__body">
+            <div class="details-list">
+                <div class="details-list__row">
+                    <span class="details-list__label">Название</span>
+                    <span class="details-list__value">{{ schedule.name|default:"—" }}</span>
+                </div>
+                <div class="details-list__row">
+                    <span class="details-list__label">Месяц</span>
+                    <span class="details-list__value">{{ schedule.month|date:"F Y" }}</span>
+                </div>
+                <div class="details-list__row">
+                    <span class="details-list__label">Статус</span>
+                    <span class="details-list__value">{{ schedule.get_status_display }}</span>
+                </div>
+                <div class="details-list__row">
+                    <span class="details-list__label">Подразделение</span>
+                    <span class="details-list__value">{{ schedule.unit.name }}</span>
+                </div>
+                <div class="details-list__row">
+                    <span class="details-list__label">Родительское расписание</span>
+                    <span class="details-list__value">
+                        {% if schedule.parent_schedule %}
+                            {{ schedule.parent_schedule }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="details-list__row">
+                    <span class="details-list__label">Создано</span>
+                    <span class="details-list__value">{{ schedule.created_at|date:"d.m.Y H:i" }}</span>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Сводка по дням</h3>
+                <p class="card__subtitle">Краткая сводка по записям внутри расписания</p>
+            </div>
+        </div>
+        <div class="card__body">
+            <div class="plan-status-list">
+                <div class="plan-status-list__item">
+                    <span class="plan-status-list__label">Всего записей</span>
+                    <span class="plan-status-list__value">{{ day_plans_count }}</span>
+                </div>
+                <div class="plan-status-list__item">
+                    <span class="plan-status-list__label">Принято</span>
+                    <span class="plan-status-list__value">{{ accepted_count }}</span>
+                </div>
+                <div class="plan-status-list__item">
+                    <span class="plan-status-list__label">Ожидает</span>
+                    <span class="plan-status-list__value">{{ pending_count }}</span>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock %}

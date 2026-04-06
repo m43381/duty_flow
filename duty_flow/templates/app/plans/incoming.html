@@ -1,0 +1,146 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Входящие наряды — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Входящие наряды</h2>
+            <p class="page-header__subtitle">
+                Просмотр и принятие входящих назначений от вышестоящих или связанных расписаний.
+            </p>
+        </div>
+
+        <div class="page-header__actions">
+            <a href="{% url 'plan:list' %}" class="button">
+                К расписаниям
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="plan-summary-grid">
+        <article class="summary-card">
+            <span class="summary-card__label">Всего входящих</span>
+            <span class="summary-card__value">{{ total_count }}</span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Групп по источникам</span>
+            <span class="summary-card__value">{{ groups|length }}</span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Статус</span>
+            <span class="summary-card__value">
+                {% if total_count %}Требуют обработки{% else %}Пусто{% endif %}
+            </span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Режим работы</span>
+            <span class="summary-card__value">Поштучное принятие</span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    {% if groups %}
+        <div class="incoming-groups">
+            {% for group in groups %}
+            <article class="card incoming-card">
+                <div class="card__header incoming-card__header">
+                    <div>
+                        <h3 class="card__title">
+                            {% if group.source_schedule %}
+                                {{ group.source_schedule.name|default:group.source_schedule }}
+                            {% else %}
+                                Неизвестный источник
+                            {% endif %}
+                        </h3>
+                        <p class="card__subtitle">
+                            {% if group.source_schedule %}
+                                {{ group.source_schedule.month|date:"F Y" }}
+                                · {{ group.source_schedule.unit.name }}
+                                · {{ group.count }} шт.
+                            {% else %}
+                                Источник не определён · {{ group.count }} шт.
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="incoming-card__actions">
+                        {% if group.source_schedule %}
+                            <a href="{% url 'plan:detail' group.source_schedule.pk %}" class="button button--sm">
+                                Открыть расписание
+                            </a>
+                            <a href="{% url 'plan:days' group.source_schedule.pk %}" class="button button--sm">
+                                Таблица дней
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card__body">
+                    <div class="table-wrap">
+                        <table class="table incoming-table">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>День</th>
+                                    <th>Тип наряда</th>
+                                    <th>Источник</th>
+                                    <th>Действие</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for plan in group.items %}
+                                <tr>
+                                    <td>{{ plan.date|date:"d.m.Y" }}</td>
+                                    <td>{{ plan.date|date:"D" }}</td>
+                                    <td>
+                                        <div class="incoming-duty">
+                                            <span class="incoming-duty__name">{{ plan.duty_type.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if plan.parent and plan.parent.schedule and plan.parent.schedule.unit %}
+                                            {{ plan.parent.schedule.unit.name }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="post" action="{% url 'plan:accept' plan.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="button button--primary button--sm">
+                                                Принять
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state__body">
+                <h3 class="empty-state__title">Входящих нарядов нет</h3>
+                <p class="empty-state__text">
+                    Сейчас нет назначений, ожидающих принятия вашим подразделением.
+                </p>
+                <div class="empty-state__actions">
+                    <a href="{% url 'plan:list' %}" class="button">К расписаниям</a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Удаление расписания — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Удаление расписания</h2>
+            <p class="page-header__subtitle">
+                Проверьте данные перед удалением. Будут удалены также дочерние расписания и записи дней.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card danger-card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Подтверждение удаления</h3>
+                <p class="card__subtitle">Вы собираетесь удалить месячное расписание</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="danger-note">
+                Удаление затронет само расписание, его записи по дням и дочерние расписания, если они есть. Это соответствует текущей логике `PlanService.delete_schedule_with_children()`. :contentReference[oaicite:3]{index=3}
+            </div>
+
+            <div class="details-list details-list--boxed">
+                <div class="details-list__row">
+                    <span class="details-list__label">Название</span>
+                    <span class="details-list__value">{{ schedule.name|default:schedule }}</span>
+                </div>
+                <div class="details-list__row">
+                    <span class="details-list__label">Месяц</span>
+                    <span class="details-list__value">{{ schedule.month|date:"F Y" }}</span>
+                </div>
+                <div class="details-list__row">
+                    <span class="details-list__label">Подразделение</span>
+                    <span class="details-list__value">{{ schedule.unit.name }}</span>
+                </div>
+                <div class="details-list__row">
+                    <span class="details-list__label">Записей дней</span>
+                    <span class="details-list__value">{{ day_plans_count }}</span>
+                </div>
+                <div class="details-list__row">
+                    <span class="details-list__label">Дочерние расписания</span>
+                    <span class="details-list__value">{{ child_schedules_count }}</span>
+                </div>
+            </div>
+
+            <form method="post" class="form-actions form-actions--danger">
+                {% csrf_token %}
+                <button type="submit" class="button button--danger">Удалить расписание</button>
+                <a href="{% url 'plan:detail' schedule.pk %}" class="button">Отмена</a>
+            </form>
+        </div>
+    </article>
+</section>
+{% endblock %}

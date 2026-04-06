@@ -1,0 +1,171 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Таблица нарядов — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">{{ schedule.name|default:schedule }}</h2>
+            <p class="page-header__subtitle">
+                {{ schedule.month|date:"F Y" }} · {{ user_unit.name }}
+            </p>
+        </div>
+
+        <div class="page-header__actions">
+            <a href="{% url 'plan:detail' schedule.pk %}" class="button">
+                Назад к расписанию
+            </a>
+            <a href="{% url 'plan:incoming' %}" class="button">
+                Входящие
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="plan-summary-grid">
+        <article class="summary-card">
+            <span class="summary-card__label">Месяц</span>
+            <span class="summary-card__value">{{ schedule.month|date:"F Y" }}</span>
+        </article>
+        <article class="summary-card">
+            <span class="summary-card__label">Типов нарядов</span>
+            <span class="summary-card__value">{{ table|length }}</span>
+        </article>
+        <article class="summary-card">
+            <span class="summary-card__label">Дней в месяце</span>
+            <span class="summary-card__value">{{ dates|length }}</span>
+        </article>
+        <article class="summary-card">
+            <span class="summary-card__label">Дочерние подразделения</span>
+            <span class="summary-card__value">{{ children|length }}</span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Таблица нарядов по дням</h3>
+                <p class="card__subtitle">
+                    Выберите, кто исполняет наряд: ваше подразделение или одно из дочерних.
+                </p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="plan-legend">
+                <span class="plan-legend__item plan-legend__item--own">Своими силами</span>
+                <span class="plan-legend__item plan-legend__item--delegated-pending">Делегировано, ждёт</span>
+                <span class="plan-legend__item plan-legend__item--delegated-accepted">Делегировано, принято</span>
+                <span class="plan-legend__item plan-legend__item--incoming">Входящий / принят</span>
+                <span class="plan-legend__item plan-legend__item--inactive">Недоступно</span>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="form-actions form-actions--top">
+                    <button type="submit" class="button button--primary">
+                        Сохранить изменения
+                    </button>
+                    <a href="{% url 'plan:detail' schedule.pk %}" class="button">
+                        Отмена
+                    </a>
+                </div>
+
+                <div class="plan-days-wrap">
+                    <table class="table plan-days-table">
+                        <thead>
+                            <tr>
+                                <th class="plan-days-table__sticky-col plan-days-table__sticky-head">Наряд</th>
+                                {% for header in date_headers %}
+                                    <th class="plan-days-table__date-head {% if header.is_weekend %}plan-days-table__date-head--weekend{% endif %}">
+                                        <div class="plan-days-table__date-num">{{ header.day }}</div>
+                                        <div class="plan-days-table__date-weekday">{{ header.weekday_short }}</div>
+                                    </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for row in table %}
+                                <tr>
+                                    <td class="plan-days-table__sticky-col plan-days-table__duty">
+                                        <div class="plan-days-table__duty-name">{{ row.duty.name }}</div>
+                                        <div class="plan-days-table__duty-meta">
+                                            {% if row.duty.required_people %}
+                                                Требуется: {{ row.duty.required_people }}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+
+                                    {% for cell in row.cells %}
+                                        <td class="plan-days-table__cell plan-days-table__cell--{{ cell.cell_class }}">
+                                            <div class="plan-cell">
+                                                {% if cell.status_text %}
+                                                    <div class="plan-cell__status">
+                                                        {{ cell.status_text }}
+                                                    </div>
+                                                {% else %}
+                                                    <div class="plan-cell__status plan-cell__status--muted">
+                                                        —
+                                                    </div>
+                                                {% endif %}
+
+                                                {% if cell.unit_name and cell.unit_id != user_unit.id %}
+                                                    <div class="plan-cell__meta">
+                                                        {{ cell.unit_name }}
+                                                    </div>
+                                                {% endif %}
+
+                                                {% if cell.can_edit %}
+                                                    <div class="plan-cell__control">
+                                                        <select
+                                                            name="day_{{ cell.date|date:'Y-m-d' }}_{{ row.duty.id }}"
+                                                            class="plan-cell__select"
+                                                        >
+                                                            <option value="">—</option>
+
+                                                            <option
+                                                                value="{{ user_unit.id }}"
+                                                                {% if cell.unit_id == user_unit.id %}selected{% endif %}
+                                                            >
+                                                                {{ user_unit.name }}
+                                                            </option>
+
+                                                            {% for child in children %}
+                                                                <option
+                                                                    value="{{ child.id }}"
+                                                                    {% if cell.unit_id == child.id %}selected{% endif %}
+                                                                >
+                                                                    {{ child.name }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button button--primary">
+                        Сохранить изменения
+                    </button>
+                    <a href="{% url 'plan:detail' schedule.pk %}" class="button">
+                        Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
+    </article>
+</section>
+{% endblock %}

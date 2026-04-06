@@ -44,6 +44,8 @@
 
     --color-danger: #cf222e;
     --color-danger-bg: #ffebe9;
+    
+    --color-weekends: #f6cdd0;
 
     --color-overlay: rgba(36, 41, 47, 0.45);
 }
