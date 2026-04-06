@@ -1,0 +1,67 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Удаление типа наряда — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Удаление типа наряда</h2>
+            <p class="page-header__subtitle">
+                Проверьте данные перед удалением. Это действие нельзя будет отменить.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card danger-card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Подтверждение удаления</h3>
+                <p class="card__subtitle">Вы собираетесь удалить тип наряда из справочника</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="danger-note">
+                Перед удалением убедитесь, что этот тип наряда больше не используется в рабочих сценариях.
+            </div>
+
+            <div class="details-list details-list--boxed">
+                <div class="details-list__row">
+                    <span class="details-list__label">Название</span>
+                    <span class="details-list__value">{{ item.name }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Требуемое количество человек</span>
+                    <span class="details-list__value">{{ item.required_people }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Подразделение</span>
+                    <span class="details-list__value">
+                        {% if item.unit %}{{ item.unit.name }}{% else %}—{% endif %}
+                    </span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Описание</span>
+                    <span class="details-list__value">{{ item.description|default:"—" }}</span>
+                </div>
+            </div>
+
+            <form method="post" class="form-actions form-actions--danger">
+                {% csrf_token %}
+                <button type="submit" class="button button--danger">
+                    Удалить тип наряда
+                </button>
+                <a href="{% url 'type:detail' item.pk %}" class="button">
+                    Отмена
+                </a>
+            </form>
+        </div>
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ item.name }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <div class="duty-type-hero">
+                <div class="duty-type-hero__main">
+                    <h2 class="page-header__title">{{ item.name }}</h2>
+                    <div class="duty-type-hero__meta">
+                        <span class="badge">чел. {{ item.required_people }}</span>
+                        {% if item.unit %}
+                            <span class="duty-type-hero__unit">{{ item.unit.name }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-header__actions">
+            <a href="{% url 'type:list' %}" class="button">Назад к списку</a>
+            <a href="{% url 'type:edit' item.pk %}" class="button">Изменить</a>
+            <a href="{% url 'type:delete' item.pk %}" class="button button--danger">Удалить</a>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="duty-type-summary-grid">
+        <article class="summary-card">
+            <span class="summary-card__label">Название</span>
+            <span class="summary-card__value">{{ item.name }}</span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Требуется человек</span>
+            <span class="summary-card__value">{{ item.required_people }}</span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Подразделение</span>
+            <span class="summary-card__value">
+                {% if item.unit %}{{ item.unit.name }}{% else %}—{% endif %}
+            </span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Создано подразделением</span>
+            <span class="summary-card__value">
+                {% if item.created_by_unit %}{{ item.created_by_unit.name }}{% else %}—{% endif %}
+            </span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Основная информация</h3>
+                <p class="card__subtitle">Параметры типа наряда и его назначение</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="details-list">
+                <div class="details-list__row">
+                    <span class="details-list__label">Название</span>
+                    <span class="details-list__value">{{ item.name }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Требуемое количество человек</span>
+                    <span class="details-list__value">{{ item.required_people }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Подразделение</span>
+                    <span class="details-list__value">
+                        {% if item.unit %}{{ item.unit.name }}{% else %}—{% endif %}
+                    </span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Создано подразделением</span>
+                    <span class="details-list__value">
+                        {% if item.created_by_unit %}{{ item.created_by_unit.name }}{% else %}—{% endif %}
+                    </span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Описание</span>
+                    <span class="details-list__value">{{ item.description|default:"—" }}</span>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock %}

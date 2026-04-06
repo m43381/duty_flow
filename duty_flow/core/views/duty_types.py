@@ -11,31 +11,40 @@ from duty_types.models import DutyType
 def duty_type_list(request):
     """Список типов нарядов"""
     duty_types = DutyTypeService.get_user_duty_types(request.user)
-    
-    return render(request, 'type/list.html', {
-        'items': duty_types,
-        'active_tab': 'type',
-        'title': 'Мои типы нарядов',
-        'can_add': True,
+
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        duty_types = duty_types.filter(name__icontains=search_query)
+
+    return render(request, "app/duty_types/list.html", {
+        "duty_types": duty_types,
+        "active_tab": "duty_types",
+        "page_title": "Типы нарядов",
+        "page_subtitle": "Справочник типов нарядов вашего подразделения",
+        "can_add": True,
+        "search_query": search_query,
     })
 
 
 @login_required
 def duty_type_add(request):
     """Создание типа наряда"""
-    if request.method == 'POST':
+    if request.method == "POST":
         form = DutyTypeForm(request.POST, user=request.user)
         if form.is_valid():
             duty_type = DutyTypeService.create_duty_type(form.cleaned_data, request.user)
             messages.success(request, f'Тип наряда "{duty_type.name}" создан')
-            return redirect('type:list')
+            return redirect("type:detail", pk=duty_type.pk)
     else:
         form = DutyTypeForm(user=request.user)
-    
-    return render(request, 'type/form.html', {
-        'form': form,
-        'active_tab': 'type',
-        'title': 'Создание типа наряда',
+
+    return render(request, "app/duty_types/form.html", {
+        "form": form,
+        "item": None,
+        "active_tab": "duty_types",
+        "page_title": "Типы нарядов",
+        "page_subtitle": "Создание типа наряда",
+        "title": "Создать тип наряда",
     })
 
 
@@ -43,15 +52,17 @@ def duty_type_add(request):
 def duty_type_detail(request, pk):
     """Просмотр типа наряда"""
     duty_type = get_object_or_404(DutyType, pk=pk)
-    
+
     if not DutyTypeService.can_edit(request.user, duty_type):
-        messages.error(request, 'Нет доступа')
-        return redirect('type:list')
-    
-    return render(request, 'type/detail.html', {
-        'item': duty_type,
-        'active_tab': 'type',
-        'title': duty_type.name,
+        messages.error(request, "Нет доступа")
+        return redirect("type:list")
+
+    return render(request, "app/duty_types/detail.html", {
+        "item": duty_type,
+        "active_tab": "duty_types",
+        "page_title": "Типы нарядов",
+        "page_subtitle": "Карточка типа наряда",
+        "title": duty_type.name,
     })
 
 
@@ -59,25 +70,27 @@ def duty_type_detail(request, pk):
 def duty_type_edit(request, pk):
     """Редактирование типа наряда"""
     duty_type = get_object_or_404(DutyType, pk=pk)
-    
+
     if not DutyTypeService.can_edit(request.user, duty_type):
-        messages.error(request, 'Нет доступа')
-        return redirect('type:list')
-    
-    if request.method == 'POST':
+        messages.error(request, "Нет доступа")
+        return redirect("type:list")
+
+    if request.method == "POST":
         form = DutyTypeForm(request.POST, instance=duty_type, user=request.user)
         if form.is_valid():
             DutyTypeService.update_duty_type(duty_type, form.cleaned_data)
-            messages.success(request, 'Тип наряда обновлен')
-            return redirect('type:detail', pk=duty_type.pk)
+            messages.success(request, "Тип наряда обновлён")
+            return redirect("type:detail", pk=duty_type.pk)
     else:
         form = DutyTypeForm(instance=duty_type, user=request.user)
-    
-    return render(request, 'type/form.html', {
-        'form': form,
-        'item': duty_type,
-        'active_tab': 'type',
-        'title': 'Редактирование',
+
+    return render(request, "app/duty_types/form.html", {
+        "form": form,
+        "item": duty_type,
+        "active_tab": "duty_types",
+        "page_title": "Типы нарядов",
+        "page_subtitle": "Редактирование типа наряда",
+        "title": "Редактировать тип наряда",
     })
 
 
@@ -85,18 +98,20 @@ def duty_type_edit(request, pk):
 def duty_type_delete(request, pk):
     """Удаление типа наряда"""
     duty_type = get_object_or_404(DutyType, pk=pk)
-    
+
     if not DutyTypeService.can_edit(request.user, duty_type):
-        messages.error(request, 'Нет доступа')
-        return redirect('type:list')
-    
-    if request.method == 'POST':
+        messages.error(request, "Нет доступа")
+        return redirect("type:list")
+
+    if request.method == "POST":
         duty_type.delete()
-        messages.success(request, 'Тип наряда удален')
-        return redirect('type:list')
-    
-    return render(request, 'type/delete.html', {
-        'item': duty_type,
-        'active_tab': 'type',
-        'title': 'Удаление',
+        messages.success(request, "Тип наряда удалён")
+        return redirect("type:list")
+
+    return render(request, "app/duty_types/delete.html", {
+        "item": duty_type,
+        "active_tab": "duty_types",
+        "page_title": "Типы нарядов",
+        "page_subtitle": "Удаление типа наряда",
+        "title": "Удаление типа наряда",
     })

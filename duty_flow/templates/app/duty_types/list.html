@@ -1,0 +1,123 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ page_title|default:"Типы нарядов" }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Типы нарядов</h2>
+            <p class="page-header__subtitle">
+                Просмотр доступных типов нарядов и переход в карточки записей.
+            </p>
+        </div>
+
+        {% if can_add %}
+        <div class="page-header__actions">
+            <a href="{% url 'type:add' %}" class="button button--primary">
+                Добавить тип наряда
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header duty-types-toolbar">
+            <form method="get" class="duty-types-toolbar__search form" role="search">
+                <div class="duty-types-search">
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ search_query|default:'' }}"
+                        placeholder="Поиск по названию типа наряда"
+                        aria-label="Поиск типов нарядов"
+                    >
+                    <button type="submit" class="button button--sm">Найти</button>
+                    {% if search_query %}
+                    <a href="{% url 'type:list' %}" class="button button--sm">Сбросить</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="duty-types-toolbar__meta">
+                <span class="duty-types-counter">Всего: {{ duty_types|length }}</span>
+            </div>
+        </div>
+
+        <div class="card__body">
+            {% if duty_types %}
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Требуется человек</th>
+                                <th>Подразделение</th>
+                                <th>Описание</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in duty_types %}
+                            <tr class="table-row-link" data-href="{% url 'type:detail' item.pk %}">
+                                <td>
+                                    <div class="duty-type-cell">
+                                        <a href="{% url 'type:detail' item.pk %}" class="duty-type-cell__name">
+                                            {{ item.name }}
+                                        </a>
+                                        <div class="duty-type-cell__meta">
+                                            Тип наряда
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="badge">{{ item.required_people }}</span>
+                                </td>
+
+                                <td>
+                                    {% if item.unit %}
+                                        {{ item.unit.name }}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {{ item.description|default:"—"|truncatechars:80 }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state__body">
+                        <h3 class="empty-state__title">Типы нарядов не найдены</h3>
+                        <p class="empty-state__text">
+                            {% if search_query %}
+                                По запросу «{{ search_query }}» ничего не найдено.
+                            {% else %}
+                                Для вашего подразделения пока нет типов нарядов.
+                            {% endif %}
+                        </p>
+
+                        <div class="empty-state__actions">
+                            {% if search_query %}
+                                <a href="{% url 'type:list' %}" class="button">Сбросить поиск</a>
+                            {% endif %}
+                            {% if can_add %}
+                                <a href="{% url 'type:add' %}" class="button button--primary">
+                                    Добавить тип наряда
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endblock %}
