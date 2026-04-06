@@ -1,0 +1,208 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ unit.name }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <div class="unit-hero">
+                <div class="unit-hero__main">
+                    <h2 class="page-header__title">{{ unit.name }}</h2>
+                    <div class="unit-hero__meta">
+                        {% if unit.unit_type %}
+                            <span class="badge">{{ unit.unit_type.name }}</span>
+                        {% endif %}
+                        {% if unit.parent %}
+                            <span class="unit-hero__parent">Родитель: {{ unit.parent.name }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-header__actions">
+            <a href="{% url 'units:list' %}" class="button">Назад к дереву</a>
+
+            {% if can_add_child %}
+                <a href="{% url 'units:add' %}?parent={{ unit.pk }}" class="button button--primary">
+                    Добавить дочернее
+                </a>
+            {% endif %}
+
+            {% if can_edit %}
+                <a href="{% url 'units:edit' unit.pk %}" class="button">
+                    Изменить
+                </a>
+            {% endif %}
+
+            {% if can_delete %}
+                <a href="{% url 'units:delete' unit.pk %}" class="button button--danger">
+                    Удалить
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+<section class="page-section">
+    <div class="unit-breadcrumbs">
+        <a href="{% url 'units:list' %}" class="unit-breadcrumbs__link">Подразделения</a>
+        {% for crumb in breadcrumbs %}
+            <span class="unit-breadcrumbs__separator">/</span>
+            {% if forloop.last %}
+                <span class="unit-breadcrumbs__current">{{ crumb.name }}</span>
+            {% else %}
+                <a href="{% url 'units:detail' crumb.pk %}" class="unit-breadcrumbs__link">
+                    {{ crumb.name }}
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="unit-summary-grid">
+        <article class="summary-card">
+            <span class="summary-card__label">Тип</span>
+            <span class="summary-card__value">
+                {% if unit.unit_type %}{{ unit.unit_type.name }}{% else %}—{% endif %}
+            </span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Уровень</span>
+            <span class="summary-card__value">
+                {% if unit.unit_type %}{{ unit.unit_type.level }}{% else %}—{% endif %}
+            </span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Сотрудники</span>
+            <span class="summary-card__value">{{ employees_count }}</span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Дочерние подразделения</span>
+            <span class="summary-card__value">{{ children_count }}</span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Основная информация</h3>
+                <p class="card__subtitle">Сведения о подразделении и его месте в иерархии</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="details-list">
+                <div class="details-list__row">
+                    <span class="details-list__label">Название</span>
+                    <span class="details-list__value">{{ unit.name }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Тип подразделения</span>
+                    <span class="details-list__value">
+                        {% if unit.unit_type %}{{ unit.unit_type.name }}{% else %}—{% endif %}
+                    </span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Уровень иерархии</span>
+                    <span class="details-list__value">
+                        {% if unit.unit_type %}{{ unit.unit_type.level }}{% else %}—{% endif %}
+                    </span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Родитель</span>
+                    <span class="details-list__value">
+                        {% if unit.parent %}{{ unit.parent.name }}{% else %}—{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Дочерние подразделения</h3>
+                <p class="card__subtitle">Непосредственно подчинённые элементы структуры</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            {% if children %}
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Тип</th>
+                                <th>Уровень</th>
+                                <th>Сотрудники</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for child in children %}
+                            <tr class="table-row-link" data-href="{% url 'units:detail' child.pk %}">
+                                <td>
+                                    <a href="{% url 'units:detail' child.pk %}" class="unit-cell__name">
+                                        {{ child.name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if child.unit_type %}
+                                        {{ child.unit_type.name }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if child.unit_type %}
+                                        {{ child.unit_type.level }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if child.people_count is not None %}
+                                        {{ child.people_count }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state__body">
+                        <h3 class="empty-state__title">Нет дочерних подразделений</h3>
+                        <p class="empty-state__text">
+                            У этого подразделения пока нет вложенных элементов структуры.
+                        </p>
+
+                        {% if can_add_child %}
+                        <div class="empty-state__actions">
+                            <a href="{% url 'units:add' %}?parent={{ unit.pk }}" class="button button--primary">
+                                Добавить дочернее подразделение
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endblock %}

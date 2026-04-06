@@ -1,0 +1,101 @@
+{% extends 'app/base_app.html' %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Подразделения" }} — DutyFlow{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/pages/units-tree.js' %}"></script>
+{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Подразделения</h2>
+            <p class="page-header__subtitle">
+                Просмотр структуры подразделений, уровней и вложенности с переходом в карточки.
+            </p>
+        </div>
+
+        {% if can_add %}
+        <div class="page-header__actions">
+            <a href="{% url 'units:add' %}" class="button button--primary">
+                Добавить подразделение
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header units-toolbar">
+            <form method="get" class="units-toolbar__search form" role="search">
+                <div class="units-search">
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ search_query|default:'' }}"
+                        placeholder="Поиск по названию подразделения"
+                        aria-label="Поиск подразделений"
+                    >
+                    <button type="submit" class="button button--sm">Найти</button>
+                    {% if search_query %}
+                    <a href="{% url 'units:list' %}" class="button button--sm">Сбросить</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="units-toolbar__meta">
+                {% if user_unit %}
+                <span class="units-counter">Ваше подразделение: {{ user_unit.name }}</span>
+                {% endif %}
+
+                <div class="units-tree-actions">
+                    <button type="button" class="button button--sm" data-tree-expand-all>
+                        Развернуть всё
+                    </button>
+                    <button type="button" class="button button--sm" data-tree-collapse-all>
+                        Свернуть всё
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card__body">
+            {% if units_tree %}
+                <div class="unit-tree" data-unit-tree>
+                    {% include 'components/units/unit_tree_node.html' with nodes=units_tree current_unit_id=user_unit.id %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state__body">
+                        <h3 class="empty-state__title">Подразделения не найдены</h3>
+                        <p class="empty-state__text">
+                            {% if search_query %}
+                                По запросу «{{ search_query }}» ничего не найдено.
+                            {% else %}
+                                Нет доступных подразделений для отображения.
+                            {% endif %}
+                        </p>
+
+                        <div class="empty-state__actions">
+                            {% if search_query %}
+                                <a href="{% url 'units:list' %}" class="button">
+                                    Сбросить поиск
+                                </a>
+                            {% endif %}
+
+                            {% if can_add %}
+                                <a href="{% url 'units:add' %}" class="button button--primary">
+                                    Добавить подразделение
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endblock %}
