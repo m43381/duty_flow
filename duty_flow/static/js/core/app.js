@@ -35,5 +35,24 @@
         });
     }
 
-    document.addEventListener("DOMContentLoaded", initSidebar);
+    function initTableRowLinks() {
+        const rows = document.querySelectorAll(".table-row-link[data-href]");
+
+        rows.forEach((row) => {
+            row.addEventListener("click", (event) => {
+                const interactiveElement = event.target.closest("a, button, input, select, textarea, label");
+                if (interactiveElement) return;
+
+                const href = row.dataset.href;
+                if (href) {
+                    window.location.href = href;
+                }
+            });
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        initSidebar();
+        initTableRowLinks();
+    });
 })();

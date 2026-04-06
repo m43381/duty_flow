@@ -1,6 +1,6 @@
 {% extends 'app/base_app.html' %}
 
-{% block title %}{{ title|default:"Сотрудник" }} — DutyFlow{% endblock %}
+{% block title %}{{ title }} — DutyFlow{% endblock %}
 
 {% block app_content %}
 <section class="page-section">
@@ -8,11 +8,7 @@
         <div class="page-header__main">
             <h2 class="page-header__title">{{ title }}</h2>
             <p class="page-header__subtitle">
-                {% if person %}
-                    Изменение данных сотрудника и его привязки к подразделению.
-                {% else %}
-                    Добавление нового сотрудника в систему.
-                {% endif %}
+                Настройка периода освобождения сотрудника от назначения в наряды.
             </p>
         </div>
     </div>
@@ -22,8 +18,10 @@
     <article class="card form-card">
         <div class="card__header">
             <div>
-                <h3 class="card__title">Данные сотрудника</h3>
-                <p class="card__subtitle">Заполните основные поля карточки сотрудника</p>
+                <h3 class="card__title">Освобождение</h3>
+                <p class="card__subtitle">
+                    Сотрудник: {{ person.last_name }} {{ person.first_name }}{% if person.middle_name %} {{ person.middle_name }}{% endif %}
+                </p>
             </div>
         </div>
 
@@ -68,18 +66,11 @@
 
                 <div class="form-actions">
                     <button type="submit" class="button button--primary">
-                        {% if person %}Сохранить изменения{% else %}Создать сотрудника{% endif %}
+                        Сохранить
                     </button>
-
-                    {% if person %}
-                        <a href="{% url 'people:person_detail' person.pk %}" class="button">
-                            Отмена
-                        </a>
-                    {% else %}
-                        <a href="{% url 'people:person_list' %}" class="button">
-                            Отмена
-                        </a>
-                    {% endif %}
+                    <a href="{% url 'people:person_detail' person.pk %}?tab=exemptions" class="button">
+                        Отмена
+                    </a>
                 </div>
             </form>
         </div>

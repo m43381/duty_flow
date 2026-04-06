@@ -1,0 +1,57 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Удаление допуска — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Удаление допуска</h2>
+            <p class="page-header__subtitle">
+                Подтвердите удаление допуска сотрудника к типу наряда.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card danger-card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Подтверждение удаления</h3>
+                <p class="card__subtitle">
+                    Сотрудник: {{ person.last_name }} {{ person.first_name }}{% if person.middle_name %} {{ person.middle_name }}{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="danger-note">
+                После удаления сотрудник потеряет право назначения на этот тип наряда.
+            </div>
+
+            <div class="details-list details-list--boxed">
+                <div class="details-list__row">
+                    <span class="details-list__label">Тип наряда</span>
+                    <span class="details-list__value">{{ clearance.duty_type.name }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Описание</span>
+                    <span class="details-list__value">{{ clearance.duty_type.description|default:"—" }}</span>
+                </div>
+            </div>
+
+            <form method="post" class="form-actions form-actions--danger">
+                {% csrf_token %}
+                <button type="submit" class="button button--danger">
+                    Удалить допуск
+                </button>
+                <a href="{% url 'people:person_detail' person.pk %}?tab=clearances" class="button">
+                    Отмена
+                </a>
+            </form>
+        </div>
+    </article>
+</section>
+{% endblock %}
