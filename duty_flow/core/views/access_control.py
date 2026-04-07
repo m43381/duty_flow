@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from access_control.forms import AccessFieldRuleForm, AccessRuleForm
 from access_control.models import AccessFieldRule, AccessRule
-from core.services.access_control_service import AccessControlService
+from core.services.access_control import AccessControlService
 
 
 def level0_required(view_func):

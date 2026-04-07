@@ -1,0 +1,19 @@
+from access_control.services import AccessManager
+
+
+def get_ruleset_for_user(user):
+    access = AccessManager(user)
+    return access.ruleset
+
+
+def seed_rules(user, resource: str):
+    access = AccessManager(user)
+
+    if resource == "user":
+        access.seed_default_user_rules()
+    elif resource == "person":
+        access.seed_default_person_rules()
+    else:
+        raise ValueError(f"Неизвестный ресурс: {resource}")
+
+    return access.ruleset
