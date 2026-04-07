@@ -63,6 +63,12 @@
                     <span class="nav-item__icon">👤</span>
                     <span class="nav-item__label">Пользователи</span>
                 </a>
+                {% if user.profile.level == 0 %}
+                <a href="{% url 'access_control:dashboard' %}" class="nav-item {% if active_tab == 'access_control' %}is-active{% endif %}">
+                    <span class="nav-item__icon">🔐</span>
+                    <span class="nav-item__label">Управление доступом</span>
+                </a>
+                {% endif %}
             </nav>
         </div>
 

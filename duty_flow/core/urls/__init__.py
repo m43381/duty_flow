@@ -9,4 +9,5 @@ urlpatterns = [
     path('units/', include(('core.urls.units', 'units'), namespace='units')),
     path('users/', include(('core.urls.users', 'users'), namespace='users')),
     path('assignments/', include(('core.urls.assignments', 'assignments'), namespace='assignment')),
+    path("access-control/", include(("core.urls.access_control", "access_control"), namespace="access_control")),
 ]

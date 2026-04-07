@@ -4,8 +4,44 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
 from users_app.forms import UserCreateForm, UserEditForm, UserChangePasswordForm
-from users_app.access_service import AccessService
 from core.services.user_service import UserService
+from access_control.services import AccessManager
+
+
+def apply_user_access_to_form(form, access_manager, action: str):
+    visible_fields = set(access_manager.visible_user_fields(action))
+    editable_fields = set(access_manager.editable_user_fields(action))
+
+    # Эти поля есть только у формы создания пользователя
+    technical_fields = {"password", "password_confirm"}
+
+    for field_name in list(form.fields.keys()):
+        # Парольные поля не фильтруем через ACL полей
+        if field_name in technical_fields:
+            continue
+
+        if field_name not in visible_fields:
+            form.fields.pop(field_name, None)
+            continue
+
+        if field_name not in editable_fields:
+            form.fields[field_name].disabled = True
+
+    # В твоей create-форме unit — это ChoiceField, не ModelChoiceField
+    # поэтому меняем choices, а не queryset
+    if "unit" in form.fields:
+        if action == "create":
+            units = access_manager.allowed_units_for_user_creation()
+        elif action == "update":
+            units = access_manager.allowed_units_for_user_update()
+        else:
+            units = None
+
+        if units is not None:
+            form.fields["unit"].choices = [
+                (unit.id, f"{unit.name} ({unit.unit_type.name})")
+                for unit in units
+            ]
 
 
 @login_required
@@ -14,56 +50,43 @@ def user_list(request):
     users = UserService.get_visible_users(request.user)
 
     search_query = request.GET.get("q", "").strip()
-    if search_query:
-        users = UserService.search_users(users, search_query)
-
+    users = UserService.search_users(users, search_query)
     users = UserService.enrich_users_with_permissions(users, request.user)
-    can_add = UserService.can_create_user(request.user)
 
-    return render(request, "app/users/list.html", {
+    context = {
         "users": users,
-        "can_add": can_add,
         "search_query": search_query,
+        "can_add": UserService.can_create_user(request.user),
         "active_tab": "users",
         "page_title": "Пользователи",
-        "page_subtitle": "Список учетных записей",
-    })
+        "page_subtitle": "Список пользователей",
+    }
+    return render(request, "app/users/list.html", context)
 
 
 @login_required
-def user_create(request):
+def user_add(request):
     """Создание пользователя"""
-    available_units = UserService.get_available_units_for_creation(request.user)
+    access = AccessManager(request.user)
 
-    if not available_units:
+    if not access.can_user("create"):
         messages.error(request, "У вас нет прав на создание пользователей")
         return redirect("users:list")
 
     if request.method == "POST":
         form = UserCreateForm(request.POST, user=request.user)
+        apply_user_access_to_form(form, access, "create")
+
         if form.is_valid():
-            try:
-                user_obj = UserService.create_user(form.cleaned_data, request.user)
-                messages.success(request, f'Пользователь "{user_obj.username}" создан')
-                return redirect("users:detail", pk=user_obj.pk)
-            except Exception as e:
-                messages.error(request, f"Ошибка: {str(e)}")
+            user_obj = UserService.create_user(form.cleaned_data, request.user)
+            messages.success(request, f'Пользователь "{user_obj.username}" создан')
+            return redirect("users:detail", pk=user_obj.pk)
     else:
         form = UserCreateForm(user=request.user)
-
-        unit_id = request.GET.get("unit")
-        if unit_id and available_units:
-            try:
-                from units.models import Unit
-                unit = Unit.objects.get(pk=unit_id)
-                if unit in available_units:
-                    form.initial["unit"] = unit.id
-            except Exception:
-                pass
+        apply_user_access_to_form(form, access, "create")
 
     return render(request, "app/users/form.html", {
         "form": form,
-        "user_obj": None,
         "active_tab": "users",
         "page_title": "Пользователи",
         "page_subtitle": "Создание пользователя",
@@ -73,52 +96,54 @@ def user_create(request):
 
 @login_required
 def user_detail(request, pk):
-    try:
-        user_obj = UserService.get_user_with_profile(pk)
-    except User.DoesNotExist:
-        messages.error(request, "Пользователь не найден")
+    """Просмотр пользователя"""
+    user_obj = get_object_or_404(
+        User.objects.select_related("profile", "profile__unit", "profile__unit__unit_type"),
+        pk=pk
+    )
+    access = AccessManager(request.user)
+
+    if not access.can_user("view", user_obj):
+        messages.error(request, "У вас нет прав на просмотр этого пользователя")
         return redirect("users:list")
-
-    access = AccessService(request.user)
-
-    if not access.can_view_unit(user_obj.profile.unit):
-        messages.error(request, "У вас нет доступа к этому пользователю")
-        return redirect("users:list")
-
-    can_edit = access.can_edit_user(user_obj)
-    can_delete = access.can_delete_user(user_obj)
-    can_change_password = access.can_change_password(user_obj)
 
     return render(request, "app/users/detail.html", {
         "user_obj": user_obj,
-        "can_edit": can_edit,
-        "can_delete": can_delete,
-        "can_change_password": can_change_password,
+        "can_edit": access.can_user("update", user_obj),
+        "can_delete": access.can_user("delete", user_obj),
+        "can_change_password": access.can_user("change_password", user_obj),
+        "visible_fields": access.visible_user_fields("view"),
         "active_tab": "users",
         "page_title": "Пользователи",
         "page_subtitle": "Карточка пользователя",
-        "title": f'Пользователь: {user_obj.get_full_name() or user_obj.username}',
+        "title": user_obj.get_full_name() or user_obj.username,
     })
 
 
 @login_required
 def user_edit(request, pk):
     """Редактирование пользователя"""
-    user_obj = get_object_or_404(User, pk=pk)
-    access = AccessService(request.user)
+    user_obj = get_object_or_404(
+        User.objects.select_related("profile", "profile__unit", "profile__unit__unit_type"),
+        pk=pk
+    )
+    access = AccessManager(request.user)
 
-    if not access.can_edit_user(user_obj):
+    if not access.can_user("update", user_obj):
         messages.error(request, "У вас нет прав на редактирование этого пользователя")
         return redirect("users:list")
 
     if request.method == "POST":
         form = UserEditForm(request.POST, instance=user_obj, user=request.user)
+        apply_user_access_to_form(form, access, "update")
+
         if form.is_valid():
             UserService.update_user(user_obj, form.cleaned_data)
             messages.success(request, f'Пользователь "{user_obj.username}" обновлен')
             return redirect("users:detail", pk=user_obj.pk)
     else:
         form = UserEditForm(instance=user_obj, user=request.user)
+        apply_user_access_to_form(form, access, "update")
 
     return render(request, "app/users/form.html", {
         "form": form,
@@ -134,9 +159,9 @@ def user_edit(request, pk):
 def user_delete(request, pk):
     """Удаление пользователя"""
     user_obj = get_object_or_404(User, pk=pk)
-    access = AccessService(request.user)
+    access = AccessManager(request.user)
 
-    if not access.can_delete_user(user_obj):
+    if not access.can_user("delete", user_obj):
         messages.error(request, "У вас нет прав на удаление этого пользователя")
         return redirect("users:list")
 
@@ -159,9 +184,9 @@ def user_delete(request, pk):
 def user_change_password(request, pk):
     """Смена пароля пользователя"""
     user_obj = get_object_or_404(User, pk=pk)
-    access = AccessService(request.user)
+    access = AccessManager(request.user)
 
-    if not access.can_change_password(user_obj):
+    if not access.can_user("change_password", user_obj):
         messages.error(request, "У вас нет прав на смену пароля этого пользователя")
         return redirect("users:list")
 

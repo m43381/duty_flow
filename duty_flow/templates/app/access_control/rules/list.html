@@ -1,0 +1,62 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Правила доступа — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Правила доступа</h2>
+            <p class="page-header__subtitle">
+                Активный набор: {{ ruleset.name }}
+            </p>
+        </div>
+        <div class="page-header__actions">
+            <a href="{% url 'access_control:dashboard' %}" class="button">Назад</a>
+            <a href="{% url 'access_control:rule_add' %}" class="button button--primary">Добавить правило</a>
+            <a href="{% url 'access_control:field_rules' %}" class="button">Правила полей</a>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__body">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Действие</th>
+                            <th>Уровень</th>
+                            <th>Scope</th>
+                            <th>Разрешено</th>
+                            <th>Активно</th>
+                            <th>Комментарий</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ item.get_action_display }}</td>
+                            <td>{{ item.subject_level }}</td>
+                            <td>{{ item.get_scope_display }}</td>
+                            <td>{% if item.is_allowed %}Да{% else %}Нет{% endif %}</td>
+                            <td>{% if item.is_active %}Да{% else %}Нет{% endif %}</td>
+                            <td>{{ item.note|default:"—" }}</td>
+                            <td>
+                                <a href="{% url 'access_control:rule_edit' item.pk %}" class="button button--sm">Изменить</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="table__empty">Правила пока не созданы</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock %}

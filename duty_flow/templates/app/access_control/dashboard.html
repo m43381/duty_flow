@@ -1,0 +1,100 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Управление доступом — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Права пользователей</h2>
+            <p class="page-header__subtitle">
+                Управление доступом для ресурса «Пользователи». Активный набор: {{ ruleset.name }}
+            </p>
+        </div>
+        <div class="page-header__actions">
+            <form method="post" action="{% url 'access_control:seed_user_rules' %}">
+                {% csrf_token %}
+                <button type="submit" class="button button--primary">
+                    Заполнить стартовые правила
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="stats-strip">
+        <article class="metric-card">
+            <span class="metric-card__label">Правил доступа</span>
+            <span class="metric-card__value">{{ rules_count }}</span>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-card__label">Правил полей</span>
+            <span class="metric-card__value">{{ field_rules_count }}</span>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-card__label">Активный набор</span>
+            <span class="metric-card__value">{{ ruleset.code }}</span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="dashboard-layout">
+        <div class="dashboard-layout__main">
+            <article class="card">
+                <div class="card__header">
+                    <div>
+                        <h3 class="card__title">С чего начать</h3>
+                        <p class="card__subtitle">Быстрый сценарий настройки</p>
+                    </div>
+                </div>
+
+                <div class="card__body">
+                    <div class="details-list">
+                        <div class="details-list__row">
+                            <span class="details-list__label">1</span>
+                            <span class="details-list__value">Нажмите «Заполнить стартовые правила»</span>
+                        </div>
+                        <div class="details-list__row">
+                            <span class="details-list__label">2</span>
+                            <span class="details-list__value">Проверьте раздел «Правила доступа»</span>
+                        </div>
+                        <div class="details-list__row">
+                            <span class="details-list__label">3</span>
+                            <span class="details-list__value">Проверьте раздел «Правила полей»</span>
+                        </div>
+                        <div class="details-list__row">
+                            <span class="details-list__label">4</span>
+                            <span class="details-list__value">Откройте раздел пользователей и проверьте создание/редактирование</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <aside class="dashboard-layout__side">
+            <article class="card">
+                <div class="card__header">
+                    <h3 class="card__title">Разделы</h3>
+                </div>
+                <div class="card__body">
+                    <nav class="dashboard-nav-list">
+                        <a href="{% url 'access_control:rules' %}" class="dashboard-nav-list__item">
+                            Правила доступа
+                        </a>
+                        <a href="{% url 'access_control:field_rules' %}" class="dashboard-nav-list__item">
+                            Правила полей
+                        </a>
+                        <a href="{% url 'users:list' %}" class="dashboard-nav-list__item">
+                            Проверить пользователей
+                        </a>
+                    </nav>
+                </div>
+            </article>
+        </aside>
+    </div>
+</section>
+{% endblock %}
