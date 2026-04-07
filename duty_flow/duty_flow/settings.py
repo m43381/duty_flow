@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'people',
     'duty_plans',
     'users_app',
+    'access_control',
 ]
 
 MIDDLEWARE = [
