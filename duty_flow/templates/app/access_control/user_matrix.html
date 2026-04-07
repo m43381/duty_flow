@@ -1,0 +1,148 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Матрица прав пользователей — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Матрица прав пользователей</h2>
+            <p class="page-header__subtitle">
+                Активный набор: {{ ruleset.name }}. Настройка прав для уровня {{ level }}.
+            </p>
+        </div>
+        <div class="page-header__actions">
+            <a href="{% url 'access_control:dashboard' %}" class="button">Назад</a>
+            <a href="{% url 'access_control:rules' %}" class="button">Все правила</a>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__body">
+            <form method="get" class="form">
+                <div class="form-layout" style="grid-template-columns: 240px auto;">
+                    <div class="form-field">
+                        <label class="form-field__label" for="id_level">Уровень</label>
+                        <select name="level" id="id_level">
+                            {% for item in available_levels %}
+                                <option value="{{ item }}" {% if item == level %}selected{% endif %}>{{ item }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="button button--primary">Показать</button>
+                </div>
+            </form>
+        </div>
+    </article>
+</section>
+
+<section class="page-section">
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="level" value="{{ level }}">
+
+        <article class="card">
+            <div class="card__header">
+                <div>
+                    <h3 class="card__title">Действия</h3>
+                    <p class="card__subtitle">Разрешение действий и scope записей</p>
+                </div>
+            </div>
+            <div class="card__body">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Действие</th>
+                                <th>Разрешено</th>
+                                <th>Scope</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in action_rows %}
+                            <tr>
+                                <td>{{ row.label }}</td>
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        name="action__{{ row.action }}__allowed"
+                                        {% if row.allowed %}checked{% endif %}
+                                    >
+                                </td>
+                                <td>
+                                    <select name="action__{{ row.action }}__scope" >
+                                        {% for scope_value, scope_label in scopes %}
+                                            <option value="{{ scope_value }}" {% if row.scope == scope_value %}selected{% endif %}>
+                                                {{ scope_label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </article>
+
+        <section class="page-section">
+            <article class="card">
+                <div class="card__header">
+                    <div>
+                        <h3 class="card__title">Поля</h3>
+                        <p class="card__subtitle">Видимость и редактирование полей по действиям</p>
+                    </div>
+                </div>
+                <div class="card__body">
+                    {% for block in field_rows %}
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="margin-bottom: 1rem;">{{ block.action_label }}</h4>
+                            <div class="table-wrap">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Поле</th>
+                                            <th>Видно</th>
+                                            <th>Редактируется</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for field in block.fields %}
+                                        <tr>
+                                            <td>{{ field.field_label }}</td>
+                                            <td>
+                                                <input
+                                                    type="checkbox"
+                                                    name="field__{{ block.action }}__{{ field.field_name }}__view"
+                                                    {% if field.can_view %}checked{% endif %}
+                                                >
+                                            </td>
+                                            <td>
+                                                <input
+                                                    type="checkbox"
+                                                    name="field__{{ block.action }}__{{ field.field_name }}__edit"
+                                                    {% if field.can_edit %}checked{% endif %}
+                                                >
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </article>
+        </section>
+
+        <div class="form-actions">
+            <button type="submit" class="button button--primary">Сохранить матрицу</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

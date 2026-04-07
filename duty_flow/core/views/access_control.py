@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from access_control.forms import AccessFieldRuleForm, AccessRuleForm
 from access_control.models import AccessFieldRule, AccessRule
-from access_control.services import AccessManager
+from core.services.access_control_service import AccessControlService
 
 
 def level0_required(view_func):
@@ -20,12 +20,12 @@ def level0_required(view_func):
 
 @level0_required
 def access_dashboard(request):
-    access = AccessManager(request.user)
-    rules_count = AccessRule.objects.filter(ruleset=access.ruleset, resource="user").count()
-    field_rules_count = AccessFieldRule.objects.filter(ruleset=access.ruleset, resource="user").count()
+    ruleset = AccessControlService.get_ruleset_for_user(request.user)
+    rules_count = AccessRule.objects.filter(ruleset=ruleset, resource="user").count()
+    field_rules_count = AccessFieldRule.objects.filter(ruleset=ruleset, resource="user").count()
 
     return render(request, "app/access_control/dashboard.html", {
-        "ruleset": access.ruleset,
+        "ruleset": ruleset,
         "rules_count": rules_count,
         "field_rules_count": field_rules_count,
         "active_tab": "access_control",
@@ -38,25 +38,51 @@ def access_dashboard(request):
 @level0_required
 def seed_user_rules(request):
     if request.method == "POST":
-        access = AccessManager(request.user)
-        access.seed_default_user_rules()
+        AccessControlService.seed_user_rules(request.user)
         messages.success(request, "Стартовые правила для пользователей заполнены")
-        return redirect("access_control:dashboard")
-
     return redirect("access_control:dashboard")
 
 
 @level0_required
+def user_access_matrix(request):
+    try:
+        level = int(request.GET.get("level", 0))
+    except (TypeError, ValueError):
+        level = 0
+
+    if request.method == "POST":
+        try:
+            level = int(request.POST.get("level", 0))
+        except (TypeError, ValueError):
+            level = 0
+
+        AccessControlService.save_user_access_matrix(request.user, level, request.POST)
+        messages.success(request, f"Права для уровня {level} сохранены")
+        return redirect(f"{request.path}?level={level}")
+
+    matrix = AccessControlService.build_user_access_matrix(request.user, level)
+
+    return render(request, "app/access_control/user_matrix.html", {
+        **matrix,
+        "available_levels": [0, 1, 2, 3, 4, 5],
+        "active_tab": "access_control",
+        "page_title": "Управление доступом",
+        "page_subtitle": f"Матрица прав пользователей для уровня {level}",
+        "title": "Матрица прав пользователей",
+    })
+
+
+@level0_required
 def rule_list(request):
-    access = AccessManager(request.user)
+    ruleset = AccessControlService.get_ruleset_for_user(request.user)
     items = AccessRule.objects.filter(
-        ruleset=access.ruleset,
+        ruleset=ruleset,
         resource="user",
     ).order_by("subject_level", "action", "priority", "id")
 
     return render(request, "app/access_control/rules/list.html", {
         "items": items,
-        "ruleset": access.ruleset,
+        "ruleset": ruleset,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
         "page_subtitle": "Правила доступа пользователей",
@@ -109,15 +135,15 @@ def rule_edit(request, pk):
 
 @level0_required
 def field_rule_list(request):
-    access = AccessManager(request.user)
+    ruleset = AccessControlService.get_ruleset_for_user(request.user)
     items = AccessFieldRule.objects.filter(
-        ruleset=access.ruleset,
+        ruleset=ruleset,
         resource="user",
     ).order_by("subject_level", "action", "field_name", "priority", "id")
 
     return render(request, "app/access_control/field_rules/list.html", {
         "items": items,
-        "ruleset": access.ruleset,
+        "ruleset": ruleset,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
         "page_subtitle": "Правила полей пользователей",

@@ -47,30 +47,23 @@
             <article class="card">
                 <div class="card__header">
                     <div>
-                        <h3 class="card__title">С чего начать</h3>
-                        <p class="card__subtitle">Быстрый сценарий настройки</p>
+                        <h3 class="card__title">Быстрая настройка</h3>
+                        <p class="card__subtitle">Работайте через матрицу, а не через десятки отдельных правил</p>
                     </div>
                 </div>
 
                 <div class="card__body">
-                    <div class="details-list">
-                        <div class="details-list__row">
-                            <span class="details-list__label">1</span>
-                            <span class="details-list__value">Нажмите «Заполнить стартовые правила»</span>
-                        </div>
-                        <div class="details-list__row">
-                            <span class="details-list__label">2</span>
-                            <span class="details-list__value">Проверьте раздел «Правила доступа»</span>
-                        </div>
-                        <div class="details-list__row">
-                            <span class="details-list__label">3</span>
-                            <span class="details-list__value">Проверьте раздел «Правила полей»</span>
-                        </div>
-                        <div class="details-list__row">
-                            <span class="details-list__label">4</span>
-                            <span class="details-list__value">Откройте раздел пользователей и проверьте создание/редактирование</span>
-                        </div>
-                    </div>
+                    <nav class="dashboard-nav-list">
+                        <a href="{% url 'access_control:user_matrix' %}?level=0" class="dashboard-nav-list__item">
+                            Матрица прав уровня 0
+                        </a>
+                        <a href="{% url 'access_control:user_matrix' %}?level=1" class="dashboard-nav-list__item">
+                            Матрица прав уровня 1
+                        </a>
+                        <a href="{% url 'access_control:user_matrix' %}?level=2" class="dashboard-nav-list__item">
+                            Матрица прав уровня 2
+                        </a>
+                    </nav>
                 </div>
             </article>
         </div>
@@ -78,15 +71,15 @@
         <aside class="dashboard-layout__side">
             <article class="card">
                 <div class="card__header">
-                    <h3 class="card__title">Разделы</h3>
+                    <h3 class="card__title">Дополнительно</h3>
                 </div>
                 <div class="card__body">
                     <nav class="dashboard-nav-list">
                         <a href="{% url 'access_control:rules' %}" class="dashboard-nav-list__item">
-                            Правила доступа
+                            Все правила доступа
                         </a>
                         <a href="{% url 'access_control:field_rules' %}" class="dashboard-nav-list__item">
-                            Правила полей
+                            Все правила полей
                         </a>
                         <a href="{% url 'users:list' %}" class="dashboard-nav-list__item">
                             Проверить пользователей

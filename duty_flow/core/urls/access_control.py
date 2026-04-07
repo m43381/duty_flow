@@ -9,6 +9,7 @@ from core.views.access_control import (
     rule_edit,
     rule_list,
     seed_user_rules,
+    user_access_matrix,
 )
 
 app_name = "access_control"
@@ -16,6 +17,7 @@ app_name = "access_control"
 urlpatterns = [
     path("", access_dashboard, name="dashboard"),
     path("seed-user-rules/", seed_user_rules, name="seed_user_rules"),
+    path("user-matrix/", user_access_matrix, name="user_matrix"),
 
     path("rules/", rule_list, name="rules"),
     path("rules/add/", rule_add, name="rule_add"),
