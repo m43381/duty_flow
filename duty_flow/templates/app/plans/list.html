@@ -1,0 +1,109 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ page_title|default:"Планы нарядов" }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Планы нарядов</h2>
+            <p class="page-header__subtitle">
+                Месячные расписания подразделения и переход к таблице нарядов по дням.
+            </p>
+        </div>
+
+        {% if can_add %}
+        <div class="page-header__actions">
+            <a href="{% url 'plan:add' %}" class="button button--primary">
+                Создать расписание
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header plans-toolbar">
+            <form method="get" class="plans-toolbar__search form" role="search">
+                <div class="plans-search">
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ search_query|default:'' }}"
+                        placeholder="Поиск по названию расписания"
+                        aria-label="Поиск расписаний"
+                    >
+                    <button type="submit" class="button button--sm">Найти</button>
+                    {% if search_query %}
+                    <a href="{% url 'plan:list' %}" class="button button--sm">Сбросить</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="plans-toolbar__meta">
+                <span class="plans-counter">Всего: {{ schedules|length }}</span>
+            </div>
+        </div>
+
+        <div class="card__body">
+            {% if schedules %}
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Расписание</th>
+                                <th>Месяц</th>
+                                <th>Статус</th>
+                                <th>Подразделение</th>
+                                <th>Записей</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in schedules %}
+                            <tr class="table-row-link" data-href="{% url 'plan:detail' item.pk %}">
+                                <td>
+                                    <div class="plan-cell">
+                                        <a href="{% url 'plan:detail' item.pk %}" class="plan-cell__name">
+                                            {{ item.name|default:item }}
+                                        </a>
+                                        <div class="plan-cell__meta">
+                                            Создано: {{ item.created_at|date:"d.m.Y H:i" }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ item.month|date:"F Y" }}</td>
+                                <td><span class="badge">{{ item.get_status_display }}</span></td>
+                                <td>{{ item.unit.name }}</td>
+                                <td>{{ item.days.count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state__body">
+                        <h3 class="empty-state__title">Расписания не найдены</h3>
+                        <p class="empty-state__text">
+                            {% if search_query %}
+                                По запросу «{{ search_query }}» ничего не найдено.
+                            {% else %}
+                                Для подразделения пока нет расписаний.
+                            {% endif %}
+                        </p>
+                        <div class="empty-state__actions">
+                            {% if search_query %}
+                                <a href="{% url 'plan:list' %}" class="button">Сбросить поиск</a>
+                            {% endif %}
+                            {% if can_add %}
+                                <a href="{% url 'plan:add' %}" class="button button--primary">Создать расписание</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endblock %}

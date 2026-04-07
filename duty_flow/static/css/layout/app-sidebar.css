@@ -1,0 +1,193 @@
+.app-sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+}
+
+.app-sidebar__inner {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-4);
+    gap: var(--space-5);
+}
+
+.app-sidebar__header {
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border-muted);
+}
+
+.app-sidebar__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 2.75rem;
+}
+
+.app-sidebar__brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
+    color: var(--color-primary-contrast);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.app-sidebar__brand-texts {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-sidebar__brand-title {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.2;
+}
+
+.app-sidebar__brand-subtitle {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    line-height: 1.2;
+}
+
+.app-sidebar__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.app-sidebar__section-title {
+    padding: 0 var(--space-3);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-subtle);
+}
+
+.app-sidebar__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 2.5rem;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    transition:
+        background var(--transition-base),
+        color var(--transition-base),
+        border-color var(--transition-base);
+}
+
+.nav-item:hover {
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+}
+
+.nav-item.is-active {
+    background: var(--color-bg-subtle);
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.nav-item__icon {
+    width: 1.125rem;
+    min-width: 1.125rem;
+    text-align: center;
+    opacity: 0.9;
+}
+
+.nav-item__label {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-sidebar__footer {
+    margin-top: auto;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border-muted);
+}
+
+.app-sidebar__unit-card {
+    padding: var(--space-3);
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.app-sidebar__unit-label {
+    margin-bottom: var(--space-1);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.app-sidebar__unit-name {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    word-break: break-word;
+}
+
+.app-sidebar__unit-meta {
+    margin-top: var(--space-1);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-subtle);
+}
+
+.app-sidebar-backdrop {
+    display: none;
+}
+
+@media (max-width: 1024px) {
+    .app-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 50;
+        width: min(280px, 86vw);
+        transform: translateX(-100%);
+        transition: transform var(--transition-base);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .app-sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    .app-sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        background: var(--color-overlay);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity var(--transition-base), visibility var(--transition-base);
+        display: block;
+    }
+
+    .app-sidebar-backdrop.is-visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    body.is-sidebar-open {
+        overflow: hidden;
+    }
+}

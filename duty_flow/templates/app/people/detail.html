@@ -1,0 +1,296 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ person.last_name }} {{ person.first_name }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <div class="person-hero">
+                <div class="person-hero__main">
+                    <h2 class="page-header__title">
+                        {{ person.last_name }} {{ person.first_name }}{% if person.middle_name %} {{ person.middle_name }}{% endif %}
+                    </h2>
+
+                    <div class="person-hero__meta">
+                        {% if person.rank %}
+                            <span class="badge">{{ person.rank.name }}</span>
+                        {% endif %}
+
+                        {% if person.unit %}
+                            <span class="person-hero__unit">{{ person.unit.name }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-header__actions">
+            <a href="{% url 'people:person_list' %}" class="button">
+                Назад к списку
+            </a>
+
+            {% if can_edit %}
+                <a href="{% url 'people:person_edit' person.pk %}" class="button">
+                    Изменить
+                </a>
+            {% endif %}
+
+            {% if can_edit %}
+                <a href="{% url 'people:person_delete' person.pk %}" class="button button--danger">
+                    Удалить
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="person-summary-grid">
+        <article class="summary-card">
+            <span class="summary-card__label">Подразделение</span>
+            <span class="summary-card__value">
+                {% if person.unit %}{{ person.unit.name }}{% else %}—{% endif %}
+            </span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Тип подразделения</span>
+            <span class="summary-card__value">
+                {% if person.unit and person.unit.unit_type %}{{ person.unit.unit_type.name }}{% else %}—{% endif %}
+            </span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Освобождения</span>
+            <span class="summary-card__value">{{ exemptions|length }}</span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Допуски</span>
+            <span class="summary-card__value">{{ clearances|length }}</span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__body">
+            <nav class="tabs" aria-label="Разделы карточки сотрудника">
+                <a href="?tab=info" class="tabs__item {% if tab == 'info' or not tab %}is-active{% endif %}">
+                    Основная информация
+                </a>
+                <a href="?tab=exemptions" class="tabs__item {% if tab == 'exemptions' %}is-active{% endif %}">
+                    Освобождения
+                </a>
+                <a href="?tab=clearances" class="tabs__item {% if tab == 'clearances' %}is-active{% endif %}">
+                    Допуски
+                </a>
+            </nav>
+        </div>
+    </article>
+</section>
+
+<section class="page-section">
+    {% if tab == 'exemptions' %}
+        <article class="card">
+            <div class="card__header">
+                <div>
+                    <h3 class="card__title">Освобождения</h3>
+                    <p class="card__subtitle">Периоды, когда сотрудник недоступен для назначения</p>
+                </div>
+
+                {% if can_edit %}
+                    <a href="{% url 'people:exemption_add' person.pk %}" class="button button--primary button--sm">
+                        Добавить освобождение
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="card__body">
+                {% if exemptions %}
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Причина</th>
+                                    <th>Дата начала</th>
+                                    <th>Дата окончания</th>
+                                    <th>Комментарий</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exemption in exemptions %}
+                                <tr>
+                                    <td>
+                                        <span class="badge badge--warning">
+                                            {{ exemption.get_reason_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ exemption.date_from|date:"d.m.Y" }}</td>
+                                    <td>{{ exemption.date_to|date:"d.m.Y" }}</td>
+                                    <td>{{ exemption.comment|default:"—" }}</td>
+                                    <td>
+                                        <div class="row-actions">
+                                            {% if can_edit %}
+                                                <a href="{% url 'people:exemption_edit' person.pk exemption.pk %}" class="button button--sm">
+                                                    Изменить
+                                                </a>
+                                                <a href="{% url 'people:exemption_delete' person.pk exemption.pk %}" class="button button--sm button--danger">
+                                                    Удалить
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state__body">
+                            <h3 class="empty-state__title">Освобождений нет</h3>
+                            <p class="empty-state__text">
+                                Для этого сотрудника пока не зарегистрированы периоды освобождения.
+                            </p>
+
+                            {% if can_edit %}
+                            <div class="empty-state__actions">
+                                <a href="{% url 'people:exemption_add' person.pk %}" class="button button--primary">
+                                    Добавить освобождение
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </article>
+
+    {% elif tab == 'clearances' %}
+        <article class="card">
+            <div class="card__header">
+                <div>
+                    <h3 class="card__title">Допуски</h3>
+                    <p class="card__subtitle">Типы нарядов, к которым сотрудник может быть допущен</p>
+                </div>
+
+                {% if can_edit %}
+                    <a href="{% url 'people:clearance_add' person.pk %}" class="button button--primary button--sm">
+                        Добавить допуск
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="card__body">
+                {% if clearances %}
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Тип наряда</th>
+                                    <th>Описание</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for clearance in clearances %}
+                                <tr>
+                                    <td>{{ clearance.duty_type.name }}</td>
+                                    <td>{{ clearance.duty_type.description|default:"—" }}</td>
+                                    <td>
+                                        <div class="row-actions">
+                                            {% if can_edit %}
+                                                <a href="{% url 'people:clearance_delete' person.pk clearance.pk %}" class="button button--sm button--danger">
+                                                    Удалить
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state__body">
+                            <h3 class="empty-state__title">Допусков нет</h3>
+                            <p class="empty-state__text">
+                                Для этого сотрудника пока не назначены допуски к типам нарядов.
+                            </p>
+
+                            {% if can_edit %}
+                            <div class="empty-state__actions">
+                                <a href="{% url 'people:clearance_add' person.pk %}" class="button button--primary">
+                                    Добавить допуск
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </article>
+
+    {% else %}
+        <article class="card">
+            <div class="card__header">
+                <div>
+                    <h3 class="card__title">Основная информация</h3>
+                    <p class="card__subtitle">Ключевые сведения о сотруднике</p>
+                </div>
+            </div>
+
+            <div class="card__body">
+                <div class="details-list">
+                    <div class="details-list__row">
+                        <span class="details-list__label">Фамилия</span>
+                        <span class="details-list__value">{{ person.last_name }}</span>
+                    </div>
+
+                    <div class="details-list__row">
+                        <span class="details-list__label">Имя</span>
+                        <span class="details-list__value">{{ person.first_name }}</span>
+                    </div>
+
+                    <div class="details-list__row">
+                        <span class="details-list__label">Отчество</span>
+                        <span class="details-list__value">{{ person.middle_name|default:"—" }}</span>
+                    </div>
+
+                    <div class="details-list__row">
+                        <span class="details-list__label">Звание</span>
+                        <span class="details-list__value">
+                            {% if person.rank %}{{ person.rank.name }}{% else %}—{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="details-list__row">
+                        <span class="details-list__label">Подразделение</span>
+                        <span class="details-list__value">
+                            {% if person.unit %}{{ person.unit.name }}{% else %}—{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="details-list__row">
+                        <span class="details-list__label">Тип подразделения</span>
+                        <span class="details-list__value">
+                            {% if person.unit and person.unit.unit_type %}{{ person.unit.unit_type.name }}{% else %}—{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="details-list__row">
+                        <span class="details-list__label">Уровень иерархии</span>
+                        <span class="details-list__value">
+                            {% if person.unit and person.unit.unit_type %}{{ person.unit.unit_type.level }}{% else %}—{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </article>
+    {% endif %}
+</section>
+{% endblock %}

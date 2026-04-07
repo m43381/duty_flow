@@ -1,0 +1,147 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ page_title|default:"Сотрудники" }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Сотрудники</h2>
+            <p class="page-header__subtitle">
+                Просмотр личного состава и переход в карточки сотрудников.
+            </p>
+        </div>
+
+        {% if can_add %}
+        <div class="page-header__actions">
+            <a href="{% url 'people:person_add' %}" class="button button--primary">
+                Добавить сотрудника
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header people-toolbar">
+            <form method="get" class="people-toolbar__search form" role="search">
+                <div class="people-search">
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ search_query|default:'' }}"
+                        placeholder="Поиск по фамилии, имени, званию или подразделению"
+                        aria-label="Поиск сотрудников"
+                    >
+                    <button type="submit" class="button button--sm">Найти</button>
+                    {% if search_query %}
+                    <a href="{% url 'people:person_list' %}" class="button button--sm">Сбросить</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="people-toolbar__meta">
+                <span class="people-counter">Всего: {{ people|length }}</span>
+            </div>
+        </div>
+
+        <div class="card__body">
+            {% if people %}
+                <div class="table-wrap">
+                    <table class="table people-table">
+                        <thead>
+                            <tr>
+                                <th>Сотрудник</th>
+                                <th>Звание</th>
+                                <th>Подразделение</th>
+                                <th>Допуски</th>
+                                <th>Освобождения</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for person in people %}
+                            <tr class="table-row-link" data-href="{% url 'people:person_detail' person.pk %}">
+                                <td>
+                                    <div class="person-cell">
+                                        <a href="{% url 'people:person_detail' person.pk %}" class="person-cell__name">
+                                            {{ person.last_name }} {{ person.first_name }}{% if person.middle_name %} {{ person.middle_name }}{% endif %}
+                                        </a>
+                                        <div class="person-cell__meta">
+                                            ID: {{ person.pk }}
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    {% if person.rank %}
+                                        {{ person.rank.name }}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if person.unit %}
+                                        {{ person.unit.name }}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% with clearance_count=person.clearances.count %}
+                                        {% if clearance_count %}
+                                            <span class="badge badge--success">{{ clearance_count }}</span>
+                                        {% else %}
+                                            <span class="badge">0</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+
+                                <td>
+                                    {% with exemption_count=person.exemptions.count %}
+                                        {% if exemption_count %}
+                                            <span class="badge badge--warning">{{ exemption_count }}</span>
+                                        {% else %}
+                                            <span class="badge">0</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state__body">
+                        <h3 class="empty-state__title">Сотрудники не найдены</h3>
+                        <p class="empty-state__text">
+                            {% if search_query %}
+                                По запросу «{{ search_query }}» ничего не найдено.
+                            {% else %}
+                                В этом разделе пока нет сотрудников для отображения.
+                            {% endif %}
+                        </p>
+
+                        <div class="empty-state__actions">
+                            {% if search_query %}
+                                <a href="{% url 'people:person_list' %}" class="button">
+                                    Сбросить поиск
+                                </a>
+                            {% endif %}
+
+                            {% if can_add %}
+                                <a href="{% url 'people:person_add' %}" class="button button--primary">
+                                    Добавить сотрудника
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endblock %}

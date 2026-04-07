@@ -1,0 +1,25 @@
+.page-container {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+.page-section + .page-section {
+    margin-top: var(--space-6);
+}
+
+.text-muted {
+    color: var(--color-text-muted);
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}

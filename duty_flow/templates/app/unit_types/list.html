@@ -1,0 +1,124 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ page_title|default:"Типы подразделений" }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Типы подразделений</h2>
+            <p class="page-header__subtitle">
+                Справочник типов подразделений, уровней иерархии и базовых правил структуры.
+            </p>
+        </div>
+
+        {% if can_add %}
+        <div class="page-header__actions">
+            <a href="{% url 'unit_type:add' %}" class="button button--primary">
+                Добавить тип
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header unit-types-toolbar">
+            <form method="get" class="unit-types-toolbar__search form" role="search">
+                <div class="unit-types-search">
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ search_query|default:'' }}"
+                        placeholder="Поиск по названию типа"
+                        aria-label="Поиск типов подразделений"
+                    >
+                    <button type="submit" class="button button--sm">Найти</button>
+                    {% if search_query %}
+                    <a href="{% url 'unit_type:list' %}" class="button button--sm">Сбросить</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="unit-types-toolbar__meta">
+                <span class="unit-types-counter">Всего: {{ unit_types|length }}</span>
+            </div>
+        </div>
+
+        <div class="card__body">
+            {% if unit_types %}
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Слаг</th>
+                                <th>Уровень</th>
+                                <th>Дочерние подразделения</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in unit_types %}
+                            <tr class="table-row-link" data-href="{% url 'unit_type:detail' item.pk %}">
+                                <td>
+                                    <div class="type-cell">
+                                        <a href="{% url 'unit_type:detail' item.pk %}" class="type-cell__name">
+                                            {{ item.name }}
+                                        </a>
+                                        <div class="type-cell__meta">
+                                            Иерархический тип подразделения
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <code class="inline-code">{{ item.slug }}</code>
+                                </td>
+
+                                <td>
+                                    <span class="badge">ур. {{ item.level }}</span>
+                                </td>
+
+                                <td>
+                                    {% if item.can_have_children %}
+                                        <span class="badge badge--success">Разрешены</span>
+                                    {% else %}
+                                        <span class="badge badge--danger">Запрещены</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state__body">
+                        <h3 class="empty-state__title">Типы подразделений не найдены</h3>
+                        <p class="empty-state__text">
+                            {% if search_query %}
+                                По запросу «{{ search_query }}» ничего не найдено.
+                            {% else %}
+                                В справочнике пока нет типов подразделений.
+                            {% endif %}
+                        </p>
+
+                        <div class="empty-state__actions">
+                            {% if search_query %}
+                                <a href="{% url 'unit_type:list' %}" class="button">Сбросить поиск</a>
+                            {% endif %}
+
+                            {% if can_add %}
+                                <a href="{% url 'unit_type:add' %}" class="button button--primary">
+                                    Добавить тип
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Вход в систему — DutyFlow{% endblock %}
+
+{% block body %}
+<div class="auth-layout">
+    <div class="auth-shell">
+        <section class="auth-shell__brand">
+            <a href="{% url 'auth:index' %}" class="auth-brand">
+                <span class="auth-brand__mark">DF</span>
+                <span class="auth-brand__text">DutyFlow</span>
+            </a>
+
+            <div class="auth-intro">
+                <div class="auth-intro__badge">Локальная система управления нарядами</div>
+                <h1 class="auth-intro__title">Вход в рабочее пространство</h1>
+                <p class="auth-intro__text">
+                    Используйте свои учетные данные для входа в систему управления
+                    подразделениями, сотрудниками, планами и назначениями.
+                </p>
+            </div>
+
+            <div class="auth-feature-list">
+                <article class="auth-feature">
+                    <h2 class="auth-feature__title">Структурированная работа</h2>
+                    <p class="auth-feature__text">
+                        Единый интерфейс для списков, карточек, планов и распределения нарядов.
+                    </p>
+                </article>
+
+                <article class="auth-feature">
+                    <h2 class="auth-feature__title">Роли и доступ</h2>
+                    <p class="auth-feature__text">
+                        Поддержка разных уровней доступа в зависимости от подразделения и роли.
+                    </p>
+                </article>
+
+                <article class="auth-feature">
+                    <h2 class="auth-feature__title">Светлая и тёмная тема</h2>
+                    <p class="auth-feature__text">
+                        Комфортная работа в локальной среде с сохранением выбранной темы.
+                    </p>
+                </article>
+            </div>
+        </section>
+
+        <section class="auth-shell__form-section">
+            <div class="auth-card">
+                <div class="auth-card__header">
+                    <h2 class="auth-card__title">Вход</h2>
+                    <p class="auth-card__subtitle">Введите логин и пароль для продолжения</p>
+                </div>
+
+                <div class="auth-card__body">
+                    {% if form.errors %}
+                        <div class="alert alert--danger">
+                            Неверный логин или пароль. Проверьте введённые данные.
+                        </div>
+                    {% endif %}
+
+                    {% if next and user.is_authenticated %}
+                        <div class="alert alert--warning">
+                            У вашей учетной записи нет доступа к этой странице.
+                        </div>
+                    {% endif %}
+
+                    <form method="post" class="form auth-form">
+                        {% csrf_token %}
+
+                        <div class="form-field">
+                            <label for="{{ form.username.id_for_label }}" class="form-field__label">
+                                Логин
+                            </label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="form-field__error">
+                                    {% for error in form.username.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-field">
+                            <label for="{{ form.password.id_for_label }}" class="form-field__label">
+                                Пароль
+                            </label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                                <div class="form-field__error">
+                                    {% for error in form.password.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {% if next %}
+                            <input type="hidden" name="next" value="{{ next }}">
+                        {% endif %}
+
+                        <div class="auth-form__actions">
+                            <button type="submit" class="button button--primary auth-form__submit">
+                                Войти
+                            </button>
+                            <a href="{% url 'auth:index' %}" class="button">
+                                На главную
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

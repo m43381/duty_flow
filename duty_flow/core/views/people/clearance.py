@@ -11,11 +11,11 @@ from core.services.people_service import PersonService
 def clearance_add(request, pk):
     person = get_object_or_404(Person, pk=pk)
     access = AccessService(request.user)
-    
+
     if not access.can_edit_object(person):
         messages.error(request, 'Нет прав для редактирования')
-        return redirect('person:person_detail', pk=person.pk)
-    
+        return redirect('people:person_detail', pk=person.pk)
+
     if request.method == 'POST':
         form = DutyClearanceForm(request.POST, person=person)
         if form.is_valid():
@@ -25,11 +25,14 @@ def clearance_add(request, pk):
             return redirect(f'/persons/{person.pk}/?tab=clearances')
     else:
         form = DutyClearanceForm(person=person)
-    
-    return render(request, 'people/clearance_form.html', {
+
+    return render(request, 'app/people/clearance_form.html', {
         'form': form,
         'person': person,
         'title': f'Добавление допуска: {person.last_name} {person.first_name}',
+        'active_tab': 'people',
+        'page_title': 'Сотрудники',
+        'page_subtitle': 'Допуски сотрудника',
     })
 
 
@@ -38,17 +41,20 @@ def clearance_delete(request, pk, clearance_id):
     person = get_object_or_404(Person, pk=pk)
     clearance = get_object_or_404(DutyClearance, pk=clearance_id, person=person)
     access = AccessService(request.user)
-    
+
     if not access.can_edit_object(person):
         messages.error(request, 'Нет прав для удаления')
-        return redirect('person:person_detail', pk=person.pk)
-    
+        return redirect('people:person_detail', pk=person.pk)
+
     if request.method == 'POST':
         PersonService.delete_clearance(clearance)
         messages.success(request, 'Допуск успешно удален')
         return redirect(f'/persons/{person.pk}/?tab=clearances')
-    
-    return render(request, 'people/clearance_confirm_delete.html', {
+
+    return render(request, 'app/people/clearance_delete.html', {
         'clearance': clearance,
         'person': person,
+        'active_tab': 'people',
+        'page_title': 'Сотрудники',
+        'page_subtitle': 'Удаление допуска',
     })

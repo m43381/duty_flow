@@ -1,0 +1,145 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ page_title|default:"Пользователи" }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Пользователи</h2>
+            <p class="page-header__subtitle">
+                Управление учетными записями и переход в карточки пользователей.
+            </p>
+        </div>
+
+        {% if can_add %}
+        <div class="page-header__actions">
+            <a href="{% url 'users:add' %}" class="button button--primary">
+                Добавить пользователя
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header users-toolbar">
+            <form method="get" class="users-toolbar__search form" role="search">
+                <div class="users-search">
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ search_query|default:'' }}"
+                        placeholder="Поиск по логину или подразделению"
+                        aria-label="Поиск пользователей"
+                    >
+                    <button type="submit" class="button button--sm">Найти</button>
+                    {% if search_query %}
+                    <a href="{% url 'users:list' %}" class="button button--sm">Сбросить</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="users-toolbar__meta">
+                <span class="users-counter">Всего: {{ users|length }}</span>
+            </div>
+        </div>
+
+        <div class="card__body">
+            {% if users %}
+                <div class="table-wrap">
+                    <table class="table users-table">
+                        <thead>
+                            <tr>
+                                <th>Логин</th>
+                                <th>ФИО</th>
+                                <th>Подразделение</th>
+                                <th>Уровень</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in users %}
+                            <tr class="table-row-link" data-href="{% url 'users:detail' item.pk %}">
+                                <td>
+                                    <div class="user-cell">
+                                        <a href="{% url 'users:detail' item.pk %}" class="user-cell__name">
+                                            {{ item.username }}
+                                        </a>
+                                        <div class="user-cell__meta">
+                                            ID: {{ item.pk }}
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    {% if item.get_full_name %}
+                                        {{ item.get_full_name }}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if item.profile and item.profile.unit %}
+                                        {{ item.profile.unit.name }}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if item.profile %}
+                                        <span class="badge">
+                                            {{ item.profile.unit_type }} / {{ item.profile.level }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if item.is_active %}
+                                        <span class="badge badge--success">Активен</span>
+                                    {% else %}
+                                        <span class="badge badge--danger">Отключён</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state__body">
+                        <h3 class="empty-state__title">Пользователи не найдены</h3>
+                        <p class="empty-state__text">
+                            {% if search_query %}
+                                По запросу «{{ search_query }}» ничего не найдено.
+                            {% else %}
+                                В этом разделе пока нет пользователей для отображения.
+                            {% endif %}
+                        </p>
+
+                        <div class="empty-state__actions">
+                            {% if search_query %}
+                                <a href="{% url 'users:list' %}" class="button">
+                                    Сбросить поиск
+                                </a>
+                            {% endif %}
+
+                            {% if can_add %}
+                                <a href="{% url 'users:add' %}" class="button button--primary">
+                                    Добавить пользователя
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endblock %}

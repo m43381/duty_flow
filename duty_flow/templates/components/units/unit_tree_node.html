@@ -1,0 +1,56 @@
+{% for node in nodes %}
+<div class="unit-tree__node" data-unit-node>
+    <div
+        class="unit-tree__row {% if current_unit_id and node.id == current_unit_id %}is-current{% endif %} table-row-link"
+        style="--tree-level: {{ node.level|default:0 }};"
+        data-href="{% url 'units:detail' node.id %}"
+    >
+        <div class="unit-tree__main">
+            {% if node.children %}
+            <button
+                type="button"
+                class="unit-tree__toggle"
+                data-unit-toggle
+                aria-expanded="true"
+                aria-label="Свернуть или развернуть дочерние подразделения"
+            >
+                ▾
+            </button>
+            {% else %}
+            <span class="unit-tree__toggle unit-tree__toggle--placeholder"></span>
+            {% endif %}
+
+            <a href="{% url 'units:detail' node.id %}" class="unit-tree__link">
+                <span class="unit-tree__name">{{ node.name }}</span>
+                <span class="unit-tree__meta">
+                    {% if node.unit_type %}
+                        {{ node.unit_type.name }}
+                    {% elif node.type %}
+                        {{ node.type }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </span>
+            </a>
+        </div>
+
+        <div class="unit-tree__side">
+            <span class="unit-tree__badge">
+                ур. {{ node.level|default:0 }}
+            </span>
+
+            {% if node.people_count is not None %}
+            <span class="unit-tree__count">
+                👥 {{ node.people_count }}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if node.children %}
+    <div class="unit-tree__children" data-unit-children>
+        {% include 'components/units/unit_tree_node.html' with nodes=node.children current_unit_id=current_unit_id %}
+    </div>
+    {% endif %}
+</div>
+{% endfor %}

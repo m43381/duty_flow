@@ -1,23 +1,33 @@
-/* Сброс стилей */
-* {
-    margin: 0;
-    padding: 0;
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
-html, body {
-    height: 100%;
+* {
+    margin: 0;
+    padding: 0;
 }
 
-img, picture, video, canvas, svg {
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+img,
+svg {
     display: block;
     max-width: 100%;
 }
 
-input, button, textarea, select {
+button,
+input,
+select,
+textarea {
     font: inherit;
-}
-
-p, h1, h2, h3, h4, h5, h6 {
-    overflow-wrap: break-word;
 }

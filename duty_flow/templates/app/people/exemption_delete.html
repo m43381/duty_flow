@@ -1,0 +1,67 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Удаление освобождения — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Удаление освобождения</h2>
+            <p class="page-header__subtitle">
+                Подтвердите удаление периода освобождения сотрудника.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card danger-card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Подтверждение удаления</h3>
+                <p class="card__subtitle">
+                    Сотрудник: {{ person.last_name }} {{ person.first_name }}{% if person.middle_name %} {{ person.middle_name }}{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="danger-note">
+                После удаления этот период освобождения исчезнет из карточки сотрудника.
+            </div>
+
+            <div class="details-list details-list--boxed">
+                <div class="details-list__row">
+                    <span class="details-list__label">Причина</span>
+                    <span class="details-list__value">{{ exemption.get_reason_display }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Дата начала</span>
+                    <span class="details-list__value">{{ exemption.date_from|date:"d.m.Y" }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Дата окончания</span>
+                    <span class="details-list__value">{{ exemption.date_to|date:"d.m.Y" }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Комментарий</span>
+                    <span class="details-list__value">{{ exemption.comment|default:"—" }}</span>
+                </div>
+            </div>
+
+            <form method="post" class="form-actions form-actions--danger">
+                {% csrf_token %}
+                <button type="submit" class="button button--danger">
+                    Удалить освобождение
+                </button>
+                <a href="{% url 'people:person_detail' person.pk %}?tab=exemptions" class="button">
+                    Отмена
+                </a>
+            </form>
+        </div>
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends 'app/base_app.html' %}
+{% load static %}
+
+{% block title %}Назначения сотрудников — DutyFlow{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/pages/assignments.js' %}"></script>
+{% endblock %}
+
+{% block app_content %}
+<div
+    id="assignment-page-config"
+    data-csrf-token="{{ csrf_token }}"
+    data-assign-url-template="/assignments/assign/__PLAN_ID__/"
+    data-unassign-url-template="/assignments/unassign/__ASSIGNMENT_ID__/"
+></div>
+
+<section class="page-section">
+    <div class="assignment-header">
+        <div class="assignment-header__main">
+            <div class="assignment-header__eyebrow">Календарь назначений</div>
+            <h2 class="assignment-header__title">{{ month_name }}</h2>
+            <p class="assignment-header__subtitle">
+                {% if has_schedule %}
+                    {{ schedule.name|default:schedule }} · {{ schedule.unit.name }}
+                {% else %}
+                    Для этого месяца расписание не найдено
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="assignment-header__actions">
+            <div class="assignment-header__nav">
+                <a href="{% url 'assignment:calendar' %}?year={{ prev_year }}&month={{ prev_month }}" class="button">
+                    ← Предыдущий
+                </a>
+                <a href="{% url 'assignment:calendar' %}?year={{ now_year }}&month={{ now_month }}" class="button">
+                    Текущий
+                </a>
+                <a href="{% url 'assignment:calendar' %}?year={{ next_year }}&month={{ next_month }}" class="button">
+                    Следующий →
+                </a>
+            </div>
+
+            <div class="assignment-header__links">
+                <a href="{% url 'plan:list' %}" class="button">К расписаниям</a>
+                {% if has_schedule %}
+                    <a href="{% url 'plan:detail' schedule.pk %}" class="button button--primary">Открыть расписание</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="assignment-stats">
+        <article class="assignment-stat">
+            <span class="assignment-stat__label">Нарядов в месяце</span>
+            <span class="assignment-stat__value">{{ total_plans }}</span>
+        </article>
+
+        <article class="assignment-stat">
+            <span class="assignment-stat__label">Назначений всего</span>
+            <span class="assignment-stat__value">{{ total_assigned }}</span>
+        </article>
+
+        <article class="assignment-stat assignment-stat--warning">
+            <span class="assignment-stat__label">Требуют внимания</span>
+            <span class="assignment-stat__value">{{ needs_attention }}</span>
+        </article>
+
+        <article class="assignment-stat assignment-stat--success">
+            <span class="assignment-stat__label">Полностью закрыты</span>
+            <span class="assignment-stat__value">{{ fully_staffed }}</span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card assignment-calendar-card">
+        <div class="card__header assignment-calendar-card__header">
+            <div>
+                <h3 class="card__title">Рабочий календарь</h3>
+                <p class="card__subtitle">
+                    Откройте нужный наряд и назначьте сотрудников через правую панель.
+                </p>
+            </div>
+
+            <div class="assignment-legend">
+                <span class="assignment-legend__item assignment-legend__item--unassigned">Требуется назначение</span>
+                <span class="assignment-legend__item assignment-legend__item--partial">Частично назначен</span>
+                <span class="assignment-legend__item assignment-legend__item--completed">Полностью назначен</span>
+                <span class="assignment-legend__item assignment-legend__item--delegated">Делегирован</span>
+            </div>
+        </div>
+
+        <div class="card__body">
+            {% if has_schedule %}
+                <div class="assignment-calendar-shell">
+                    <div class="assignment-calendar-grid assignment-calendar-grid--head">
+                        <div class="assignment-calendar-grid__weekday">ПН</div>
+                        <div class="assignment-calendar-grid__weekday">ВТ</div>
+                        <div class="assignment-calendar-grid__weekday">СР</div>
+                        <div class="assignment-calendar-grid__weekday">ЧТ</div>
+                        <div class="assignment-calendar-grid__weekday">ПТ</div>
+                        <div class="assignment-calendar-grid__weekday assignment-calendar-grid__weekday--weekend">СБ</div>
+                        <div class="assignment-calendar-grid__weekday assignment-calendar-grid__weekday--weekend">ВС</div>
+                    </div>
+
+                    {% for week in calendar_data %}
+                        <div class="assignment-calendar-grid assignment-calendar-grid--week">
+                            {% for day in week %}
+                                {% if day %}
+                                    <section class="assignment-day {% if day.is_today %}assignment-day--today{% endif %} {% if day.is_weekend %}assignment-day--weekend{% endif %}">
+                                        <header class="assignment-day__header">
+                                            <span class="assignment-day__number">{{ day.date.day }}</span>
+                                            <span class="assignment-day__weekday">{{ day.date|date:"D" }}</span>
+                                        </header>
+
+                                        <div class="assignment-day__body">
+                                            {% if day.plans %}
+                                                {% for plan in day.plans %}
+                                                    <article class="assignment-duty assignment-duty--{{ plan.status }}">
+                                                        <div class="assignment-duty__top">
+                                                            <h4 class="assignment-duty__title">{{ plan.duty_name }}</h4>
+                                                            <span class="assignment-duty__counter">
+                                                                {{ plan.assigned_count }}/{{ plan.required_people }}
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="assignment-duty__meta">
+                                                            {{ plan.unit_name }}
+                                                        </div>
+
+                                                        <div class="assignment-duty__status">
+                                                            {{ plan.status_text }}
+                                                        </div>
+
+                                                        {% if plan.assignments %}
+                                                            <div class="assignment-duty__people">
+                                                                {% for a in plan.assignments %}
+                                                                    <span class="assignment-duty__person" title="{{ a.person.rank.name }} {{ a.person.full_name }}">
+                                                                        {{ a.person.last_name }}
+                                                                    </span>
+                                                                {% endfor %}
+                                                            </div>
+                                                        {% endif %}
+
+                                                        <div class="assignment-duty__actions">
+                                                            <button
+                                                                type="button"
+                                                                class="button button--sm assignment-duty__manage-button"
+                                                                data-assignment-open
+                                                                data-fetch-url="{{ plan.manage_url }}"
+                                                            >
+                                                                Управлять
+                                                            </button>
+                                                        </div>
+                                                    </article>
+                                                {% endfor %}
+                                            {% else %}
+                                                <div class="assignment-day__empty">Нет нарядов</div>
+                                            {% endif %}
+                                        </div>
+                                    </section>
+                                {% else %}
+                                    <div class="assignment-day assignment-day--placeholder"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state__body">
+                        <h3 class="empty-state__title">Нет расписания на этот месяц</h3>
+                        <p class="empty-state__text">
+                            Сначала создайте план нарядов, после этого здесь появится календарь назначений.
+                        </p>
+                        <div class="empty-state__actions">
+                            <a href="{% url 'plan:list' %}" class="button">К расписаниям</a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+
+<div class="assignment-panel-backdrop" data-assignment-backdrop></div>
+
+<aside class="assignment-panel" data-assignment-panel>
+    <div class="assignment-panel__header">
+        <div>
+            <h3 class="assignment-panel__heading">Управление назначениями</h3>
+            <p class="assignment-panel__subheading" data-assignment-panel-subheading>
+                Выберите наряд в календаре
+            </p>
+        </div>
+        <button type="button" class="button button--sm" data-assignment-close>Закрыть</button>
+    </div>
+
+    <div class="assignment-panel__body" data-assignment-panel-body>
+        <div class="assignment-panel__placeholder">
+            Нажмите «Управлять» у нужного наряда, чтобы открыть уже назначенных и доступных сотрудников.
+        </div>
+    </div>
+</aside>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Удаление пользователя — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Удаление пользователя</h2>
+            <p class="page-header__subtitle">
+                Проверьте данные учетной записи перед удалением. Это действие нельзя будет отменить.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card danger-card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Подтверждение удаления</h3>
+                <p class="card__subtitle">Вы собираетесь удалить учетную запись пользователя</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="danger-note">
+                После удаления пользователь потеряет доступ к системе. Убедитесь, что выбрана правильная учетная запись.
+            </div>
+
+            <div class="details-list details-list--boxed">
+                <div class="details-list__row">
+                    <span class="details-list__label">Логин</span>
+                    <span class="details-list__value">{{ user_obj.username }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Полное имя</span>
+                    <span class="details-list__value">{{ user_obj.get_full_name|default:"—" }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Подразделение</span>
+                    <span class="details-list__value">
+                        {% if user_obj.profile and user_obj.profile.unit %}
+                            {{ user_obj.profile.unit.name }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Тип подразделения</span>
+                    <span class="details-list__value">
+                        {% if user_obj.profile %}
+                            {{ user_obj.profile.unit_type }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Уровень иерархии</span>
+                    <span class="details-list__value">
+                        {% if user_obj.profile %}
+                            {{ user_obj.profile.level }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Статус</span>
+                    <span class="details-list__value">
+                        {% if user_obj.is_active %}
+                            <span class="badge badge--success">Активен</span>
+                        {% else %}
+                            <span class="badge badge--danger">Отключён</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <form method="post" class="form-actions form-actions--danger">
+                {% csrf_token %}
+                <button type="submit" class="button button--danger">
+                    Удалить пользователя
+                </button>
+                <a href="{% url 'users:detail' user_obj.pk %}" class="button">
+                    Отмена
+                </a>
+            </form>
+        </div>
+    </article>
+</section>
+{% endblock %}

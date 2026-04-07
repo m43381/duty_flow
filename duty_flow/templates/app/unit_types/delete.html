@@ -1,0 +1,71 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Удаление типа подразделения — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Удаление типа подразделения</h2>
+            <p class="page-header__subtitle">
+                Проверьте данные перед удалением. Это действие нельзя будет отменить.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card danger-card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Подтверждение удаления</h3>
+                <p class="card__subtitle">Вы собираетесь удалить тип подразделения из справочника</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="danger-note">
+                Перед удалением убедитесь, что этот тип не используется активными подразделениями и пользователями.
+            </div>
+
+            <div class="details-list details-list--boxed">
+                <div class="details-list__row">
+                    <span class="details-list__label">Название</span>
+                    <span class="details-list__value">{{ item.name }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Слаг</span>
+                    <span class="details-list__value"><code class="inline-code">{{ item.slug }}</code></span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Уровень</span>
+                    <span class="details-list__value">{{ item.level }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Дочерние подразделения</span>
+                    <span class="details-list__value">
+                        {% if item.can_have_children %}
+                            Да
+                        {% else %}
+                            Нет
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <form method="post" class="form-actions form-actions--danger">
+                {% csrf_token %}
+                <button type="submit" class="button button--danger">
+                    Удалить тип подразделения
+                </button>
+                <a href="{% url 'unit_type:detail' item.pk %}" class="button">
+                    Отмена
+                </a>
+            </form>
+        </div>
+    </article>
+</section>
+{% endblock %}

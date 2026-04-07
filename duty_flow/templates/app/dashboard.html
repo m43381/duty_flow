@@ -1,0 +1,137 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ page_title|default:"Дашборд" }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="stats-strip">
+        <article class="metric-card">
+            <span class="metric-card__label">Сотрудники</span>
+            <span class="metric-card__value">{{ total_people|default:"0" }}</span>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-card__label">Планы на сегодня</span>
+            <span class="metric-card__value">{{ today_plans|default:"0" }}</span>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-card__label">Освобождения</span>
+            <span class="metric-card__value">{{ active_exemptions|default:"0" }}</span>
+        </article>
+
+        <article class="metric-card">
+            <span class="metric-card__label">Назначения</span>
+            <span class="metric-card__value">{{ total_assignments|default:"0" }}</span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section dashboard-layout">
+    <div class="dashboard-layout__main">
+        <article class="card">
+            <div class="card__header">
+                <div>
+                    <h3 class="card__title">Ближайшие наряды</h3>
+                    <p class="card__subtitle">Актуальные планы по видимым подразделениям</p>
+                </div>
+                <a href="{% url 'plan:list' %}" class="button button--sm">Все планы</a>
+            </div>
+
+            <div class="card__body">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Тип наряда</th>
+                                <th>Подразделение</th>
+                                <th>Назначено</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for plan in upcoming_plans|slice:":8" %}
+                            <tr>
+                                <td>{{ plan.date|date:"d.m.Y" }}</td>
+                                <td>{{ plan.duty_type.name }}</td>
+                                <td>{{ plan.unit.name }}</td>
+                                <td>{{ plan.assignments.count }}/{{ plan.duty_type.required_people }}</td>
+                                <td>
+                                    {% if plan.assignments.count >= plan.duty_type.required_people %}
+                                        <span class="badge badge--success">Укомплектован</span>
+                                    {% else %}
+                                        <span class="badge badge--warning">Требуются люди</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="table__empty">Нет ближайших нарядов</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <aside class="dashboard-layout__side">
+        <article class="card">
+            <div class="card__header">
+                <h3 class="card__title">Моё подразделение</h3>
+            </div>
+            <div class="card__body">
+                <div class="details-list">
+                    <div class="details-list__row">
+                        <span class="details-list__label">Подразделение</span>
+                        <span class="details-list__value">{{ user.profile.unit.name }}</span>
+                    </div>
+
+                    <div class="details-list__row">
+                        <span class="details-list__label">Тип</span>
+                        <span class="details-list__value">{{ user.profile.unit.unit_type.name }}</span>
+                    </div>
+
+                    {% if user.profile.unit.parent %}
+                    <div class="details-list__row">
+                        <span class="details-list__label">Вышестоящее</span>
+                        <span class="details-list__value">{{ user.profile.unit.parent.name }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="details-list__row">
+                        <span class="details-list__label">Роль</span>
+                        <span class="details-list__value">{{ user.profile.get_access_level_display }}</span>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card__header">
+                <h3 class="card__title">Разделы</h3>
+            </div>
+            <div class="card__body">
+                <nav class="dashboard-nav-list">
+                    <a href="{% url 'people:person_list' %}" class="dashboard-nav-list__item">Сотрудники</a>
+                    <a href="{% url 'plan:list' %}" class="dashboard-nav-list__item">Планы нарядов</a>
+                    <a href="{% url 'assignment:calendar' %}" class="dashboard-nav-list__item">Назначения</a>
+
+                    {% if user.profile.unit.unit_type.level <= 1 %}
+                    <a href="{% url 'type:list' %}" class="dashboard-nav-list__item">Типы нарядов</a>
+                    {% endif %}
+
+                    {% if user.profile.unit.unit_type.level == 0 %}
+                    <a href="{% url 'unit_type:list' %}" class="dashboard-nav-list__item">Типы подразделений</a>
+                    {% endif %}
+
+                    <a href="{% url 'units:list' %}" class="dashboard-nav-list__item">Подразделения</a>
+                    <a href="{% url 'users:list' %}" class="dashboard-nav-list__item">Пользователи</a>
+                </nav>
+            </div>
+        </article>
+    </aside>
+</section>
+{% endblock %}

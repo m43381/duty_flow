@@ -1,0 +1,175 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}{{ user_obj.get_full_name|default:user_obj.username }} — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <div class="user-hero">
+                <div class="user-hero__main">
+                    <h2 class="page-header__title">
+                        {{ user_obj.get_full_name|default:user_obj.username }}
+                    </h2>
+
+                    <div class="user-hero__meta">
+                        <span class="badge">{{ user_obj.username }}</span>
+
+                        {% if user_obj.profile and user_obj.profile.unit %}
+                            <span class="user-hero__unit">{{ user_obj.profile.unit.name }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-header__actions">
+            <a href="{% url 'users:list' %}" class="button">
+                Назад к списку
+            </a>
+
+            {% if can_edit %}
+                <a href="{% url 'users:edit' user_obj.pk %}" class="button">
+                    Изменить
+                </a>
+            {% endif %}
+
+            {% if can_change_password %}
+                <a href="{% url 'users:change_password' user_obj.pk %}" class="button">
+                    Сменить пароль
+                </a>
+            {% endif %}
+
+            {% if can_delete %}
+                <a href="{% url 'users:delete' user_obj.pk %}" class="button button--danger">
+                    Удалить
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="user-summary-grid">
+        <article class="summary-card">
+            <span class="summary-card__label">Логин</span>
+            <span class="summary-card__value">{{ user_obj.username }}</span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Статус</span>
+            <span class="summary-card__value">
+                {% if user_obj.is_active %}Активен{% else %}Отключён{% endif %}
+            </span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Подразделение</span>
+            <span class="summary-card__value">
+                {% if user_obj.profile and user_obj.profile.unit %}
+                    {{ user_obj.profile.unit.name }}
+                {% else %}
+                    —
+                {% endif %}
+            </span>
+        </article>
+
+        <article class="summary-card">
+            <span class="summary-card__label">Уровень</span>
+            <span class="summary-card__value">
+                {% if user_obj.profile %}
+                    {{ user_obj.profile.unit_type }} / {{ user_obj.profile.level }}
+                {% else %}
+                    —
+                {% endif %}
+            </span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Основная информация</h3>
+                <p class="card__subtitle">Данные учетной записи и профиля пользователя</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="details-list">
+                <div class="details-list__row">
+                    <span class="details-list__label">Логин</span>
+                    <span class="details-list__value">{{ user_obj.username }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Имя</span>
+                    <span class="details-list__value">{{ user_obj.first_name|default:"—" }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Фамилия</span>
+                    <span class="details-list__value">{{ user_obj.last_name|default:"—" }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Полное имя</span>
+                    <span class="details-list__value">{{ user_obj.get_full_name|default:"—" }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Email</span>
+                    <span class="details-list__value">{{ user_obj.email|default:"—" }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Статус</span>
+                    <span class="details-list__value">
+                        {% if user_obj.is_active %}
+                            <span class="badge badge--success">Активен</span>
+                        {% else %}
+                            <span class="badge badge--danger">Отключён</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                {% if user_obj.profile %}
+                <div class="details-list__row">
+                    <span class="details-list__label">Подразделение</span>
+                    <span class="details-list__value">
+                        {% if user_obj.profile.unit %}{{ user_obj.profile.unit.name }}{% else %}—{% endif %}
+                    </span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Тип подразделения</span>
+                    <span class="details-list__value">{{ user_obj.profile.unit_type }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Уровень иерархии</span>
+                    <span class="details-list__value">{{ user_obj.profile.level }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Дата создания профиля</span>
+                    <span class="details-list__value">{{ user_obj.profile.created_at|date:"d.m.Y H:i" }}</span>
+                </div>
+
+                <div class="details-list__row">
+                    <span class="details-list__label">Создал пользователь</span>
+                    <span class="details-list__value">
+                        {% if user_obj.profile.created_by %}
+                            {{ user_obj.profile.created_by.username }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock %}
