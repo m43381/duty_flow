@@ -38,6 +38,7 @@ class AccessRuleSet(models.Model):
 class AccessRule(models.Model):
     RESOURCE_CHOICES = [
         ("user", "Пользователи"),
+        ("person", "Сотрудники"),
     ]
 
     ACTION_CHOICES = [
@@ -46,6 +47,8 @@ class AccessRule(models.Model):
         ("update", "Редактирование"),
         ("delete", "Удаление"),
         ("change_password", "Смена пароля"),
+        ("manage_exemptions", "Управление освобождениями"),
+        ("manage_clearances", "Управление допусками"),
     ]
 
     SCOPE_CHOICES = [
@@ -124,3 +127,41 @@ class AccessFieldRule(models.Model):
 
     def __str__(self):
         return f"{self.ruleset} | {self.resource}.{self.action}.{self.field_name} | level={self.subject_level}"
+
+
+class AccessChoiceRule(models.Model):
+    RESOURCE_CHOICES = AccessRule.RESOURCE_CHOICES
+    SCOPE_CHOICES = AccessRule.SCOPE_CHOICES
+
+    ACTION_CHOICES = [
+        ("create", "Создание"),
+        ("update", "Редактирование"),
+    ]
+
+    ruleset = models.ForeignKey(
+        AccessRuleSet,
+        on_delete=models.CASCADE,
+        related_name="choice_rules",
+        verbose_name="Набор правил",
+    )
+    resource = models.CharField("Ресурс", max_length=50, choices=RESOURCE_CHOICES)
+    action = models.CharField("Действие", max_length=50, choices=ACTION_CHOICES)
+    subject_level = models.PositiveSmallIntegerField("Для уровня")
+    field_name = models.CharField("Поле select/queryset", max_length=100)
+    scope = models.CharField("Scope значений", max_length=50, choices=SCOPE_CHOICES, default="none")
+    is_active = models.BooleanField("Активно", default=True)
+    priority = models.PositiveIntegerField("Приоритет", default=100)
+    note = models.CharField("Комментарий", max_length=255, blank=True)
+    created_at = models.DateTimeField("Создано", auto_now_add=True)
+    updated_at = models.DateTimeField("Обновлено", auto_now=True)
+
+    class Meta:
+        verbose_name = "Правило доступа к выпадающему списку"
+        verbose_name_plural = "Правила доступа к выпадающим спискам"
+        ordering = ["resource", "action", "field_name", "subject_level", "priority", "id"]
+        indexes = [
+            models.Index(fields=["ruleset", "resource", "action", "field_name", "subject_level"]),
+        ]
+
+    def __str__(self):
+        return f"{self.ruleset} | {self.resource}.{self.action}.{self.field_name} -> {self.scope}"

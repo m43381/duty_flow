@@ -5,25 +5,29 @@ from core.views.access_control import (
     field_rule_add,
     field_rule_edit,
     field_rule_list,
+    resource_matrix,
     rule_add,
     rule_edit,
     rule_list,
+    seed_person_rules,
     seed_user_rules,
-    user_access_matrix,
 )
 
 app_name = "access_control"
 
 urlpatterns = [
     path("", access_dashboard, name="dashboard"),
+
     path("seed-user-rules/", seed_user_rules, name="seed_user_rules"),
-    path("user-matrix/", user_access_matrix, name="user_matrix"),
+    path("seed-person-rules/", seed_person_rules, name="seed_person_rules"),
 
-    path("rules/", rule_list, name="rules"),
-    path("rules/add/", rule_add, name="rule_add"),
-    path("rules/<int:pk>/edit/", rule_edit, name="rule_edit"),
+    path("<str:resource>/matrix/", resource_matrix, name="resource_matrix"),
 
-    path("field-rules/", field_rule_list, name="field_rules"),
-    path("field-rules/add/", field_rule_add, name="field_rule_add"),
-    path("field-rules/<int:pk>/edit/", field_rule_edit, name="field_rule_edit"),
+    path("<str:resource>/rules/", rule_list, name="rules"),
+    path("<str:resource>/rules/add/", rule_add, name="rule_add"),
+    path("<str:resource>/rules/<int:pk>/edit/", rule_edit, name="rule_edit"),
+
+    path("<str:resource>/field-rules/", field_rule_list, name="field_rules"),
+    path("<str:resource>/field-rules/add/", field_rule_add, name="field_rule_add"),
+    path("<str:resource>/field-rules/<int:pk>/edit/", field_rule_edit, name="field_rule_edit"),
 ]

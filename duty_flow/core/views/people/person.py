@@ -1,15 +1,45 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+
 from people.models import Person, Exemption, DutyClearance
 from people.forms import PersonForm
-from users_app.access_service import AccessService
+from access_control.services import AccessManager
+
+
+from access_control.services.labels import build_unit_path_label
+
+def apply_person_access_to_form(form, access_manager, action: str):
+    visible_fields = set(access_manager.visible_person_fields(action))
+    editable_fields = set(access_manager.editable_person_fields(action))
+
+    for field_name in list(form.fields.keys()):
+        if field_name not in visible_fields:
+            form.fields.pop(field_name, None)
+            continue
+
+        if field_name not in editable_fields:
+            form.fields[field_name].disabled = True
+
+    if "unit" in form.fields:
+        if action == "create":
+            units = access_manager.allowed_units_for_person_creation()
+        elif action == "update":
+            units = access_manager.allowed_units_for_person_update()
+        else:
+            units = None
+
+        if units is not None:
+            form.fields["unit"].queryset = units
+            form.fields["unit"].label_from_instance = build_unit_path_label
 
 
 @login_required
 def person_list(request):
-    access = AccessService(request.user)
-    people = access.get_visible_queryset(Person.objects.all())
+    access = AccessManager(request.user)
+    people = access.scope_people(
+        Person.objects.select_related("rank", "unit", "unit__unit_type").all()
+    )
 
     search_query = request.GET.get('q', '').strip()
     if search_query:
@@ -24,7 +54,7 @@ def person_list(request):
         'active_tab': 'people',
         'page_title': 'Сотрудники',
         'page_subtitle': 'Список сотрудников и переход в карточки',
-        'can_add': access.can_create_in_unit(access.user_unit),
+        'can_add': access.can_person("create"),
         'can_edit': True,
         'search_query': search_query,
     })
@@ -32,22 +62,30 @@ def person_list(request):
 
 @login_required
 def person_add(request):
-    access = AccessService(request.user)
+    access = AccessManager(request.user)
 
-    if not access.can_create_in_unit(access.user_unit):
+    if not access.can_person("create"):
         messages.error(request, 'Нет прав для создания')
         return redirect('people:person_list')
 
     if request.method == 'POST':
         form = PersonForm(request.POST, user=request.user)
+        apply_person_access_to_form(form, access, "create")
+
         if form.is_valid():
             person = form.save(commit=False)
-            person.unit = access.user_unit
+
+            # Сохраняем старую рабочую бизнес-логику:
+            # если form не даёт unit, подставляем подразделение текущего пользователя
+            if getattr(person, "unit_id", None) is None:
+                person.unit = request.user.profile.unit
+
             person.save()
             messages.success(request, f'Сотрудник {person} создан')
             return redirect('people:person_detail', pk=person.pk)
     else:
         form = PersonForm(user=request.user)
+        apply_person_access_to_form(form, access, "create")
 
     return render(request, 'app/people/form.html', {
         'form': form,
@@ -61,10 +99,13 @@ def person_add(request):
 
 @login_required
 def person_detail(request, pk):
-    access = AccessService(request.user)
-    person = get_object_or_404(Person, pk=pk)
+    access = AccessManager(request.user)
+    person = get_object_or_404(
+        Person.objects.select_related("rank", "unit", "unit__unit_type"),
+        pk=pk
+    )
 
-    if not access.can_view_object(person):
+    if not access.can_person("view", person):
         messages.error(request, 'Нет прав для просмотра')
         return redirect('people:person_list')
 
@@ -75,7 +116,10 @@ def person_detail(request, pk):
 
     context = {
         'person': person,
-        'can_edit': access.can_edit_object(person),
+        'can_edit': access.can_person("update", person),
+        'can_manage_exemptions': access.can_person("manage_exemptions", person),
+        'can_manage_clearances': access.can_person("manage_clearances", person),
+        'visible_fields': access.visible_person_fields("view"),
         'active_tab': 'people',
         'page_title': 'Сотрудники',
         'page_subtitle': 'Карточка сотрудника',
@@ -90,21 +134,24 @@ def person_detail(request, pk):
 
 @login_required
 def person_edit(request, pk):
-    access = AccessService(request.user)
+    access = AccessManager(request.user)
     person = get_object_or_404(Person, pk=pk)
 
-    if not access.can_edit_object(person):
+    if not access.can_person("update", person):
         messages.error(request, 'Нет прав для редактирования')
-        return redirect('people:person_list')
+        return redirect('people:person_detail', pk=person.pk)
 
     if request.method == 'POST':
         form = PersonForm(request.POST, instance=person, user=request.user)
+        apply_person_access_to_form(form, access, "update")
+
         if form.is_valid():
             form.save()
-            messages.success(request, 'Сотрудник обновлён')
+            messages.success(request, 'Данные сотрудника обновлены')
             return redirect('people:person_detail', pk=person.pk)
     else:
         form = PersonForm(instance=person, user=request.user)
+        apply_person_access_to_form(form, access, "update")
 
     return render(request, 'app/people/form.html', {
         'form': form,
@@ -112,22 +159,23 @@ def person_edit(request, pk):
         'active_tab': 'people',
         'page_title': 'Сотрудники',
         'page_subtitle': 'Редактирование сотрудника',
-        'title': f'Редактировать {person}',
+        'title': f'Редактировать: {person.last_name} {person.first_name}',
     })
 
 
 @login_required
 def person_delete(request, pk):
-    access = AccessService(request.user)
+    access = AccessManager(request.user)
     person = get_object_or_404(Person, pk=pk)
 
-    if not access.can_edit_object(person):
+    if not access.can_person("delete", person):
         messages.error(request, 'Нет прав для удаления')
-        return redirect('people:person_list')
+        return redirect('people:person_detail', pk=person.pk)
 
     if request.method == 'POST':
+        person_name = str(person)
         person.delete()
-        messages.success(request, 'Сотрудник удалён')
+        messages.success(request, f'Сотрудник {person_name} удалён')
         return redirect('people:person_list')
 
     return render(request, 'app/people/delete.html', {
@@ -135,5 +183,5 @@ def person_delete(request, pk):
         'active_tab': 'people',
         'page_title': 'Сотрудники',
         'page_subtitle': 'Удаление сотрудника',
-        'title': 'Удаление сотрудника',
+        'title': f'Удаление: {person.last_name} {person.first_name}',
     })

@@ -21,30 +21,44 @@ def level0_required(view_func):
 @level0_required
 def access_dashboard(request):
     ruleset = AccessControlService.get_ruleset_for_user(request.user)
-    rules_count = AccessRule.objects.filter(ruleset=ruleset, resource="user").count()
-    field_rules_count = AccessFieldRule.objects.filter(ruleset=ruleset, resource="user").count()
+    user_rules_count = AccessRule.objects.filter(ruleset=ruleset, resource="user").count()
+    person_rules_count = AccessRule.objects.filter(ruleset=ruleset, resource="person").count()
+    field_rules_count = AccessFieldRule.objects.filter(ruleset=ruleset).count()
 
     return render(request, "app/access_control/dashboard.html", {
         "ruleset": ruleset,
-        "rules_count": rules_count,
+        "user_rules_count": user_rules_count,
+        "person_rules_count": person_rules_count,
         "field_rules_count": field_rules_count,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
-        "page_subtitle": "Права пользователей",
-        "title": "Права пользователей",
+        "page_subtitle": "Права пользователей и сотрудников",
+        "title": "Управление доступом",
     })
 
 
 @level0_required
 def seed_user_rules(request):
     if request.method == "POST":
-        AccessControlService.seed_user_rules(request.user)
+        AccessControlService.seed_rules(request.user, "user")
         messages.success(request, "Стартовые правила для пользователей заполнены")
     return redirect("access_control:dashboard")
 
 
 @level0_required
-def user_access_matrix(request):
+def seed_person_rules(request):
+    if request.method == "POST":
+        AccessControlService.seed_rules(request.user, "person")
+        messages.success(request, "Стартовые правила для сотрудников заполнены")
+    return redirect("access_control:dashboard")
+
+
+@level0_required
+def resource_matrix(request, resource):
+    if resource not in {"user", "person"}:
+        messages.error(request, "Неизвестный ресурс")
+        return redirect("access_control:dashboard")
+
     try:
         level = int(request.GET.get("level", 0))
     except (TypeError, ValueError):
@@ -56,53 +70,63 @@ def user_access_matrix(request):
         except (TypeError, ValueError):
             level = 0
 
-        AccessControlService.save_user_access_matrix(request.user, level, request.POST)
-        messages.success(request, f"Права для уровня {level} сохранены")
+        AccessControlService.save_matrix(request.user, resource, level, request.POST)
+        messages.success(request, f"Права для ресурса '{resource}' и уровня {level} сохранены")
         return redirect(f"{request.path}?level={level}")
 
-    matrix = AccessControlService.build_user_access_matrix(request.user, level)
+    matrix = AccessControlService.build_matrix(request.user, resource, level)
 
-    return render(request, "app/access_control/user_matrix.html", {
+    return render(request, "app/access_control/resource_matrix.html", {
         **matrix,
         "available_levels": [0, 1, 2, 3, 4, 5],
         "active_tab": "access_control",
         "page_title": "Управление доступом",
-        "page_subtitle": f"Матрица прав пользователей для уровня {level}",
-        "title": "Матрица прав пользователей",
+        "page_subtitle": f"Матрица прав: {matrix['resource_title']} / уровень {level}",
+        "title": f"Матрица прав: {matrix['resource_title']}",
     })
 
 
 @level0_required
-def rule_list(request):
+def rule_list(request, resource):
+    if resource not in {"user", "person"}:
+        messages.error(request, "Неизвестный ресурс")
+        return redirect("access_control:dashboard")
+
     ruleset = AccessControlService.get_ruleset_for_user(request.user)
     items = AccessRule.objects.filter(
         ruleset=ruleset,
-        resource="user",
+        resource=resource,
     ).order_by("subject_level", "action", "priority", "id")
 
     return render(request, "app/access_control/rules/list.html", {
         "items": items,
         "ruleset": ruleset,
+        "resource": resource,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
-        "page_subtitle": "Правила доступа пользователей",
+        "page_subtitle": f"Правила доступа: {resource}",
         "title": "Правила доступа",
     })
 
 
 @level0_required
-def rule_add(request):
+def rule_add(request, resource):
+    if resource not in {"user", "person"}:
+        messages.error(request, "Неизвестный ресурс")
+        return redirect("access_control:dashboard")
+
     if request.method == "POST":
-        form = AccessRuleForm(request.POST)
+        form = AccessRuleForm(request.POST, resource=resource)
         if form.is_valid():
             form.save()
             messages.success(request, "Правило доступа создано")
-            return redirect("access_control:rules")
+            return redirect("access_control:rules", resource=resource)
     else:
-        form = AccessRuleForm()
+        form = AccessRuleForm(resource=resource)
 
     return render(request, "app/access_control/rules/form.html", {
         "form": form,
+        "resource": resource,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
         "page_subtitle": "Создание правила доступа",
@@ -111,21 +135,26 @@ def rule_add(request):
 
 
 @level0_required
-def rule_edit(request, pk):
-    item = get_object_or_404(AccessRule, pk=pk)
+def rule_edit(request, resource, pk):
+    if resource not in {"user", "person"}:
+        messages.error(request, "Неизвестный ресурс")
+        return redirect("access_control:dashboard")
+
+    item = get_object_or_404(AccessRule, pk=pk, resource=resource)
 
     if request.method == "POST":
-        form = AccessRuleForm(request.POST, instance=item)
+        form = AccessRuleForm(request.POST, instance=item, resource=resource)
         if form.is_valid():
             form.save()
             messages.success(request, "Правило доступа обновлено")
-            return redirect("access_control:rules")
+            return redirect("access_control:rules", resource=resource)
     else:
-        form = AccessRuleForm(instance=item)
+        form = AccessRuleForm(instance=item, resource=resource)
 
     return render(request, "app/access_control/rules/form.html", {
         "form": form,
         "item": item,
+        "resource": resource,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
         "page_subtitle": "Редактирование правила доступа",
@@ -134,36 +163,46 @@ def rule_edit(request, pk):
 
 
 @level0_required
-def field_rule_list(request):
+def field_rule_list(request, resource):
+    if resource not in {"user", "person"}:
+        messages.error(request, "Неизвестный ресурс")
+        return redirect("access_control:dashboard")
+
     ruleset = AccessControlService.get_ruleset_for_user(request.user)
     items = AccessFieldRule.objects.filter(
         ruleset=ruleset,
-        resource="user",
+        resource=resource,
     ).order_by("subject_level", "action", "field_name", "priority", "id")
 
     return render(request, "app/access_control/field_rules/list.html", {
         "items": items,
         "ruleset": ruleset,
+        "resource": resource,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
-        "page_subtitle": "Правила полей пользователей",
+        "page_subtitle": f"Правила полей: {resource}",
         "title": "Правила полей",
     })
 
 
 @level0_required
-def field_rule_add(request):
+def field_rule_add(request, resource):
+    if resource not in {"user", "person"}:
+        messages.error(request, "Неизвестный ресурс")
+        return redirect("access_control:dashboard")
+
     if request.method == "POST":
-        form = AccessFieldRuleForm(request.POST)
+        form = AccessFieldRuleForm(request.POST, resource=resource)
         if form.is_valid():
             form.save()
             messages.success(request, "Правило поля создано")
-            return redirect("access_control:field_rules")
+            return redirect("access_control:field_rules", resource=resource)
     else:
-        form = AccessFieldRuleForm()
+        form = AccessFieldRuleForm(resource=resource)
 
     return render(request, "app/access_control/field_rules/form.html", {
         "form": form,
+        "resource": resource,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
         "page_subtitle": "Создание правила поля",
@@ -172,21 +211,26 @@ def field_rule_add(request):
 
 
 @level0_required
-def field_rule_edit(request, pk):
-    item = get_object_or_404(AccessFieldRule, pk=pk)
+def field_rule_edit(request, resource, pk):
+    if resource not in {"user", "person"}:
+        messages.error(request, "Неизвестный ресурс")
+        return redirect("access_control:dashboard")
+
+    item = get_object_or_404(AccessFieldRule, pk=pk, resource=resource)
 
     if request.method == "POST":
-        form = AccessFieldRuleForm(request.POST, instance=item)
+        form = AccessFieldRuleForm(request.POST, instance=item, resource=resource)
         if form.is_valid():
             form.save()
             messages.success(request, "Правило поля обновлено")
-            return redirect("access_control:field_rules")
+            return redirect("access_control:field_rules", resource=resource)
     else:
-        form = AccessFieldRuleForm(instance=item)
+        form = AccessFieldRuleForm(instance=item, resource=resource)
 
     return render(request, "app/access_control/field_rules/form.html", {
         "form": form,
         "item": item,
+        "resource": resource,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
         "page_subtitle": "Редактирование правила поля",

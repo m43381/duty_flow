@@ -8,15 +8,15 @@ from core.services.user_service import UserService
 from access_control.services import AccessManager
 
 
+from access_control.services.labels import build_unit_path_label
+
 def apply_user_access_to_form(form, access_manager, action: str):
     visible_fields = set(access_manager.visible_user_fields(action))
     editable_fields = set(access_manager.editable_user_fields(action))
 
-    # Эти поля есть только у формы создания пользователя
     technical_fields = {"password", "password_confirm"}
 
     for field_name in list(form.fields.keys()):
-        # Парольные поля не фильтруем через ACL полей
         if field_name in technical_fields:
             continue
 
@@ -27,8 +27,6 @@ def apply_user_access_to_form(form, access_manager, action: str):
         if field_name not in editable_fields:
             form.fields[field_name].disabled = True
 
-    # В твоей create-форме unit — это ChoiceField, не ModelChoiceField
-    # поэтому меняем choices, а не queryset
     if "unit" in form.fields:
         if action == "create":
             units = access_manager.allowed_units_for_user_creation()
@@ -39,8 +37,8 @@ def apply_user_access_to_form(form, access_manager, action: str):
 
         if units is not None:
             form.fields["unit"].choices = [
-                (unit.id, f"{unit.name} ({unit.unit_type.name})")
-                for unit in units
+                (unit.id, build_unit_path_label(unit))
+                for unit in units.select_related("parent", "unit_type")
             ]
 
 

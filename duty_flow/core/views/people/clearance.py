@@ -1,18 +1,19 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+
 from people.models import Person, DutyClearance
 from people.forms import DutyClearanceForm
-from users_app.access_service import AccessService
 from core.services.people_service import PersonService
+from access_control.services import AccessManager
 
 
 @login_required
 def clearance_add(request, pk):
     person = get_object_or_404(Person, pk=pk)
-    access = AccessService(request.user)
+    access = AccessManager(request.user)
 
-    if not access.can_edit_object(person):
+    if not access.can_person("manage_clearances", person):
         messages.error(request, 'Нет прав для редактирования')
         return redirect('people:person_detail', pk=person.pk)
 
@@ -40,9 +41,9 @@ def clearance_add(request, pk):
 def clearance_delete(request, pk, clearance_id):
     person = get_object_or_404(Person, pk=pk)
     clearance = get_object_or_404(DutyClearance, pk=clearance_id, person=person)
-    access = AccessService(request.user)
+    access = AccessManager(request.user)
 
-    if not access.can_edit_object(person):
+    if not access.can_person("manage_clearances", person):
         messages.error(request, 'Нет прав для удаления')
         return redirect('people:person_detail', pk=person.pk)
 

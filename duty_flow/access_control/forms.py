@@ -3,13 +3,22 @@ from django import forms
 from .models import AccessFieldRule, AccessRule, AccessRuleSet
 
 
-USER_FIELDS = [
-    ("username", "Логин"),
-    ("first_name", "Имя"),
-    ("last_name", "Фамилия"),
-    ("email", "Email"),
-    ("unit", "Подразделение"),
-]
+RESOURCE_FIELDS = {
+    "user": [
+        ("username", "Логин"),
+        ("first_name", "Имя"),
+        ("last_name", "Фамилия"),
+        ("email", "Email"),
+        ("unit", "Подразделение"),
+    ],
+    "person": [
+        ("last_name", "Фамилия"),
+        ("first_name", "Имя"),
+        ("middle_name", "Отчество"),
+        ("rank", "Звание"),
+        ("unit", "Подразделение"),
+    ],
+}
 
 
 class RulesetAwareFormMixin:
@@ -51,15 +60,35 @@ class AccessRuleForm(RulesetAwareFormMixin, forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
+        resource = kwargs.pop("resource", None)
         super().__init__(*args, **kwargs)
         self._setup_ruleset_field()
 
-        self.fields["resource"].initial = "user"
-        self.fields["resource"].disabled = True
+        if resource:
+            self.fields["resource"].initial = resource
+            self.fields["resource"].disabled = True
+
+            if resource == "user":
+                self.fields["action"].choices = [
+                    ("view", "Просмотр"),
+                    ("create", "Создание"),
+                    ("update", "Редактирование"),
+                    ("delete", "Удаление"),
+                    ("change_password", "Смена пароля"),
+                ]
+            elif resource == "person":
+                self.fields["action"].choices = [
+                    ("view", "Просмотр"),
+                    ("create", "Создание"),
+                    ("update", "Редактирование"),
+                    ("delete", "Удаление"),
+                    ("manage_exemptions", "Управление освобождениями"),
+                    ("manage_clearances", "Управление допусками"),
+                ]
 
 
 class AccessFieldRuleForm(RulesetAwareFormMixin, forms.ModelForm):
-    field_name = forms.ChoiceField(label="Поле", choices=USER_FIELDS)
+    field_name = forms.ChoiceField(label="Поле", choices=[])
 
     class Meta:
         model = AccessFieldRule
@@ -77,8 +106,24 @@ class AccessFieldRuleForm(RulesetAwareFormMixin, forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
+        resource = kwargs.pop("resource", None)
         super().__init__(*args, **kwargs)
         self._setup_ruleset_field()
 
-        self.fields["resource"].initial = "user"
-        self.fields["resource"].disabled = True
+        if resource:
+            self.fields["resource"].initial = resource
+            self.fields["resource"].disabled = True
+            self.fields["field_name"].choices = RESOURCE_FIELDS.get(resource, [])
+
+            if resource == "user":
+                self.fields["action"].choices = [
+                    ("view", "Просмотр"),
+                    ("create", "Создание"),
+                    ("update", "Редактирование"),
+                ]
+            elif resource == "person":
+                self.fields["action"].choices = [
+                    ("view", "Просмотр"),
+                    ("create", "Создание"),
+                    ("update", "Редактирование"),
+                ]
