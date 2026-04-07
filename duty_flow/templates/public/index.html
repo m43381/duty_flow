@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}DutyFlow — Система управления нарядами{% endblock %}
+{% block title %}DutyFlow{% endblock %}
 
 {% block body %}
 <div class="public-layout">
@@ -12,6 +12,18 @@
             </a>
 
             <div class="public-header__actions">
+                <div class="theme-switcher theme-switcher--compact" data-theme-switcher>
+                    <button type="button" class="theme-switcher__button" data-theme-value="light" aria-label="Светлая тема">
+                        ☀
+                    </button>
+                    <button type="button" class="theme-switcher__button" data-theme-value="dark" aria-label="Тёмная тема">
+                        🌙
+                    </button>
+                    <button type="button" class="theme-switcher__button" data-theme-value="system" aria-label="Системная тема">
+                        ◐
+                    </button>
+                </div>
+
                 {% if user.is_authenticated %}
                     <a href="{% url 'auth:dashboard' %}" class="button button--primary">
                         Открыть кабинет
@@ -33,34 +45,33 @@
     </header>
 
     <main class="public-main">
-        <section class="hero">
+        <section class="hero hero--minimal">
             <div class="hero__content">
-                <div class="hero__badge">Локальная система управления нарядами</div>
+                <div class="hero__badge">DutyFlow</div>
 
                 <h1 class="hero__title">
-                    Надёжное планирование, распределение и контроль нарядов
+                    Рабочее пространство
                 </h1>
 
                 <p class="hero__subtitle">
-                    DutyFlow помогает работать с подразделениями, сотрудниками, допусками,
-                    планами и назначениями в едином интерфейсе с поддержкой светлой и тёмной темы.
+                    Откройте систему и продолжите работу.
                 </p>
 
                 <div class="hero__actions">
                     {% if user.is_authenticated %}
                         <a href="{% url 'auth:dashboard' %}" class="button button--primary">
-                            Перейти в дашборд
+                            Перейти в кабинет
                         </a>
                     {% else %}
                         <a href="{% url 'login' %}" class="button button--primary">
-                            Войти в систему
+                            Войти
                         </a>
                     {% endif %}
                 </div>
             </div>
 
             <div class="hero__panel">
-                <div class="preview-card">
+                <div class="preview-card preview-card--compact">
                     <div class="preview-card__header">
                         <span class="preview-card__dot"></span>
                         <span class="preview-card__dot"></span>
@@ -70,16 +81,16 @@
                     <div class="preview-card__body">
                         <div class="preview-stat-list">
                             <div class="preview-stat">
-                                <span class="preview-stat__label">Сотрудники</span>
-                                <span class="preview-stat__value">128</span>
+                                <span class="preview-stat__label">Период</span>
+                                <span class="preview-stat__value">Апрель 2026</span>
                             </div>
                             <div class="preview-stat">
-                                <span class="preview-stat__label">Планы на месяц</span>
-                                <span class="preview-stat__value">42</span>
+                                <span class="preview-stat__label">Подразделение</span>
+                                <span class="preview-stat__value">Академия</span>
                             </div>
                             <div class="preview-stat">
-                                <span class="preview-stat__label">Открытые назначения</span>
-                                <span class="preview-stat__value">17</span>
+                                <span class="preview-stat__label">Состояние</span>
+                                <span class="preview-stat__value">Рабочее</span>
                             </div>
                         </div>
 
@@ -90,19 +101,19 @@
                                 <span>Статус</span>
                             </div>
                             <div class="preview-table__row">
-                                <span>08.04</span>
+                                <span>07.04</span>
                                 <span>Дежурство</span>
-                                <span class="badge badge--success">Готово</span>
+                                <span class="badge badge--warning">0/1</span>
+                            </div>
+                            <div class="preview-table__row">
+                                <span>08.04</span>
+                                <span>Патруль</span>
+                                <span class="badge badge--success">1/1</span>
                             </div>
                             <div class="preview-table__row">
                                 <span>09.04</span>
-                                <span>Патруль</span>
-                                <span class="badge badge--warning">Нужно назначение</span>
-                            </div>
-                            <div class="preview-table__row">
-                                <span>10.04</span>
                                 <span>Проверка</span>
-                                <span class="badge badge--success">Готово</span>
+                                <span class="badge badge--success">2/2</span>
                             </div>
                         </div>
                     </div>
@@ -110,62 +121,34 @@
             </div>
         </section>
 
-        <section class="public-section">
+        <section class="public-section public-section--compact">
             <div class="public-section__header">
-                <h2 class="public-section__title">Основные возможности</h2>
+                <h2 class="public-section__title">Быстрый доступ</h2>
                 <p class="public-section__subtitle">
-                    Интерфейс проектируется как строгая и удобная рабочая среда без визуального шума.
+                    Основные рабочие направления в единой среде.
                 </p>
             </div>
 
             <div class="feature-grid">
                 <article class="feature-card">
-                    <h3 class="feature-card__title">Подразделения и иерархия</h3>
+                    <h3 class="feature-card__title">Подразделения</h3>
                     <p class="feature-card__text">
-                        Работа со структурой подразделений, типами подразделений и правами доступа по уровням.
+                        Структура, уровни и типы подразделений.
                     </p>
                 </article>
 
                 <article class="feature-card">
-                    <h3 class="feature-card__title">Сотрудники и допуски</h3>
+                    <h3 class="feature-card__title">Сотрудники</h3>
                     <p class="feature-card__text">
-                        Учет личного состава, освобождений и допусков к различным видам нарядов.
+                        Личный состав, допуски и освобождения.
                     </p>
                 </article>
 
                 <article class="feature-card">
                     <h3 class="feature-card__title">Планы и назначения</h3>
                     <p class="feature-card__text">
-                        Формирование расписаний, контроль комплектования и распределение людей по планам.
+                        Расписания, распределение и контроль исполнения.
                     </p>
-                </article>
-            </div>
-        </section>
-
-        <section class="public-section">
-            <div class="public-section__header">
-                <h2 class="public-section__title">Роли в системе</h2>
-            </div>
-
-            <div class="role-grid">
-                <article class="role-card">
-                    <h3 class="role-card__title">Академия</h3>
-                    <p class="role-card__text">Полный уровень контроля, работа со всеми сущностями системы.</p>
-                </article>
-
-                <article class="role-card">
-                    <h3 class="role-card__title">Факультет</h3>
-                    <p class="role-card__text">Управление своими подразделениями и планами на подчинённом уровне.</p>
-                </article>
-
-                <article class="role-card">
-                    <h3 class="role-card__title">Кафедра</h3>
-                    <p class="role-card__text">Работа с локальными сотрудниками, допусками и текущими назначениями.</p>
-                </article>
-
-                <article class="role-card">
-                    <h3 class="role-card__title">Комендант</h3>
-                    <p class="role-card__text">Контроль хозяйственных и специальных нарядов в своей зоне ответственности.</p>
                 </article>
             </div>
         </section>

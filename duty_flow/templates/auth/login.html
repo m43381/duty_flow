@@ -1,44 +1,50 @@
 {% extends 'base.html' %}
 
-{% block title %}Вход в систему — DutyFlow{% endblock %}
+{% block title %}Вход — DutyFlow{% endblock %}
 
 {% block body %}
 <div class="auth-layout">
     <div class="auth-shell">
         <section class="auth-shell__brand">
-            <a href="{% url 'auth:index' %}" class="auth-brand">
-                <span class="auth-brand__mark">DF</span>
-                <span class="auth-brand__text">DutyFlow</span>
-            </a>
+            <div class="auth-shell__top">
+                <a href="{% url 'auth:index' %}" class="auth-brand">
+                    <span class="auth-brand__mark">DF</span>
+                    <span class="auth-brand__text">DutyFlow</span>
+                </a>
 
-            <div class="auth-intro">
-                <div class="auth-intro__badge">Локальная система управления нарядами</div>
+                <div class="theme-switcher theme-switcher--compact" data-theme-switcher>
+                    <button type="button" class="theme-switcher__button" data-theme-value="light" aria-label="Светлая тема">
+                        ☀
+                    </button>
+                    <button type="button" class="theme-switcher__button" data-theme-value="dark" aria-label="Тёмная тема">
+                        🌙
+                    </button>
+                    <button type="button" class="theme-switcher__button" data-theme-value="system" aria-label="Системная тема">
+                        ◐
+                    </button>
+                </div>
+            </div>
+
+            <div class="auth-intro auth-intro--minimal">
+                <div class="auth-intro__badge">DutyFlow</div>
                 <h1 class="auth-intro__title">Вход в рабочее пространство</h1>
                 <p class="auth-intro__text">
-                    Используйте свои учетные данные для входа в систему управления
-                    подразделениями, сотрудниками, планами и назначениями.
+                    Используйте учётные данные для продолжения работы.
                 </p>
             </div>
 
-            <div class="auth-feature-list">
+            <div class="auth-feature-list auth-feature-list--compact">
                 <article class="auth-feature">
-                    <h2 class="auth-feature__title">Структурированная работа</h2>
+                    <h2 class="auth-feature__title">Рабочая среда</h2>
                     <p class="auth-feature__text">
-                        Единый интерфейс для списков, карточек, планов и распределения нарядов.
+                        Быстрый доступ к планам, сотрудникам, подразделениям и назначениям.
                     </p>
                 </article>
 
                 <article class="auth-feature">
-                    <h2 class="auth-feature__title">Роли и доступ</h2>
+                    <h2 class="auth-feature__title">Единый интерфейс</h2>
                     <p class="auth-feature__text">
-                        Поддержка разных уровней доступа в зависимости от подразделения и роли.
-                    </p>
-                </article>
-
-                <article class="auth-feature">
-                    <h2 class="auth-feature__title">Светлая и тёмная тема</h2>
-                    <p class="auth-feature__text">
-                        Комфортная работа в локальной среде с сохранением выбранной темы.
+                        Последовательная работа со списками, карточками и календарями.
                     </p>
                 </article>
             </div>
@@ -48,19 +54,19 @@
             <div class="auth-card">
                 <div class="auth-card__header">
                     <h2 class="auth-card__title">Вход</h2>
-                    <p class="auth-card__subtitle">Введите логин и пароль для продолжения</p>
+                    <p class="auth-card__subtitle">Введите логин и пароль</p>
                 </div>
 
                 <div class="auth-card__body">
                     {% if form.errors %}
                         <div class="alert alert--danger">
-                            Неверный логин или пароль. Проверьте введённые данные.
+                            Неверный логин или пароль.
                         </div>
                     {% endif %}
 
                     {% if next and user.is_authenticated %}
                         <div class="alert alert--warning">
-                            У вашей учетной записи нет доступа к этой странице.
+                            У вашей учётной записи нет доступа к этой странице.
                         </div>
                     {% endif %}
 
@@ -104,7 +110,7 @@
                                 Войти
                             </button>
                             <a href="{% url 'auth:index' %}" class="button">
-                                На главную
+                                Назад
                             </a>
                         </div>
                     </form>
