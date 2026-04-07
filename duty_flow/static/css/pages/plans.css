@@ -193,7 +193,7 @@
 }
 
 .plan-days-table thead th.plan-days-table__date-head--weekend {
-    background: var(--color-weekends) 5%;
+    background: color-mix(in srgb, var(--color-warning) 4%, var(--color-surface));
 }
 
 .plan-days-table__date-num {
