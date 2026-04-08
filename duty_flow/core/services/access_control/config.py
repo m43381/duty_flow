@@ -24,9 +24,14 @@ RESOURCE_CONFIG = {
             ("email", "Email"),
             ("unit", "Подразделение"),
         ],
-        "choice_fields": [
-            ("unit", "Подразделение"),
-        ],
+        "choice_fields": {
+            "create": [
+                ("unit", "Подразделение"),
+            ],
+            "update": [
+                ("unit", "Подразделение"),
+            ],
+        },
     },
     "person": {
         "title": "Сотрудники",
@@ -46,6 +51,7 @@ RESOURCE_CONFIG = {
         "choice_actions": [
             ("create", "Создание"),
             ("update", "Редактирование"),
+            ("manage_clearances", "Управление допусками"),
         ],
         "fields": [
             ("last_name", "Фамилия"),
@@ -54,9 +60,17 @@ RESOURCE_CONFIG = {
             ("rank", "Звание"),
             ("unit", "Подразделение"),
         ],
-        "choice_fields": [
-            ("unit", "Подразделение"),
-        ],
+        "choice_fields": {
+            "create": [
+                ("unit", "Подразделение"),
+            ],
+            "update": [
+                ("unit", "Подразделение"),
+            ],
+            "manage_clearances": [
+                ("duty_type", "Тип наряда"),
+            ],
+        },
     },
 }
 
@@ -66,4 +80,10 @@ SCOPES = [
     ("descendants", "Только дочерние подразделения"),
     ("own_and_descendants", "Своё и дочерние подразделения"),
     ("all", "Все подразделения"),
+]
+
+CHOICE_MODES = [
+    ("scope", "По scope"),
+    ("specific_units", "Только конкретные подразделения"),
+    ("scope_plus_units", "Scope + конкретные подразделения"),
 ]

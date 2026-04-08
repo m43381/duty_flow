@@ -1,6 +1,8 @@
 from access_control.models import AccessChoiceRule, AccessFieldRule, AccessRule
+from units.models import Unit
 
-from .config import RESOURCE_CONFIG, SCOPES
+from access_control.services.labels import build_unit_path_label
+from .config import CHOICE_MODES, RESOURCE_CONFIG, SCOPES
 from .ruleset import get_ruleset_for_user
 
 
@@ -10,6 +12,7 @@ def build_matrix(user, resource: str, level: int):
 
     ruleset = get_ruleset_for_user(user)
     config = RESOURCE_CONFIG[resource]
+    units = Unit.objects.select_related("parent", "unit_type").all().order_by("name")
 
     action_rows = []
     for action_code, action_label in config["actions"]:
@@ -74,15 +77,28 @@ def build_matrix(user, resource: str, level: int):
                 action=action_code,
                 subject_level=level,
                 is_active=True,
-            ).order_by("priority", "id")
+            ).prefetch_related("units").order_by("priority", "id")
         }
 
-        for field_name, field_label in config["choice_fields"]:
+        action_choice_fields = config["choice_fields"].get(action_code, [])
+
+        for field_name, field_label in action_choice_fields:
             choice_rule = existing_rules.get(field_name)
+            selected_unit_ids = list(choice_rule.units.values_list("id", flat=True)) if choice_rule else []
+
             fields_data.append({
                 "field_name": field_name,
                 "field_label": field_label,
                 "scope": choice_rule.scope if choice_rule else "none",
+                "mode": choice_rule.mode if choice_rule else "scope",
+                "selected_unit_ids": selected_unit_ids,
+                "unit_options": [
+                    {
+                        "id": unit.id,
+                        "label": build_unit_path_label(unit),
+                    }
+                    for unit in units
+                ] if field_name == "duty_type" else [],
             })
 
         choice_rows.append({
@@ -100,4 +116,5 @@ def build_matrix(user, resource: str, level: int):
         "field_rows": field_rows,
         "choice_rows": choice_rows,
         "scopes": SCOPES,
+        "choice_modes": CHOICE_MODES,
     }

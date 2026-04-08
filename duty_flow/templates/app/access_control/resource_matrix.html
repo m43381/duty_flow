@@ -146,13 +146,24 @@
                                 <thead>
                                     <tr>
                                         <th>Поле</th>
-                                        <th>Scope значений</th>
+                                        <th>Режим</th>
+                                        <th>Scope</th>
+                                        <th>Конкретные подразделения</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for field in block.fields %}
                                     <tr>
                                         <td>{{ field.field_label }}</td>
+                                        <td>
+                                            <select name="choice__{{ block.action }}__{{ field.field_name }}__mode" class="form-select">
+                                                {% for mode_value, mode_label in choice_modes %}
+                                                    <option value="{{ mode_value }}" {% if field.mode == mode_value %}selected{% endif %}>
+                                                        {{ mode_label }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
                                         <td>
                                             <select name="choice__{{ block.action }}__{{ field.field_name }}__scope" class="form-select">
                                                 {% for scope_value, scope_label in scopes %}
@@ -161,6 +172,26 @@
                                                     </option>
                                                 {% endfor %}
                                             </select>
+                                        </td>
+                                        <td>
+                                            {% if field.unit_options %}
+                                                <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--color-border, #d9dee7); border-radius: 12px; padding: 0.75rem; background: var(--color-surface, #fff);">
+                                                    {% for unit in field.unit_options %}
+                                                        <label style="display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.35rem 0; cursor: pointer;">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="choice__{{ block.action }}__{{ field.field_name }}__units"
+                                                                value="{{ unit.id }}"
+                                                                {% if unit.id in field.selected_unit_ids %}checked{% endif %}
+                                                                style="margin-top: 0.15rem;"
+                                                            >
+                                                            <span style="line-height: 1.35;">{{ unit.label }}</span>
+                                                        </label>
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                     {% endfor %}

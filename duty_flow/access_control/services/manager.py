@@ -50,6 +50,9 @@ class AccessManager:
     def allowed_units_for_person_update(self):
         return self.person_access.allowed_units_for_update()
 
+    def allowed_duty_types_for_clearance(self):
+        return self.person_access.allowed_duty_types_for_clearance()
+
     def seed_default_user_rules(self):
         seed_default_user_rules(self.ruleset)
 

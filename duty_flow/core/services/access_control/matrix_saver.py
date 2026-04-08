@@ -1,4 +1,5 @@
 from access_control.models import AccessChoiceRule, AccessFieldRule, AccessRule
+from units.models import Unit
 
 from .config import RESOURCE_CONFIG
 from .ruleset import get_ruleset_for_user
@@ -50,10 +51,11 @@ def save_matrix(user, resource: str, level: int, post_data):
             )
 
     for action_code, _ in config["choice_actions"]:
-        for field_name, _ in config["choice_fields"]:
+        for field_name, _ in config["choice_fields"].get(action_code, []):
             scope = post_data.get(f"choice__{action_code}__{field_name}__scope", "none")
+            mode = post_data.get(f"choice__{action_code}__{field_name}__mode", "scope")
 
-            AccessChoiceRule.objects.update_or_create(
+            choice_rule, _ = AccessChoiceRule.objects.update_or_create(
                 ruleset=ruleset,
                 resource=resource,
                 action=action_code,
@@ -61,10 +63,18 @@ def save_matrix(user, resource: str, level: int, post_data):
                 field_name=field_name,
                 priority=10,
                 defaults={
+                    "mode": mode,
                     "scope": scope,
                     "is_active": True,
                     "note": "Настроено через матрицу select/queryset",
                 },
             )
+
+            if field_name == "duty_type":
+                unit_ids = post_data.getlist(f"choice__{action_code}__{field_name}__units")
+                units = Unit.objects.filter(id__in=unit_ids)
+                choice_rule.units.set(units)
+            else:
+                choice_rule.units.clear()
 
     return ruleset

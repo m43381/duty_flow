@@ -136,6 +136,13 @@ class AccessChoiceRule(models.Model):
     ACTION_CHOICES = [
         ("create", "Создание"),
         ("update", "Редактирование"),
+        ("manage_clearances", "Управление допусками"),
+    ]
+
+    MODE_CHOICES = [
+        ("scope", "По scope"),
+        ("specific_units", "Только конкретные подразделения"),
+        ("scope_plus_units", "Scope + конкретные подразделения"),
     ]
 
     ruleset = models.ForeignKey(
@@ -148,7 +155,26 @@ class AccessChoiceRule(models.Model):
     action = models.CharField("Действие", max_length=50, choices=ACTION_CHOICES)
     subject_level = models.PositiveSmallIntegerField("Для уровня")
     field_name = models.CharField("Поле select/queryset", max_length=100)
-    scope = models.CharField("Scope значений", max_length=50, choices=SCOPE_CHOICES, default="none")
+
+    mode = models.CharField(
+        "Режим выбора",
+        max_length=32,
+        choices=MODE_CHOICES,
+        default="scope",
+    )
+    scope = models.CharField(
+        "Scope значений",
+        max_length=50,
+        choices=SCOPE_CHOICES,
+        default="none",
+    )
+    units = models.ManyToManyField(
+        "units.Unit",
+        blank=True,
+        related_name="access_choice_rules",
+        verbose_name="Конкретные подразделения",
+    )
+
     is_active = models.BooleanField("Активно", default=True)
     priority = models.PositiveIntegerField("Приоритет", default=100)
     note = models.CharField("Комментарий", max_length=255, blank=True)
@@ -164,4 +190,4 @@ class AccessChoiceRule(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.ruleset} | {self.resource}.{self.action}.{self.field_name} -> {self.scope}"
+        return f"{self.ruleset} | {self.resource}.{self.action}.{self.field_name} -> {self.mode}"
