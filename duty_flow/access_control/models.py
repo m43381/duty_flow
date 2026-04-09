@@ -39,6 +39,7 @@ class AccessRule(models.Model):
     RESOURCE_CHOICES = [
         ("user", "Пользователи"),
         ("person", "Сотрудники"),
+        ("unit", "Подразделения"),
     ]
 
     ACTION_CHOICES = [
@@ -143,6 +144,8 @@ class AccessChoiceRule(models.Model):
         ("scope", "По scope"),
         ("specific_units", "Только конкретные подразделения"),
         ("scope_plus_units", "Scope + конкретные подразделения"),
+        ("all_values", "Все значения"),
+        ("specific_unit_types", "Только конкретные типы подразделений"),
     ]
 
     ruleset = models.ForeignKey(
@@ -173,6 +176,12 @@ class AccessChoiceRule(models.Model):
         blank=True,
         related_name="access_choice_rules",
         verbose_name="Конкретные подразделения",
+    )
+    unit_types = models.ManyToManyField(
+        "units.UnitType",
+        blank=True,
+        related_name="access_choice_rules",
+        verbose_name="Конкретные типы подразделений",
     )
 
     is_active = models.BooleanField("Активно", default=True)

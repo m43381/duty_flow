@@ -95,30 +95,6 @@ def seed_default_user_rules(ruleset):
             },
         )
 
-    choice_rules = [
-        (0, "create", "unit", "all"),
-        (0, "update", "unit", "all"),
-        (1, "create", "unit", "own_and_descendants"),
-        (1, "update", "unit", "own_and_descendants"),
-        (2, "create", "unit", "own_unit"),
-        (2, "update", "unit", "own_unit"),
-    ]
-
-    for subject_level, action, field_name, scope in choice_rules:
-        AccessChoiceRule.objects.update_or_create(
-            ruleset=ruleset,
-            resource="user",
-            action=action,
-            subject_level=subject_level,
-            field_name=field_name,
-            priority=10,
-            defaults={
-                "scope": scope,
-                "is_active": True,
-                "note": "Автозаполнение стартового набора",
-            },
-        )
-
 
 def seed_default_person_rules(ruleset):
     default_rules = [
@@ -231,31 +207,137 @@ def seed_default_person_rules(ruleset):
             },
         )
 
-    choice_rules = [
-        (0, "create", "unit", "all"),
-        (0, "update", "unit", "all"),
-        (0, "manage_clearances", "duty_type", "all"),
 
-        (1, "create", "unit", "own_and_descendants"),
-        (1, "update", "unit", "own_and_descendants"),
-        (1, "manage_clearances", "duty_type", "own_and_descendants"),
+def seed_default_unit_rules(ruleset):
+    default_rules = [
+        (0, "view", True, "all", 10),
+        (0, "create", True, "all", 10),
+        (0, "update", True, "all", 10),
+        (0, "delete", True, "all", 10),
 
-        (2, "create", "unit", "own_unit"),
-        (2, "update", "unit", "own_unit"),
-        (2, "manage_clearances", "duty_type", "own_unit"),
+        (1, "view", True, "own_and_descendants", 10),
+        (1, "create", True, "own_and_descendants", 10),
+        (1, "update", True, "own_and_descendants", 10),
+        (1, "delete", False, "none", 10),
+
+        (2, "view", True, "own_unit", 10),
+        (2, "create", False, "none", 10),
+        (2, "update", False, "none", 10),
+        (2, "delete", False, "none", 10),
     ]
 
-    for subject_level, action, field_name, scope in choice_rules:
-        AccessChoiceRule.objects.update_or_create(
+    for subject_level, action, is_allowed, scope, priority in default_rules:
+        AccessRule.objects.update_or_create(
             ruleset=ruleset,
-            resource="person",
+            resource="unit",
             action=action,
             subject_level=subject_level,
-            field_name=field_name,
-            priority=10,
+            priority=priority,
             defaults={
+                "is_allowed": is_allowed,
                 "scope": scope,
                 "is_active": True,
                 "note": "Автозаполнение стартового набора",
             },
         )
+
+    default_field_rules = [
+        (0, "view", "name", True, False),
+        (0, "view", "parent", True, False),
+        (0, "view", "unit_type", True, False),
+
+        (0, "create", "name", True, True),
+        (0, "create", "parent", True, True),
+        (0, "create", "unit_type", True, True),
+
+        (0, "update", "name", True, True),
+        (0, "update", "parent", True, True),
+        (0, "update", "unit_type", True, True),
+
+        (1, "view", "name", True, False),
+        (1, "view", "parent", True, False),
+        (1, "view", "unit_type", True, False),
+
+        (1, "create", "name", True, True),
+        (1, "create", "parent", True, True),
+        (1, "create", "unit_type", True, True),
+
+        (1, "update", "name", True, True),
+        (1, "update", "parent", True, True),
+        (1, "update", "unit_type", True, True),
+
+        (2, "view", "name", True, False),
+        (2, "view", "parent", True, False),
+        (2, "view", "unit_type", True, False),
+    ]
+
+    for subject_level, action, field_name, can_view, can_edit in default_field_rules:
+        AccessFieldRule.objects.update_or_create(
+            ruleset=ruleset,
+            resource="unit",
+            action=action,
+            subject_level=subject_level,
+            field_name=field_name,
+            priority=10,
+            defaults={
+                "can_view": can_view,
+                "can_edit": can_edit,
+                "is_active": True,
+                "note": "Автозаполнение стартового набора",
+            },
+        )
+
+    parent_choice_rules = [
+        (0, "create", "parent", "scope", "all"),
+        (0, "update", "parent", "scope", "all"),
+
+        (1, "create", "parent", "scope", "own_and_descendants"),
+        (1, "update", "parent", "scope", "own_and_descendants"),
+
+        (2, "create", "parent", "scope", "none"),
+        (2, "update", "parent", "scope", "none"),
+    ]
+
+    for subject_level, action, field_name, mode, scope in parent_choice_rules:
+        AccessChoiceRule.objects.update_or_create(
+            ruleset=ruleset,
+            resource="unit",
+            action=action,
+            subject_level=subject_level,
+            field_name=field_name,
+            priority=10,
+            defaults={
+                "mode": mode,
+                "scope": scope,
+                "is_active": True,
+                "note": "Автозаполнение стартового набора",
+            },
+        )
+
+    unit_type_choice_rules = [
+        (0, "create", "unit_type", "all_values"),
+        (0, "update", "unit_type", "all_values"),
+        (1, "create", "unit_type", "all_values"),
+        (1, "update", "unit_type", "all_values"),
+        (2, "create", "unit_type", "specific_unit_types"),
+        (2, "update", "unit_type", "specific_unit_types"),
+    ]
+
+    for subject_level, action, field_name, mode in unit_type_choice_rules:
+        choice_rule, _ = AccessChoiceRule.objects.update_or_create(
+            ruleset=ruleset,
+            resource="unit",
+            action=action,
+            subject_level=subject_level,
+            field_name=field_name,
+            priority=10,
+            defaults={
+                "mode": mode,
+                "scope": "none",
+                "is_active": True,
+                "note": "Автозаполнение стартового набора",
+            },
+        )
+
+        if mode == "all_values":
+            choice_rule.unit_types.set(AccessChoiceRule._meta.get_field("unit_types").related_model.objects.all())

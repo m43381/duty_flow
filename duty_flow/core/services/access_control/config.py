@@ -25,12 +25,8 @@ RESOURCE_CONFIG = {
             ("unit", "Подразделение"),
         ],
         "choice_fields": {
-            "create": [
-                ("unit", "Подразделение"),
-            ],
-            "update": [
-                ("unit", "Подразделение"),
-            ],
+            "create": [("unit", "Подразделение")],
+            "update": [("unit", "Подразделение")],
         },
     },
     "person": {
@@ -61,14 +57,41 @@ RESOURCE_CONFIG = {
             ("unit", "Подразделение"),
         ],
         "choice_fields": {
+            "create": [("unit", "Подразделение")],
+            "update": [("unit", "Подразделение")],
+            "manage_clearances": [("duty_type", "Тип наряда")],
+        },
+    },
+    "unit": {
+        "title": "Подразделения",
+        "actions": [
+            ("view", "Просмотр"),
+            ("create", "Создание"),
+            ("update", "Редактирование"),
+            ("delete", "Удаление"),
+        ],
+        "field_actions": [
+            ("view", "Просмотр"),
+            ("create", "Создание"),
+            ("update", "Редактирование"),
+        ],
+        "choice_actions": [
+            ("create", "Создание"),
+            ("update", "Редактирование"),
+        ],
+        "fields": [
+            ("name", "Название"),
+            ("parent", "Родительское подразделение"),
+            ("unit_type", "Тип подразделения"),
+        ],
+        "choice_fields": {
             "create": [
-                ("unit", "Подразделение"),
+                ("parent", "Родительское подразделение"),
+                ("unit_type", "Тип подразделения"),
             ],
             "update": [
-                ("unit", "Подразделение"),
-            ],
-            "manage_clearances": [
-                ("duty_type", "Тип наряда"),
+                ("parent", "Родительское подразделение"),
+                ("unit_type", "Тип подразделения"),
             ],
         },
     },
@@ -86,4 +109,6 @@ CHOICE_MODES = [
     ("scope", "По scope"),
     ("specific_units", "Только конкретные подразделения"),
     ("scope_plus_units", "Scope + конкретные подразделения"),
+    ("all_values", "Все значения"),
+    ("specific_unit_types", "Только конкретные типы подразделений"),
 ]

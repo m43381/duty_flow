@@ -18,44 +18,42 @@ def level0_required(view_func):
     return wrapper
 
 
+ALLOWED_RESOURCES = {"user", "person", "unit"}
+
+
 @level0_required
 def access_dashboard(request):
     ruleset = AccessControlService.get_ruleset_for_user(request.user)
-    user_rules_count = AccessRule.objects.filter(ruleset=ruleset, resource="user").count()
-    person_rules_count = AccessRule.objects.filter(ruleset=ruleset, resource="person").count()
+    rules_count = AccessRule.objects.filter(ruleset=ruleset).count()
     field_rules_count = AccessFieldRule.objects.filter(ruleset=ruleset).count()
 
     return render(request, "app/access_control/dashboard.html", {
         "ruleset": ruleset,
-        "user_rules_count": user_rules_count,
-        "person_rules_count": person_rules_count,
+        "rules_count": rules_count,
         "field_rules_count": field_rules_count,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
-        "page_subtitle": "Права пользователей и сотрудников",
+        "page_subtitle": "Права пользователей, сотрудников и подразделений",
         "title": "Управление доступом",
     })
 
 
 @level0_required
-def seed_user_rules(request):
-    if request.method == "POST":
-        AccessControlService.seed_rules(request.user, "user")
-        messages.success(request, "Стартовые правила для пользователей заполнены")
-    return redirect("access_control:dashboard")
+def seed_resource_rules(request, resource):
+    if resource not in ALLOWED_RESOURCES:
+        messages.error(request, "Неизвестный ресурс")
+        return redirect("access_control:dashboard")
 
-
-@level0_required
-def seed_person_rules(request):
     if request.method == "POST":
-        AccessControlService.seed_rules(request.user, "person")
-        messages.success(request, "Стартовые правила для сотрудников заполнены")
+        AccessControlService.seed_rules(request.user, resource)
+        messages.success(request, f"Стартовые правила для ресурса '{resource}' заполнены")
+
     return redirect("access_control:dashboard")
 
 
 @level0_required
 def resource_matrix(request, resource):
-    if resource not in {"user", "person"}:
+    if resource not in ALLOWED_RESOURCES:
         messages.error(request, "Неизвестный ресурс")
         return redirect("access_control:dashboard")
 
@@ -88,7 +86,7 @@ def resource_matrix(request, resource):
 
 @level0_required
 def rule_list(request, resource):
-    if resource not in {"user", "person"}:
+    if resource not in ALLOWED_RESOURCES:
         messages.error(request, "Неизвестный ресурс")
         return redirect("access_control:dashboard")
 
@@ -111,7 +109,7 @@ def rule_list(request, resource):
 
 @level0_required
 def rule_add(request, resource):
-    if resource not in {"user", "person"}:
+    if resource not in ALLOWED_RESOURCES:
         messages.error(request, "Неизвестный ресурс")
         return redirect("access_control:dashboard")
 
@@ -136,7 +134,7 @@ def rule_add(request, resource):
 
 @level0_required
 def rule_edit(request, resource, pk):
-    if resource not in {"user", "person"}:
+    if resource not in ALLOWED_RESOURCES:
         messages.error(request, "Неизвестный ресурс")
         return redirect("access_control:dashboard")
 
@@ -164,7 +162,7 @@ def rule_edit(request, resource, pk):
 
 @level0_required
 def field_rule_list(request, resource):
-    if resource not in {"user", "person"}:
+    if resource not in ALLOWED_RESOURCES:
         messages.error(request, "Неизвестный ресурс")
         return redirect("access_control:dashboard")
 
@@ -187,7 +185,7 @@ def field_rule_list(request, resource):
 
 @level0_required
 def field_rule_add(request, resource):
-    if resource not in {"user", "person"}:
+    if resource not in ALLOWED_RESOURCES:
         messages.error(request, "Неизвестный ресурс")
         return redirect("access_control:dashboard")
 
@@ -212,7 +210,7 @@ def field_rule_add(request, resource):
 
 @level0_required
 def field_rule_edit(request, resource, pk):
-    if resource not in {"user", "person"}:
+    if resource not in ALLOWED_RESOURCES:
         messages.error(request, "Неизвестный ресурс")
         return redirect("access_control:dashboard")
 

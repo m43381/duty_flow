@@ -18,6 +18,11 @@ RESOURCE_FIELDS = {
         ("rank", "Звание"),
         ("unit", "Подразделение"),
     ],
+    "unit": [
+        ("name", "Название"),
+        ("parent", "Вышестоящее подразделение"),
+        ("unit_type", "Тип подразделения"),
+    ],
 }
 
 
@@ -85,6 +90,13 @@ class AccessRuleForm(RulesetAwareFormMixin, forms.ModelForm):
                     ("manage_exemptions", "Управление освобождениями"),
                     ("manage_clearances", "Управление допусками"),
                 ]
+            elif resource == "unit":
+                self.fields["action"].choices = [
+                    ("view", "Просмотр"),
+                    ("create", "Создание"),
+                    ("update", "Редактирование"),
+                    ("delete", "Удаление"),
+                ]
 
 
 class AccessFieldRuleForm(RulesetAwareFormMixin, forms.ModelForm):
@@ -122,6 +134,12 @@ class AccessFieldRuleForm(RulesetAwareFormMixin, forms.ModelForm):
                     ("update", "Редактирование"),
                 ]
             elif resource == "person":
+                self.fields["action"].choices = [
+                    ("view", "Просмотр"),
+                    ("create", "Создание"),
+                    ("update", "Редактирование"),
+                ]
+            elif resource == "unit":
                 self.fields["action"].choices = [
                     ("view", "Просмотр"),
                     ("create", "Создание"),

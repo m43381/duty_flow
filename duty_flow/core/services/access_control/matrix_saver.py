@@ -1,5 +1,5 @@
 from access_control.models import AccessChoiceRule, AccessFieldRule, AccessRule
-from units.models import Unit
+from units.models import Unit, UnitType
 
 from .config import RESOURCE_CONFIG
 from .ruleset import get_ruleset_for_user
@@ -70,11 +70,20 @@ def save_matrix(user, resource: str, level: int, post_data):
                 },
             )
 
-            if field_name == "duty_type":
+            if field_name == "parent":
                 unit_ids = post_data.getlist(f"choice__{action_code}__{field_name}__units")
                 units = Unit.objects.filter(id__in=unit_ids)
                 choice_rule.units.set(units)
+                choice_rule.unit_types.clear()
+
+            elif field_name == "unit_type":
+                unit_type_ids = post_data.getlist(f"choice__{action_code}__{field_name}__unit_types")
+                unit_types = UnitType.objects.filter(id__in=unit_type_ids)
+                choice_rule.unit_types.set(unit_types)
+                choice_rule.units.clear()
+
             else:
                 choice_rule.units.clear()
+                choice_rule.unit_types.clear()
 
     return ruleset
