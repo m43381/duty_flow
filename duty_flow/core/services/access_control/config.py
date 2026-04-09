@@ -95,6 +95,26 @@ RESOURCE_CONFIG = {
             ],
         },
     },
+    "unit_type": {
+        "title": "Типы подразделений",
+        "actions": [
+            ("view", "Просмотр"),
+            ("create", "Создание"),
+            ("update", "Редактирование"),
+            ("delete", "Удаление"),
+        ],
+        "field_actions": [
+            ("view", "Просмотр"),
+            ("create", "Создание"),
+            ("update", "Редактирование"),
+        ],
+        "choice_actions": [],
+        "fields": [
+            ("name", "Название"),
+            ("level", "Уровень"),
+        ],
+        "choice_fields": {},
+    },
 }
 
 SCOPES = [

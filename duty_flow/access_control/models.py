@@ -40,6 +40,7 @@ class AccessRule(models.Model):
         ("user", "Пользователи"),
         ("person", "Сотрудники"),
         ("unit", "Подразделения"),
+        ("unit_type", "Типы подразделений"),
     ]
 
     ACTION_CHOICES = [

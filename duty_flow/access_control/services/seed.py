@@ -1,4 +1,5 @@
 from access_control.models import AccessChoiceRule, AccessFieldRule, AccessRule
+from units.models import UnitType
 
 
 def seed_default_user_rules(ruleset):
@@ -340,4 +341,63 @@ def seed_default_unit_rules(ruleset):
         )
 
         if mode == "all_values":
-            choice_rule.unit_types.set(AccessChoiceRule._meta.get_field("unit_types").related_model.objects.all())
+            choice_rule.unit_types.set(UnitType.objects.all())
+
+
+def seed_default_unit_type_rules(ruleset):
+    default_rules = [
+        (0, "view", True, "all", 10),
+        (0, "create", True, "all", 10),
+        (0, "update", True, "all", 10),
+        (0, "delete", True, "all", 10),
+
+        (1, "view", False, "none", 10),
+        (1, "create", False, "none", 10),
+        (1, "update", False, "none", 10),
+        (1, "delete", False, "none", 10),
+
+        (2, "view", False, "none", 10),
+        (2, "create", False, "none", 10),
+        (2, "update", False, "none", 10),
+        (2, "delete", False, "none", 10),
+    ]
+
+    for subject_level, action, is_allowed, scope, priority in default_rules:
+        AccessRule.objects.update_or_create(
+            ruleset=ruleset,
+            resource="unit_type",
+            action=action,
+            subject_level=subject_level,
+            priority=priority,
+            defaults={
+                "is_allowed": is_allowed,
+                "scope": scope,
+                "is_active": True,
+                "note": "Автозаполнение стартового набора",
+            },
+        )
+
+    field_rules = [
+        (0, "view", "name", True, False),
+        (0, "view", "level", True, False),
+        (0, "create", "name", True, True),
+        (0, "create", "level", True, True),
+        (0, "update", "name", True, True),
+        (0, "update", "level", True, True),
+    ]
+
+    for subject_level, action, field_name, can_view, can_edit in field_rules:
+        AccessFieldRule.objects.update_or_create(
+            ruleset=ruleset,
+            resource="unit_type",
+            action=action,
+            subject_level=subject_level,
+            field_name=field_name,
+            priority=10,
+            defaults={
+                "can_view": can_view,
+                "can_edit": can_edit,
+                "is_active": True,
+                "note": "Автозаполнение стартового набора",
+            },
+        )

@@ -3,9 +3,11 @@ from .person_access import PersonAccessService
 from .seed import (
     seed_default_person_rules,
     seed_default_unit_rules,
+    seed_default_unit_type_rules,
     seed_default_user_rules,
 )
 from .unit_access import UnitAccessService
+from .unit_type_access import UnitTypeAccessService
 from .user_access import UserAccessService
 
 
@@ -17,6 +19,7 @@ class AccessManager:
         self.user_access = UserAccessService(self.ctx)
         self.person_access = PersonAccessService(self.ctx)
         self.unit_access = UnitAccessService(self.ctx)
+        self.unit_type_access = UnitTypeAccessService(self.ctx)
 
         self.ruleset = self.user_access.ruleset
 
@@ -86,6 +89,19 @@ class AccessManager:
     def allowed_unit_types_for_unit_update(self):
         return self.unit_access.allowed_unit_types_for_update()
 
+    # ---------- unit types ----------
+    def can_unit_type(self, action, unit_type=None):
+        return self.unit_type_access.can(action, unit_type)
+
+    def scope_unit_types(self, queryset):
+        return self.unit_type_access.scope_queryset(queryset)
+
+    def visible_unit_type_fields(self, action):
+        return self.unit_type_access.visible_fields(action)
+
+    def editable_unit_type_fields(self, action):
+        return self.unit_type_access.editable_fields(action)
+
     # ---------- seeds ----------
     def seed_default_user_rules(self):
         seed_default_user_rules(self.ruleset)
@@ -95,3 +111,6 @@ class AccessManager:
 
     def seed_default_unit_rules(self):
         seed_default_unit_rules(self.ruleset)
+
+    def seed_default_unit_type_rules(self):
+        seed_default_unit_type_rules(self.ruleset)
