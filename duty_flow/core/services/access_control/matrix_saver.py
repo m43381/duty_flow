@@ -70,7 +70,7 @@ def save_matrix(user, resource: str, level: int, post_data):
                 },
             )
 
-            if field_name in {"unit", "parent"}:
+            if field_name in {"unit", "parent", "delegate_unit"}:
                 unit_ids = post_data.getlist(f"choice__{action_code}__{field_name}__units")
                 units = Unit.objects.filter(id__in=unit_ids)
                 choice_rule.units.set(units)

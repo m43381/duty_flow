@@ -38,8 +38,8 @@
             <span class="summary-card__value">{{ dates|length }}</span>
         </article>
         <article class="summary-card">
-            <span class="summary-card__label">Дочерние подразделения</span>
-            <span class="summary-card__value">{{ children|length }}</span>
+            <span class="summary-card__label">Доступно для делегирования</span>
+            <span class="summary-card__value">{{ delegate_units|length }}</span>
         </article>
     </div>
 </section>
@@ -50,7 +50,7 @@
             <div>
                 <h3 class="card__title">Таблица нарядов по дням</h3>
                 <p class="card__subtitle">
-                    Выберите, кто исполняет наряд: ваше подразделение или одно из дочерних.
+                    Выберите, кто исполняет наряд: ваше подразделение или одно из разрешённых подразделений.
                 </p>
             </div>
         </div>
@@ -136,12 +136,12 @@
                                                                 {{ user_unit.name }}
                                                             </option>
 
-                                                            {% for child in children %}
+                                                            {% for item in delegate_units %}
                                                                 <option
-                                                                    value="{{ child.id }}"
-                                                                    {% if cell.unit_id == child.id %}selected{% endif %}
+                                                                    value="{{ item.id }}"
+                                                                    {% if cell.unit_id == item.id %}selected{% endif %}
                                                                 >
-                                                                    {{ child.name }}
+                                                                    {{ item.name }}
                                                                 </option>
                                                             {% endfor %}
                                                         </select>

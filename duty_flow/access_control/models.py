@@ -41,6 +41,8 @@ class AccessRule(models.Model):
         ("person", "Сотрудники"),
         ("unit", "Подразделения"),
         ("unit_type", "Типы подразделений"),
+        ("duty_type", "Типы нарядов"),
+        ("plan", "Планы нарядов"),
     ]
 
     ACTION_CHOICES = [
@@ -51,6 +53,8 @@ class AccessRule(models.Model):
         ("change_password", "Смена пароля"),
         ("manage_exemptions", "Управление освобождениями"),
         ("manage_clearances", "Управление допусками"),
+        ("manage_days", "Управление таблицей дней"),
+        ("accept_incoming", "Принятие входящих"),
     ]
 
     SCOPE_CHOICES = [
@@ -139,6 +143,7 @@ class AccessChoiceRule(models.Model):
         ("create", "Создание"),
         ("update", "Редактирование"),
         ("manage_clearances", "Управление допусками"),
+        ("manage_days", "Управление таблицей дней"),
     ]
 
     MODE_CHOICES = [
@@ -160,18 +165,8 @@ class AccessChoiceRule(models.Model):
     subject_level = models.PositiveSmallIntegerField("Для уровня")
     field_name = models.CharField("Поле select/queryset", max_length=100)
 
-    mode = models.CharField(
-        "Режим выбора",
-        max_length=32,
-        choices=MODE_CHOICES,
-        default="scope",
-    )
-    scope = models.CharField(
-        "Scope значений",
-        max_length=50,
-        choices=SCOPE_CHOICES,
-        default="none",
-    )
+    mode = models.CharField("Режим выбора", max_length=32, choices=MODE_CHOICES, default="scope")
+    scope = models.CharField("Scope значений", max_length=50, choices=SCOPE_CHOICES, default="none")
     units = models.ManyToManyField(
         "units.Unit",
         blank=True,

@@ -39,7 +39,6 @@ def build_matrix(user, resource: str, level: int):
     field_rows = []
     for action_code, action_label in config["field_actions"]:
         fields_data = []
-
         existing_rules = {
             item.field_name: item
             for item in AccessFieldRule.objects.filter(
@@ -89,7 +88,7 @@ def build_matrix(user, resource: str, level: int):
             selected_unit_ids = list(choice_rule.units.values_list("id", flat=True)) if choice_rule else []
             selected_unit_type_ids = list(choice_rule.unit_types.values_list("id", flat=True)) if choice_rule else []
 
-            if field_name in {"unit", "parent"}:
+            if field_name in {"unit", "parent", "delegate_unit"}:
                 mode_options = [
                     ("scope", "По scope"),
                     ("specific_units", "Только конкретные подразделения"),
@@ -108,22 +107,16 @@ def build_matrix(user, resource: str, level: int):
                 "field_name": field_name,
                 "field_label": field_label,
                 "scope": choice_rule.scope if choice_rule else "none",
-                "mode": choice_rule.mode if choice_rule else ("all_values" if field_name == "unit_type" else "scope"),
+                "mode": choice_rule.mode if choice_rule else "scope",
                 "mode_options": mode_options,
                 "selected_unit_ids": selected_unit_ids,
                 "selected_unit_type_ids": selected_unit_type_ids,
                 "unit_options": [
-                    {
-                        "id": unit.id,
-                        "label": build_unit_path_label(unit),
-                    }
+                    {"id": unit.id, "label": build_unit_path_label(unit)}
                     for unit in units
-                ] if field_name in {"unit", "parent"} else [],
+                ] if field_name in {"unit", "parent", "delegate_unit"} else [],
                 "unit_type_options": [
-                    {
-                        "id": item.id,
-                        "label": f"{item.name} (уровень {item.level})",
-                    }
+                    {"id": item.id, "label": f"{item.name} (уровень {item.level})"}
                     for item in unit_types
                 ] if field_name == "unit_type" else [],
             })

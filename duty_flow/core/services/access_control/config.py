@@ -10,17 +10,8 @@ RESOURCE_CONFIG = {
         ],
         "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
         "choice_actions": [("create", "Создание"), ("update", "Редактирование")],
-        "fields": [
-            ("username", "Логин"),
-            ("first_name", "Имя"),
-            ("last_name", "Фамилия"),
-            ("email", "Email"),
-            ("unit", "Подразделение"),
-        ],
-        "choice_fields": {
-            "create": [("unit", "Подразделение")],
-            "update": [("unit", "Подразделение")],
-        },
+        "fields": [("username", "Логин"), ("first_name", "Имя"), ("last_name", "Фамилия"), ("email", "Email"), ("unit", "Подразделение")],
+        "choice_fields": {"create": [("unit", "Подразделение")], "update": [("unit", "Подразделение")]},
     },
     "person": {
         "title": "Сотрудники",
@@ -34,13 +25,7 @@ RESOURCE_CONFIG = {
         ],
         "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
         "choice_actions": [("create", "Создание"), ("update", "Редактирование"), ("manage_clearances", "Управление допусками")],
-        "fields": [
-            ("last_name", "Фамилия"),
-            ("first_name", "Имя"),
-            ("middle_name", "Отчество"),
-            ("rank", "Звание"),
-            ("unit", "Подразделение"),
-        ],
+        "fields": [("last_name", "Фамилия"), ("first_name", "Имя"), ("middle_name", "Отчество"), ("rank", "Звание"), ("unit", "Подразделение")],
         "choice_fields": {
             "create": [("unit", "Подразделение")],
             "update": [("unit", "Подразделение")],
@@ -49,19 +34,10 @@ RESOURCE_CONFIG = {
     },
     "unit": {
         "title": "Подразделения",
-        "actions": [
-            ("view", "Просмотр"),
-            ("create", "Создание"),
-            ("update", "Редактирование"),
-            ("delete", "Удаление"),
-        ],
+        "actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование"), ("delete", "Удаление")],
         "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
         "choice_actions": [("create", "Создание"), ("update", "Редактирование")],
-        "fields": [
-            ("name", "Название"),
-            ("parent", "Родительское подразделение"),
-            ("unit_type", "Тип подразделения"),
-        ],
+        "fields": [("name", "Название"), ("parent", "Родительское подразделение"), ("unit_type", "Тип подразделения")],
         "choice_fields": {
             "create": [("parent", "Родительское подразделение"), ("unit_type", "Тип подразделения")],
             "update": [("parent", "Родительское подразделение"), ("unit_type", "Тип подразделения")],
@@ -69,39 +45,35 @@ RESOURCE_CONFIG = {
     },
     "unit_type": {
         "title": "Типы подразделений",
-        "actions": [
-            ("view", "Просмотр"),
-            ("create", "Создание"),
-            ("update", "Редактирование"),
-            ("delete", "Удаление"),
-        ],
+        "actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование"), ("delete", "Удаление")],
         "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
         "choice_actions": [],
-        "fields": [
-            ("name", "Название"),
-            ("level", "Уровень"),
-        ],
+        "fields": [("name", "Название"), ("level", "Уровень")],
         "choice_fields": {},
     },
     "duty_type": {
         "title": "Типы нарядов",
-        "actions": [
-            ("view", "Просмотр"),
-            ("create", "Создание"),
-            ("update", "Редактирование"),
-            ("delete", "Удаление"),
-        ],
+        "actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование"), ("delete", "Удаление")],
         "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
         "choice_actions": [("create", "Создание"), ("update", "Редактирование")],
-        "fields": [
-            ("name", "Название"),
-            ("description", "Описание"),
-            ("required_people", "Требуется человек"),
-            ("unit", "Подразделение"),
+        "fields": [("name", "Название"), ("description", "Описание"), ("required_people", "Требуется человек"), ("unit", "Подразделение")],
+        "choice_fields": {"create": [("unit", "Подразделение")], "update": [("unit", "Подразделение")]},
+    },
+    "plan": {
+        "title": "Планы нарядов",
+        "actions": [
+            ("view", "Просмотр расписаний"),
+            ("create", "Создание расписаний"),
+            ("update", "Редактирование реквизитов"),
+            ("delete", "Удаление расписаний"),
+            ("manage_days", "Таблица дней и делегирование"),
+            ("accept_incoming", "Входящие и принятие"),
         ],
+        "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
+        "choice_actions": [("manage_days", "Таблица дней и делегирование")],
+        "fields": [("month", "Месяц"), ("name", "Название"), ("status", "Статус")],
         "choice_fields": {
-            "create": [("unit", "Подразделение")],
-            "update": [("unit", "Подразделение")],
+            "manage_days": [("delegate_unit", "Подразделения для делегирования")],
         },
     },
 }

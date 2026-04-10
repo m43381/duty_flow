@@ -1,9 +1,11 @@
 from .context import AccessContext
 from .duty_type_access import DutyTypeAccessService
 from .person_access import PersonAccessService
+from .plan_access import PlanAccessService
 from .seed import (
     seed_default_duty_type_rules,
     seed_default_person_rules,
+    seed_default_plan_rules,
     seed_default_unit_rules,
     seed_default_unit_type_rules,
     seed_default_user_rules,
@@ -23,10 +25,10 @@ class AccessManager:
         self.unit_access = UnitAccessService(self.ctx)
         self.unit_type_access = UnitTypeAccessService(self.ctx)
         self.duty_type_access = DutyTypeAccessService(self.ctx)
+        self.plan_access = PlanAccessService(self.ctx)
 
         self.ruleset = self.user_access.ruleset
 
-    # ---------- users ----------
     def can_user(self, action, target_user=None):
         return self.user_access.can(action, target_user)
 
@@ -45,7 +47,6 @@ class AccessManager:
     def allowed_units_for_user_update(self):
         return self.user_access.allowed_units_for_update()
 
-    # ---------- people ----------
     def can_person(self, action, person=None):
         return self.person_access.can(action, person)
 
@@ -67,7 +68,6 @@ class AccessManager:
     def allowed_duty_types_for_clearance(self):
         return self.person_access.allowed_duty_types_for_clearance()
 
-    # ---------- units ----------
     def can_unit(self, action, unit=None):
         return self.unit_access.can(action, unit)
 
@@ -92,7 +92,6 @@ class AccessManager:
     def allowed_unit_types_for_unit_update(self):
         return self.unit_access.allowed_unit_types_for_update()
 
-    # ---------- unit types ----------
     def can_unit_type(self, action, unit_type=None):
         return self.unit_type_access.can(action, unit_type)
 
@@ -105,7 +104,6 @@ class AccessManager:
     def editable_unit_type_fields(self, action):
         return self.unit_type_access.editable_fields(action)
 
-    # ---------- duty types ----------
     def can_duty_type(self, action, duty_type=None):
         return self.duty_type_access.can(action, duty_type)
 
@@ -124,7 +122,21 @@ class AccessManager:
     def allowed_units_for_duty_type_update(self):
         return self.duty_type_access.allowed_units_for_update()
 
-    # ---------- seeds ----------
+    def can_plan(self, action, schedule=None):
+        return self.plan_access.can(action, schedule)
+
+    def scope_plans(self, queryset):
+        return self.plan_access.scope_queryset(queryset)
+
+    def visible_plan_fields(self, action):
+        return self.plan_access.visible_fields(action)
+
+    def editable_plan_fields(self, action):
+        return self.plan_access.editable_fields(action)
+
+    def allowed_delegate_units_for_plan_days(self, schedule):
+        return self.plan_access.allowed_delegate_units_for_days(schedule)
+
     def seed_default_user_rules(self):
         seed_default_user_rules(self.ruleset)
 
@@ -139,3 +151,6 @@ class AccessManager:
 
     def seed_default_duty_type_rules(self):
         seed_default_duty_type_rules(self.ruleset)
+
+    def seed_default_plan_rules(self):
+        seed_default_plan_rules(self.ruleset)

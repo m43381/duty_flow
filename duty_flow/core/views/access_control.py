@@ -18,7 +18,7 @@ def level0_required(view_func):
     return wrapper
 
 
-ALLOWED_RESOURCES = {"user", "person", "unit", "unit_type", "duty_type"}
+ALLOWED_RESOURCES = {"user", "person", "unit", "unit_type", "duty_type", "plan"}
 
 
 @level0_required
@@ -91,10 +91,7 @@ def rule_list(request, resource):
         return redirect("access_control:dashboard")
 
     ruleset = AccessControlService.get_ruleset_for_user(request.user)
-    items = AccessRule.objects.filter(
-        ruleset=ruleset,
-        resource=resource,
-    ).order_by("subject_level", "action", "priority", "id")
+    items = AccessRule.objects.filter(ruleset=ruleset, resource=resource).order_by("subject_level", "action", "priority", "id")
 
     return render(request, "app/access_control/rules/list.html", {
         "items": items,
@@ -167,10 +164,7 @@ def field_rule_list(request, resource):
         return redirect("access_control:dashboard")
 
     ruleset = AccessControlService.get_ruleset_for_user(request.user)
-    items = AccessFieldRule.objects.filter(
-        ruleset=ruleset,
-        resource=resource,
-    ).order_by("subject_level", "action", "field_name", "priority", "id")
+    items = AccessFieldRule.objects.filter(ruleset=ruleset, resource=resource).order_by("subject_level", "action", "field_name", "priority", "id")
 
     return render(request, "app/access_control/field_rules/list.html", {
         "items": items,

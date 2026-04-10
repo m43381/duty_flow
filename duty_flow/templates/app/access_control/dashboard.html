@@ -7,9 +7,7 @@
     <div class="page-header">
         <div class="page-header__main">
             <h2 class="page-header__title">Управление доступом</h2>
-            <p class="page-header__subtitle">
-                Активный набор: {{ ruleset.name }}
-            </p>
+            <p class="page-header__subtitle">Активный набор: {{ ruleset.name }}</p>
         </div>
     </div>
 </section>
@@ -20,12 +18,10 @@
             <span class="metric-card__label">Активный набор</span>
             <span class="metric-card__value">{{ ruleset.code }}</span>
         </article>
-
         <article class="metric-card">
             <span class="metric-card__label">Правил доступа</span>
             <span class="metric-card__value">{{ rules_count|default:"—" }}</span>
         </article>
-
         <article class="metric-card">
             <span class="metric-card__label">Правил полей</span>
             <span class="metric-card__value">{{ field_rules_count|default:"—" }}</span>
@@ -59,102 +55,37 @@
                 </div>
             </article>
 
-            <section class="page-section" style="margin-top: 1.5rem;">
-                <article class="card">
-                    <div class="card__header">
-                        <div>
-                            <h3 class="card__title">Сотрудники</h3>
-                            <p class="card__subtitle">Матрицы и стартовые правила</p>
-                        </div>
-                    </div>
-                    <div class="card__body">
-                        <div class="form-actions">
-                            <form method="post" action="{% url 'access_control:seed_resource_rules' resource='person' %}">
-                                {% csrf_token %}
-                                <button type="submit" class="button button--primary">Заполнить стартовые правила people</button>
-                            </form>
-                        </div>
-                        <nav class="dashboard-nav-list">
-                            <a href="{% url 'access_control:resource_matrix' resource='person' %}?level=0" class="dashboard-nav-list__item">Матрица people / уровень 0</a>
-                            <a href="{% url 'access_control:resource_matrix' resource='person' %}?level=1" class="dashboard-nav-list__item">Матрица people / уровень 1</a>
-                            <a href="{% url 'access_control:resource_matrix' resource='person' %}?level=2" class="dashboard-nav-list__item">Матрица people / уровень 2</a>
-                        </nav>
-                    </div>
-                </article>
-            </section>
+            <section class="page-section" style="margin-top: 1.5rem;"><article class="card"><div class="card__header"><div><h3 class="card__title">Сотрудники</h3><p class="card__subtitle">Матрицы и стартовые правила</p></div></div><div class="card__body"><div class="form-actions"><form method="post" action="{% url 'access_control:seed_resource_rules' resource='person' %}">{% csrf_token %}<button type="submit" class="button button--primary">Заполнить стартовые правила people</button></form></div><nav class="dashboard-nav-list"><a href="{% url 'access_control:resource_matrix' resource='person' %}?level=0" class="dashboard-nav-list__item">Матрица people / уровень 0</a><a href="{% url 'access_control:resource_matrix' resource='person' %}?level=1" class="dashboard-nav-list__item">Матрица people / уровень 1</a><a href="{% url 'access_control:resource_matrix' resource='person' %}?level=2" class="dashboard-nav-list__item">Матрица people / уровень 2</a></nav></div></article></section>
+
+            <section class="page-section" style="margin-top: 1.5rem;"><article class="card"><div class="card__header"><div><h3 class="card__title">Подразделения</h3><p class="card__subtitle">Матрицы и стартовые правила</p></div></div><div class="card__body"><div class="form-actions"><form method="post" action="{% url 'access_control:seed_resource_rules' resource='unit' %}">{% csrf_token %}<button type="submit" class="button button--primary">Заполнить стартовые правила units</button></form></div><nav class="dashboard-nav-list"><a href="{% url 'access_control:resource_matrix' resource='unit' %}?level=0" class="dashboard-nav-list__item">Матрица units / уровень 0</a><a href="{% url 'access_control:resource_matrix' resource='unit' %}?level=1" class="dashboard-nav-list__item">Матрица units / уровень 1</a><a href="{% url 'access_control:resource_matrix' resource='unit' %}?level=2" class="dashboard-nav-list__item">Матрица units / уровень 2</a></nav></div></article></section>
+
+            <section class="page-section" style="margin-top: 1.5rem;"><article class="card"><div class="card__header"><div><h3 class="card__title">Типы подразделений</h3><p class="card__subtitle">Матрицы и стартовые правила</p></div></div><div class="card__body"><div class="form-actions"><form method="post" action="{% url 'access_control:seed_resource_rules' resource='unit_type' %}">{% csrf_token %}<button type="submit" class="button button--primary">Заполнить стартовые правила unit_types</button></form></div><nav class="dashboard-nav-list"><a href="{% url 'access_control:resource_matrix' resource='unit_type' %}?level=0" class="dashboard-nav-list__item">Матрица unit_types / уровень 0</a><a href="{% url 'access_control:resource_matrix' resource='unit_type' %}?level=1" class="dashboard-nav-list__item">Матрица unit_types / уровень 1</a><a href="{% url 'access_control:resource_matrix' resource='unit_type' %}?level=2" class="dashboard-nav-list__item">Матрица unit_types / уровень 2</a></nav></div></article></section>
+
+            <section class="page-section" style="margin-top: 1.5rem;"><article class="card"><div class="card__header"><div><h3 class="card__title">Типы нарядов</h3><p class="card__subtitle">Матрицы и стартовые правила</p></div></div><div class="card__body"><div class="form-actions"><form method="post" action="{% url 'access_control:seed_resource_rules' resource='duty_type' %}">{% csrf_token %}<button type="submit" class="button button--primary">Заполнить стартовые правила duty_types</button></form></div><nav class="dashboard-nav-list"><a href="{% url 'access_control:resource_matrix' resource='duty_type' %}?level=0" class="dashboard-nav-list__item">Матрица duty_types / уровень 0</a><a href="{% url 'access_control:resource_matrix' resource='duty_type' %}?level=1" class="dashboard-nav-list__item">Матрица duty_types / уровень 1</a><a href="{% url 'access_control:resource_matrix' resource='duty_type' %}?level=2" class="dashboard-nav-list__item">Матрица duty_types / уровень 2</a></nav></div></article></section>
 
             <section class="page-section" style="margin-top: 1.5rem;">
                 <article class="card">
                     <div class="card__header">
                         <div>
-                            <h3 class="card__title">Подразделения</h3>
+                            <h3 class="card__title">Планы нарядов</h3>
                             <p class="card__subtitle">Матрицы и стартовые правила</p>
                         </div>
                     </div>
                     <div class="card__body">
                         <div class="form-actions">
-                            <form method="post" action="{% url 'access_control:seed_resource_rules' resource='unit' %}">
+                            <form method="post" action="{% url 'access_control:seed_resource_rules' resource='plan' %}">
                                 {% csrf_token %}
-                                <button type="submit" class="button button--primary">Заполнить стартовые правила units</button>
+                                <button type="submit" class="button button--primary">Заполнить стартовые правила plans</button>
                             </form>
                         </div>
                         <nav class="dashboard-nav-list">
-                            <a href="{% url 'access_control:resource_matrix' resource='unit' %}?level=0" class="dashboard-nav-list__item">Матрица units / уровень 0</a>
-                            <a href="{% url 'access_control:resource_matrix' resource='unit' %}?level=1" class="dashboard-nav-list__item">Матрица units / уровень 1</a>
-                            <a href="{% url 'access_control:resource_matrix' resource='unit' %}?level=2" class="dashboard-nav-list__item">Матрица units / уровень 2</a>
+                            <a href="{% url 'access_control:resource_matrix' resource='plan' %}?level=0" class="dashboard-nav-list__item">Матрица plans / уровень 0</a>
+                            <a href="{% url 'access_control:resource_matrix' resource='plan' %}?level=1" class="dashboard-nav-list__item">Матрица plans / уровень 1</a>
+                            <a href="{% url 'access_control:resource_matrix' resource='plan' %}?level=2" class="dashboard-nav-list__item">Матрица plans / уровень 2</a>
                         </nav>
                     </div>
                 </article>
             </section>
-
-            <section class="page-section" style="margin-top: 1.5rem;">
-                <article class="card">
-                    <div class="card__header">
-                        <div>
-                            <h3 class="card__title">Типы подразделений</h3>
-                            <p class="card__subtitle">Матрицы и стартовые правила</p>
-                        </div>
-                    </div>
-                    <div class="card__body">
-                        <div class="form-actions">
-                            <form method="post" action="{% url 'access_control:seed_resource_rules' resource='unit_type' %}">
-                                {% csrf_token %}
-                                <button type="submit" class="button button--primary">Заполнить стартовые правила unit_types</button>
-                            </form>
-                        </div>
-                        <nav class="dashboard-nav-list">
-                            <a href="{% url 'access_control:resource_matrix' resource='unit_type' %}?level=0" class="dashboard-nav-list__item">Матрица unit_types / уровень 0</a>
-                            <a href="{% url 'access_control:resource_matrix' resource='unit_type' %}?level=1" class="dashboard-nav-list__item">Матрица unit_types / уровень 1</a>
-                            <a href="{% url 'access_control:resource_matrix' resource='unit_type' %}?level=2" class="dashboard-nav-list__item">Матрица unit_types / уровень 2</a>
-                        </nav>
-                    </div>
-                </article>
-            </section>
-
-            <section class="page-section" style="margin-top: 1.5rem;">
-                <article class="card">
-                    <div class="card__header">
-                        <div>
-                            <h3 class="card__title">Типы нарядов</h3>
-                            <p class="card__subtitle">Матрицы и стартовые правила</p>
-                        </div>
-                    </div>
-                    <div class="card__body">
-                        <div class="form-actions">
-                            <form method="post" action="{% url 'access_control:seed_resource_rules' resource='duty_type' %}">
-                                {% csrf_token %}
-                                <button type="submit" class="button button--primary">Заполнить стартовые правила duty_types</button>
-                            </form>
-                        </div>
-                        <nav class="dashboard-nav-list">
-                            <a href="{% url 'access_control:resource_matrix' resource='duty_type' %}?level=0" class="dashboard-nav-list__item">Матрица duty_types / уровень 0</a>
-                            <a href="{% url 'access_control:resource_matrix' resource='duty_type' %}?level=1" class="dashboard-nav-list__item">Матрица duty_types / уровень 1</a>
-                            <a href="{% url 'access_control:resource_matrix' resource='duty_type' %}?level=2" class="dashboard-nav-list__item">Матрица duty_types / уровень 2</a>
-                        </nav>
-                    </div>
-                </article>
-            </section>
-
         </div>
 
         <aside class="dashboard-layout__side">
@@ -166,18 +97,16 @@
                     <nav class="dashboard-nav-list">
                         <a href="{% url 'access_control:rules' resource='user' %}" class="dashboard-nav-list__item">Все правила users</a>
                         <a href="{% url 'access_control:field_rules' resource='user' %}" class="dashboard-nav-list__item">Все поля users</a>
-
                         <a href="{% url 'access_control:rules' resource='person' %}" class="dashboard-nav-list__item">Все правила people</a>
                         <a href="{% url 'access_control:field_rules' resource='person' %}" class="dashboard-nav-list__item">Все поля people</a>
-
                         <a href="{% url 'access_control:rules' resource='unit' %}" class="dashboard-nav-list__item">Все правила units</a>
                         <a href="{% url 'access_control:field_rules' resource='unit' %}" class="dashboard-nav-list__item">Все поля units</a>
-
                         <a href="{% url 'access_control:rules' resource='unit_type' %}" class="dashboard-nav-list__item">Все правила unit_types</a>
                         <a href="{% url 'access_control:field_rules' resource='unit_type' %}" class="dashboard-nav-list__item">Все поля unit_types</a>
-
                         <a href="{% url 'access_control:rules' resource='duty_type' %}" class="dashboard-nav-list__item">Все правила duty_types</a>
                         <a href="{% url 'access_control:field_rules' resource='duty_type' %}" class="dashboard-nav-list__item">Все поля duty_types</a>
+                        <a href="{% url 'access_control:rules' resource='plan' %}" class="dashboard-nav-list__item">Все правила plans</a>
+                        <a href="{% url 'access_control:field_rules' resource='plan' %}" class="dashboard-nav-list__item">Все поля plans</a>
                     </nav>
                 </div>
             </article>

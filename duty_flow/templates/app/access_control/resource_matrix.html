@@ -146,7 +146,7 @@
                             <div style="border: 1px solid var(--color-border, #d9dee7); border-radius: 16px; padding: 1rem; margin-bottom: 1rem;">
                                 <h5 style="margin: 0 0 1rem 0;">{{ field.field_label }}</h5>
 
-                                {% if field.field_name == "parent" or field.field_name == "unit" %}
+                                {% if field.field_name == "parent" or field.field_name == "unit" or field.field_name == "delegate_unit" %}
                                     <div class="form-layout" style="grid-template-columns: 280px 280px;">
                                         <div class="form-field">
                                             <label class="form-field__label">Режим</label>
