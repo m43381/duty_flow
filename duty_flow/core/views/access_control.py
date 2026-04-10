@@ -18,7 +18,7 @@ def level0_required(view_func):
     return wrapper
 
 
-ALLOWED_RESOURCES = {"user", "person", "unit", "unit_type"}
+ALLOWED_RESOURCES = {"user", "person", "unit", "unit_type", "duty_type"}
 
 
 @level0_required

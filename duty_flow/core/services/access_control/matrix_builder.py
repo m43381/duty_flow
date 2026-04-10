@@ -89,11 +89,12 @@ def build_matrix(user, resource: str, level: int):
             selected_unit_ids = list(choice_rule.units.values_list("id", flat=True)) if choice_rule else []
             selected_unit_type_ids = list(choice_rule.unit_types.values_list("id", flat=True)) if choice_rule else []
 
-            if field_name == "parent":
+            if field_name in {"unit", "parent"}:
                 mode_options = [
                     ("scope", "По scope"),
                     ("specific_units", "Только конкретные подразделения"),
                     ("scope_plus_units", "Scope + конкретные подразделения"),
+                    ("all_values", "Все значения"),
                 ]
             elif field_name == "unit_type":
                 mode_options = [
@@ -117,7 +118,7 @@ def build_matrix(user, resource: str, level: int):
                         "label": build_unit_path_label(unit),
                     }
                     for unit in units
-                ] if field_name == "parent" else [],
+                ] if field_name in {"unit", "parent"} else [],
                 "unit_type_options": [
                     {
                         "id": item.id,

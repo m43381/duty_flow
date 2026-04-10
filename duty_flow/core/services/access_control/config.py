@@ -8,15 +8,8 @@ RESOURCE_CONFIG = {
             ("delete", "Удаление"),
             ("change_password", "Смена пароля"),
         ],
-        "field_actions": [
-            ("view", "Просмотр"),
-            ("create", "Создание"),
-            ("update", "Редактирование"),
-        ],
-        "choice_actions": [
-            ("create", "Создание"),
-            ("update", "Редактирование"),
-        ],
+        "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
+        "choice_actions": [("create", "Создание"), ("update", "Редактирование")],
         "fields": [
             ("username", "Логин"),
             ("first_name", "Имя"),
@@ -39,16 +32,8 @@ RESOURCE_CONFIG = {
             ("manage_exemptions", "Управление освобождениями"),
             ("manage_clearances", "Управление допусками"),
         ],
-        "field_actions": [
-            ("view", "Просмотр"),
-            ("create", "Создание"),
-            ("update", "Редактирование"),
-        ],
-        "choice_actions": [
-            ("create", "Создание"),
-            ("update", "Редактирование"),
-            ("manage_clearances", "Управление допусками"),
-        ],
+        "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
+        "choice_actions": [("create", "Создание"), ("update", "Редактирование"), ("manage_clearances", "Управление допусками")],
         "fields": [
             ("last_name", "Фамилия"),
             ("first_name", "Имя"),
@@ -70,29 +55,16 @@ RESOURCE_CONFIG = {
             ("update", "Редактирование"),
             ("delete", "Удаление"),
         ],
-        "field_actions": [
-            ("view", "Просмотр"),
-            ("create", "Создание"),
-            ("update", "Редактирование"),
-        ],
-        "choice_actions": [
-            ("create", "Создание"),
-            ("update", "Редактирование"),
-        ],
+        "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
+        "choice_actions": [("create", "Создание"), ("update", "Редактирование")],
         "fields": [
             ("name", "Название"),
             ("parent", "Родительское подразделение"),
             ("unit_type", "Тип подразделения"),
         ],
         "choice_fields": {
-            "create": [
-                ("parent", "Родительское подразделение"),
-                ("unit_type", "Тип подразделения"),
-            ],
-            "update": [
-                ("parent", "Родительское подразделение"),
-                ("unit_type", "Тип подразделения"),
-            ],
+            "create": [("parent", "Родительское подразделение"), ("unit_type", "Тип подразделения")],
+            "update": [("parent", "Родительское подразделение"), ("unit_type", "Тип подразделения")],
         },
     },
     "unit_type": {
@@ -103,17 +75,34 @@ RESOURCE_CONFIG = {
             ("update", "Редактирование"),
             ("delete", "Удаление"),
         ],
-        "field_actions": [
-            ("view", "Просмотр"),
-            ("create", "Создание"),
-            ("update", "Редактирование"),
-        ],
+        "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
         "choice_actions": [],
         "fields": [
             ("name", "Название"),
             ("level", "Уровень"),
         ],
         "choice_fields": {},
+    },
+    "duty_type": {
+        "title": "Типы нарядов",
+        "actions": [
+            ("view", "Просмотр"),
+            ("create", "Создание"),
+            ("update", "Редактирование"),
+            ("delete", "Удаление"),
+        ],
+        "field_actions": [("view", "Просмотр"), ("create", "Создание"), ("update", "Редактирование")],
+        "choice_actions": [("create", "Создание"), ("update", "Редактирование")],
+        "fields": [
+            ("name", "Название"),
+            ("description", "Описание"),
+            ("required_people", "Требуется человек"),
+            ("unit", "Подразделение"),
+        ],
+        "choice_fields": {
+            "create": [("unit", "Подразделение")],
+            "update": [("unit", "Подразделение")],
+        },
     },
 }
 

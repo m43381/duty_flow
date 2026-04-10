@@ -1,6 +1,8 @@
 from .context import AccessContext
+from .duty_type_access import DutyTypeAccessService
 from .person_access import PersonAccessService
 from .seed import (
+    seed_default_duty_type_rules,
     seed_default_person_rules,
     seed_default_unit_rules,
     seed_default_unit_type_rules,
@@ -20,6 +22,7 @@ class AccessManager:
         self.person_access = PersonAccessService(self.ctx)
         self.unit_access = UnitAccessService(self.ctx)
         self.unit_type_access = UnitTypeAccessService(self.ctx)
+        self.duty_type_access = DutyTypeAccessService(self.ctx)
 
         self.ruleset = self.user_access.ruleset
 
@@ -102,6 +105,25 @@ class AccessManager:
     def editable_unit_type_fields(self, action):
         return self.unit_type_access.editable_fields(action)
 
+    # ---------- duty types ----------
+    def can_duty_type(self, action, duty_type=None):
+        return self.duty_type_access.can(action, duty_type)
+
+    def scope_duty_types(self, queryset):
+        return self.duty_type_access.scope_queryset(queryset)
+
+    def visible_duty_type_fields(self, action):
+        return self.duty_type_access.visible_fields(action)
+
+    def editable_duty_type_fields(self, action):
+        return self.duty_type_access.editable_fields(action)
+
+    def allowed_units_for_duty_type_creation(self):
+        return self.duty_type_access.allowed_units_for_creation()
+
+    def allowed_units_for_duty_type_update(self):
+        return self.duty_type_access.allowed_units_for_update()
+
     # ---------- seeds ----------
     def seed_default_user_rules(self):
         seed_default_user_rules(self.ruleset)
@@ -114,3 +136,6 @@ class AccessManager:
 
     def seed_default_unit_type_rules(self):
         seed_default_unit_type_rules(self.ruleset)
+
+    def seed_default_duty_type_rules(self):
+        seed_default_duty_type_rules(self.ruleset)

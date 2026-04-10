@@ -115,10 +115,6 @@ class UnitAccessService(BaseAccessService):
                 explicit_ids = set(choice_rule.unit_types.values_list("id", flat=True))
                 return qs.filter(id__in=list(explicit_ids))
 
-            # Для unit_type scope не имеет бизнес-смысла, поэтому fallback:
-            if choice_rule.mode == "scope" and choice_rule.scope == "none":
-                return qs.none()
-
         action_rule = self._get_rule("unit", action)
         if action_rule and action_rule.is_allowed:
             return qs

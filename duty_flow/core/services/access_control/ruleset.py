@@ -17,6 +17,8 @@ def seed_rules(user, resource: str):
         access.seed_default_unit_rules()
     elif resource == "unit_type":
         access.seed_default_unit_type_rules()
+    elif resource == "duty_type":
+        access.seed_default_duty_type_rules()
     else:
         raise ValueError(f"Неизвестный ресурс: {resource}")
 
