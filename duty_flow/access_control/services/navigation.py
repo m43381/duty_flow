@@ -1,7 +1,7 @@
 from django.urls import reverse
 
-from access_control.models import AccessMenuRule
-from access_control.services import AccessManager
+from access_control.models import AccessMenuRule, AccessRule, AccessRuleSet
+from .manager import AccessManager
 
 
 MENU_ITEMS = [
@@ -12,6 +12,7 @@ MENU_ITEMS = [
         "url_name": "auth:dashboard",
         "section": "main",
         "active_tab": "dashboard",
+        "namespace": "auth",
     },
     {
         "key": "people",
@@ -20,6 +21,7 @@ MENU_ITEMS = [
         "url_name": "people:person_list",
         "section": "main",
         "active_tab": "people",
+        "namespace": "people",
     },
     {
         "key": "plans",
@@ -28,6 +30,7 @@ MENU_ITEMS = [
         "url_name": "plan:list",
         "section": "main",
         "active_tab": "plans",
+        "namespace": "plan",
     },
     {
         "key": "assignments",
@@ -36,6 +39,7 @@ MENU_ITEMS = [
         "url_name": "assignment:calendar",
         "section": "main",
         "active_tab": "assignments",
+        "namespace": "assignment",
     },
     {
         "key": "duty_types",
@@ -44,6 +48,7 @@ MENU_ITEMS = [
         "url_name": "type:list",
         "section": "directories",
         "active_tab": "duty_types",
+        "namespace": "type",
     },
     {
         "key": "unit_types",
@@ -52,6 +57,7 @@ MENU_ITEMS = [
         "url_name": "unit_type:list",
         "section": "directories",
         "active_tab": "unit_types",
+        "namespace": "unit_type",
     },
     {
         "key": "units",
@@ -60,6 +66,7 @@ MENU_ITEMS = [
         "url_name": "units:list",
         "section": "directories",
         "active_tab": "units",
+        "namespace": "units",
     },
     {
         "key": "users",
@@ -68,6 +75,7 @@ MENU_ITEMS = [
         "url_name": "users:list",
         "section": "directories",
         "active_tab": "users",
+        "namespace": "users",
     },
     {
         "key": "access_control",
@@ -76,6 +84,7 @@ MENU_ITEMS = [
         "url_name": "access_control:dashboard",
         "section": "directories",
         "active_tab": "access_control",
+        "namespace": "access_control",
     },
 ]
 
@@ -83,6 +92,31 @@ MENU_ITEMS = [
 SECTION_TITLES = {
     "main": "Основное",
     "directories": "Справочники",
+}
+
+
+MENU_ACCESS_MAP = {
+    "dashboard": None,
+    "people": ("person", "view"),
+    "plans": ("plan", "view"),
+    "assignments": ("assignment", "view"),
+    "duty_types": ("duty_type", "view"),
+    "unit_types": ("unit_type", "view"),
+    "units": ("unit", "view"),
+    "users": ("user", "view"),
+    "access_control": None,
+}
+
+
+NAMESPACE_TO_MENU_KEY = {
+    "people": "people",
+    "plan": "plans",
+    "assignment": "assignments",
+    "type": "duty_types",
+    "unit_type": "unit_types",
+    "units": "units",
+    "users": "users",
+    "access_control": "access_control",
 }
 
 
@@ -98,30 +132,65 @@ def get_effective_level(user):
     return getattr(profile, "level", None)
 
 
-def _fallback_visibility(user, key):
-    access = AccessManager(user)
-    level = get_effective_level(user)
+def _get_ruleset():
+    return AccessRuleSet.get_default()
 
-    if key == "dashboard":
+
+def _get_first_rule(ruleset, resource, action, level):
+    return (
+        AccessRule.objects.filter(
+            ruleset=ruleset,
+            resource=resource,
+            action=action,
+            subject_level=level,
+            is_active=True,
+        )
+        .order_by("priority", "id")
+        .first()
+    )
+
+
+def _default_menu_visibility_for_level(ruleset, menu_key, level):
+    if menu_key == "dashboard":
         return True
-    if key == "people":
-        return access.can_person("view")
-    if key == "plans":
-        return access.can_plan("view")
-    if key == "assignments":
-        return access.can_assignment("view")
-    if key == "duty_types":
-        return access.can_duty_type("view")
-    if key == "unit_types":
-        return access.can_unit_type("view")
-    if key == "units":
-        return access.can_unit("view")
-    if key == "users":
-        return access.can_user("view")
-    if key == "access_control":
+
+    if menu_key == "access_control":
         return level == 0
 
+    resource_action = MENU_ACCESS_MAP.get(menu_key)
+    if not resource_action:
+        return False
+
+    resource, action = resource_action
+    rule = _get_first_rule(ruleset, resource, action, level)
+
+    if rule:
+        return bool(rule.is_allowed)
+
     return False
+
+
+def get_menu_visibility_for_level(ruleset, menu_key, level):
+    if menu_key == "access_control" and level == 0:
+        return True
+
+    explicit_rule = (
+        AccessMenuRule.objects.filter(
+            ruleset=ruleset,
+            menu_key=menu_key,
+            subject_level=level,
+            is_active=True,
+        )
+        .order_by("priority", "id")
+        .first()
+    )
+
+    if explicit_rule:
+        if menu_key == "access_control" and level == 0:
+            return True
+        return explicit_rule.is_visible
+
+    return _default_menu_visibility_for_level(ruleset, menu_key, level)
 
 
 def build_navigation_visibility(user):
@@ -129,21 +198,9 @@ def build_navigation_visibility(user):
     ruleset = access.ruleset
     level = get_effective_level(user)
 
-    explicit_rules = {
-        item.menu_key: item.is_visible
-        for item in AccessMenuRule.objects.filter(
-            ruleset=ruleset,
-            subject_level=level,
-            is_active=True,
-        )
-    }
-
     result = {}
     for item in MENU_ITEMS:
-        if item["key"] in explicit_rules:
-            result[item["key"]] = explicit_rules[item["key"]]
-        else:
-            result[item["key"]] = _fallback_visibility(user, item["key"])
+        result[item["key"]] = get_menu_visibility_for_level(ruleset, item["key"], level)
 
     return result
 
@@ -203,17 +260,13 @@ def build_menu_matrix(user):
         cells = []
         for level in levels:
             rule = existing_rules.get((item["key"], level))
-            if rule:
-                is_visible = rule.is_visible
-                source = "rule"
-            else:
-                is_visible = _fallback_visibility(user, item["key"]) if get_effective_level(user) == level else False
-                source = "default"
+
+            effective_value = get_menu_visibility_for_level(ruleset, item["key"], level)
 
             cells.append({
                 "level": level,
-                "is_visible": is_visible,
-                "source": source,
+                "is_visible": effective_value,
+                "has_explicit_rule": rule is not None,
             })
 
         rows.append({
@@ -234,7 +287,6 @@ def build_menu_matrix(user):
 def save_menu_matrix(user, post_data):
     access = AccessManager(user)
     ruleset = access.ruleset
-
     matrix = build_menu_matrix(user)
     levels = matrix["levels"]
 
@@ -242,6 +294,9 @@ def save_menu_matrix(user, post_data):
         for level in levels:
             key = f"menu__{item['key']}__{level}"
             is_visible = key in post_data
+
+            if item["key"] == "access_control" and level == 0:
+                is_visible = True
 
             AccessMenuRule.objects.update_or_create(
                 ruleset=ruleset,
@@ -253,3 +308,7 @@ def save_menu_matrix(user, post_data):
                     "priority": 100,
                 },
             )
+
+
+def get_menu_key_by_namespace(namespace):
+    return NAMESPACE_TO_MENU_KEY.get(namespace)
