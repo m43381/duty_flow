@@ -5,6 +5,8 @@ from .navigation import (
     build_navigation_sections,
     build_navigation_visibility,
     get_effective_level,
+    get_menu_key_by_namespace,
+    get_menu_visibility_for_level,
     save_menu_matrix,
 )
 
@@ -16,4 +18,6 @@ __all__ = [
     "build_menu_matrix",
     "save_menu_matrix",
     "get_effective_level",
+    "get_menu_key_by_namespace",
+    "get_menu_visibility_for_level",
 ]
