@@ -76,6 +76,18 @@ RESOURCE_CONFIG = {
             "manage_days": [("delegate_unit", "Подразделения для делегирования")],
         },
     },
+    "assignment": {
+        "title": "Назначения сотрудников",
+        "actions": [
+            ("view", "Просмотр календаря"),
+            ("assign", "Назначение сотрудников"),
+            ("unassign", "Снятие назначений"),
+        ],
+        "field_actions": [],
+        "choice_actions": [],
+        "fields": [],
+        "choice_fields": {},
+    },
 }
 
 SCOPES = [

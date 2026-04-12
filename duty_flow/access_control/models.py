@@ -43,6 +43,7 @@ class AccessRule(models.Model):
         ("unit_type", "Типы подразделений"),
         ("duty_type", "Типы нарядов"),
         ("plan", "Планы нарядов"),
+        ("assignment", "Назначения сотрудников"),
     ]
 
     ACTION_CHOICES = [
@@ -55,6 +56,8 @@ class AccessRule(models.Model):
         ("manage_clearances", "Управление допусками"),
         ("manage_days", "Управление таблицей дней"),
         ("accept_incoming", "Принятие входящих"),
+        ("assign", "Назначение сотрудников"),
+        ("unassign", "Снятие назначений"),
     ]
 
     SCOPE_CHOICES = [

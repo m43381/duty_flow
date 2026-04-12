@@ -63,25 +63,27 @@
 
             <section class="page-section" style="margin-top: 1.5rem;"><article class="card"><div class="card__header"><div><h3 class="card__title">Типы нарядов</h3><p class="card__subtitle">Матрицы и стартовые правила</p></div></div><div class="card__body"><div class="form-actions"><form method="post" action="{% url 'access_control:seed_resource_rules' resource='duty_type' %}">{% csrf_token %}<button type="submit" class="button button--primary">Заполнить стартовые правила duty_types</button></form></div><nav class="dashboard-nav-list"><a href="{% url 'access_control:resource_matrix' resource='duty_type' %}?level=0" class="dashboard-nav-list__item">Матрица duty_types / уровень 0</a><a href="{% url 'access_control:resource_matrix' resource='duty_type' %}?level=1" class="dashboard-nav-list__item">Матрица duty_types / уровень 1</a><a href="{% url 'access_control:resource_matrix' resource='duty_type' %}?level=2" class="dashboard-nav-list__item">Матрица duty_types / уровень 2</a></nav></div></article></section>
 
+            <section class="page-section" style="margin-top: 1.5rem;"><article class="card"><div class="card__header"><div><h3 class="card__title">Планы нарядов</h3><p class="card__subtitle">Матрицы и стартовые правила</p></div></div><div class="card__body"><div class="form-actions"><form method="post" action="{% url 'access_control:seed_resource_rules' resource='plan' %}">{% csrf_token %}<button type="submit" class="button button--primary">Заполнить стартовые правила plans</button></form></div><nav class="dashboard-nav-list"><a href="{% url 'access_control:resource_matrix' resource='plan' %}?level=0" class="dashboard-nav-list__item">Матрица plans / уровень 0</a><a href="{% url 'access_control:resource_matrix' resource='plan' %}?level=1" class="dashboard-nav-list__item">Матрица plans / уровень 1</a><a href="{% url 'access_control:resource_matrix' resource='plan' %}?level=2" class="dashboard-nav-list__item">Матрица plans / уровень 2</a></nav></div></article></section>
+
             <section class="page-section" style="margin-top: 1.5rem;">
                 <article class="card">
                     <div class="card__header">
                         <div>
-                            <h3 class="card__title">Планы нарядов</h3>
+                            <h3 class="card__title">Назначения сотрудников</h3>
                             <p class="card__subtitle">Матрицы и стартовые правила</p>
                         </div>
                     </div>
                     <div class="card__body">
                         <div class="form-actions">
-                            <form method="post" action="{% url 'access_control:seed_resource_rules' resource='plan' %}">
+                            <form method="post" action="{% url 'access_control:seed_resource_rules' resource='assignment' %}">
                                 {% csrf_token %}
-                                <button type="submit" class="button button--primary">Заполнить стартовые правила plans</button>
+                                <button type="submit" class="button button--primary">Заполнить стартовые правила assignments</button>
                             </form>
                         </div>
                         <nav class="dashboard-nav-list">
-                            <a href="{% url 'access_control:resource_matrix' resource='plan' %}?level=0" class="dashboard-nav-list__item">Матрица plans / уровень 0</a>
-                            <a href="{% url 'access_control:resource_matrix' resource='plan' %}?level=1" class="dashboard-nav-list__item">Матрица plans / уровень 1</a>
-                            <a href="{% url 'access_control:resource_matrix' resource='plan' %}?level=2" class="dashboard-nav-list__item">Матрица plans / уровень 2</a>
+                            <a href="{% url 'access_control:resource_matrix' resource='assignment' %}?level=0" class="dashboard-nav-list__item">Матрица assignments / уровень 0</a>
+                            <a href="{% url 'access_control:resource_matrix' resource='assignment' %}?level=1" class="dashboard-nav-list__item">Матрица assignments / уровень 1</a>
+                            <a href="{% url 'access_control:resource_matrix' resource='assignment' %}?level=2" class="dashboard-nav-list__item">Матрица assignments / уровень 2</a>
                         </nav>
                     </div>
                 </article>
@@ -107,6 +109,7 @@
                         <a href="{% url 'access_control:field_rules' resource='duty_type' %}" class="dashboard-nav-list__item">Все поля duty_types</a>
                         <a href="{% url 'access_control:rules' resource='plan' %}" class="dashboard-nav-list__item">Все правила plans</a>
                         <a href="{% url 'access_control:field_rules' resource='plan' %}" class="dashboard-nav-list__item">Все поля plans</a>
+                        <a href="{% url 'access_control:rules' resource='assignment' %}" class="dashboard-nav-list__item">Все правила assignments</a>
                     </nav>
                 </div>
             </article>

@@ -21,6 +21,8 @@ def seed_rules(user, resource: str):
         access.seed_default_duty_type_rules()
     elif resource == "plan":
         access.seed_default_plan_rules()
+    elif resource == "assignment":
+        access.seed_default_assignment_rules()
     else:
         raise ValueError(f"Неизвестный ресурс: {resource}")
 

@@ -1,8 +1,10 @@
+from .assignment_access import AssignmentAccessService
 from .context import AccessContext
 from .duty_type_access import DutyTypeAccessService
 from .person_access import PersonAccessService
 from .plan_access import PlanAccessService
 from .seed import (
+    seed_default_assignment_rules,
     seed_default_duty_type_rules,
     seed_default_person_rules,
     seed_default_plan_rules,
@@ -26,6 +28,7 @@ class AccessManager:
         self.unit_type_access = UnitTypeAccessService(self.ctx)
         self.duty_type_access = DutyTypeAccessService(self.ctx)
         self.plan_access = PlanAccessService(self.ctx)
+        self.assignment_access = AssignmentAccessService(self.ctx)
 
         self.ruleset = self.user_access.ruleset
 
@@ -137,6 +140,9 @@ class AccessManager:
     def allowed_delegate_units_for_plan_days(self, schedule):
         return self.plan_access.allowed_delegate_units_for_days(schedule)
 
+    def can_assignment(self, action, plan=None):
+        return self.assignment_access.can(action, plan)
+
     def seed_default_user_rules(self):
         seed_default_user_rules(self.ruleset)
 
@@ -154,3 +160,6 @@ class AccessManager:
 
     def seed_default_plan_rules(self):
         seed_default_plan_rules(self.ruleset)
+
+    def seed_default_assignment_rules(self):
+        seed_default_assignment_rules(self.ruleset)

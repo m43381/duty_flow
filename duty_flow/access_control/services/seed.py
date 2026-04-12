@@ -294,3 +294,28 @@ def seed_default_plan_rules(ruleset):
         )
         if mode == "all_values":
             choice_rule.units.set(Unit.objects.all())
+
+
+def seed_default_assignment_rules(ruleset):
+    default_rules = [
+        (0, "view", True, "all", 10),
+        (0, "assign", True, "all", 10),
+        (0, "unassign", True, "all", 10),
+
+        (1, "view", True, "own_unit", 10),
+        (1, "assign", True, "own_unit", 10),
+        (1, "unassign", True, "own_unit", 10),
+
+        (2, "view", True, "own_unit", 10),
+        (2, "assign", True, "own_unit", 10),
+        (2, "unassign", True, "own_unit", 10),
+    ]
+    for subject_level, action, is_allowed, scope, priority in default_rules:
+        AccessRule.objects.update_or_create(
+            ruleset=ruleset,
+            resource="assignment",
+            action=action,
+            subject_level=subject_level,
+            priority=priority,
+            defaults={"is_allowed": is_allowed, "scope": scope, "is_active": True, "note": "Автозаполнение стартового набора"},
+        )
