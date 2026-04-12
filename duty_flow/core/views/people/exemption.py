@@ -1,18 +1,19 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+
 from people.models import Person, Exemption
 from people.forms import ExemptionForm
-from users_app.access_service import AccessService
 from core.services.people_service import PersonService
+from access_control.services import AccessManager
 
 
 @login_required
 def exemption_add(request, pk):
     person = get_object_or_404(Person, pk=pk)
-    access = AccessService(request.user)
+    access = AccessManager(request.user)
 
-    if not access.can_edit_object(person):
+    if not access.can_person("manage_exemptions", person):
         messages.error(request, 'Нет прав для редактирования')
         return redirect('people:person_detail', pk=person.pk)
 
@@ -49,9 +50,9 @@ def exemption_add(request, pk):
 def exemption_edit(request, pk, exemption_id):
     person = get_object_or_404(Person, pk=pk)
     exemption = get_object_or_404(Exemption, pk=exemption_id, person=person)
-    access = AccessService(request.user)
+    access = AccessManager(request.user)
 
-    if not access.can_edit_object(person):
+    if not access.can_person("manage_exemptions", person):
         messages.error(request, 'Нет прав для редактирования')
         return redirect('people:person_detail', pk=person.pk)
 
@@ -90,9 +91,9 @@ def exemption_edit(request, pk, exemption_id):
 def exemption_delete(request, pk, exemption_id):
     person = get_object_or_404(Person, pk=pk)
     exemption = get_object_or_404(Exemption, pk=exemption_id, person=person)
-    access = AccessService(request.user)
+    access = AccessManager(request.user)
 
-    if not access.can_edit_object(person):
+    if not access.can_person("manage_exemptions", person):
         messages.error(request, 'Нет прав для удаления')
         return redirect('people:person_detail', pk=person.pk)
 

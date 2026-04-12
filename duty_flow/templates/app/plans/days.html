@@ -8,7 +8,7 @@
         <div class="page-header__main">
             <h2 class="page-header__title">{{ schedule.name|default:schedule }}</h2>
             <p class="page-header__subtitle">
-                {{ schedule.month|date:"F Y" }} · {{ user_unit.name }}
+                {{ schedule.month|date:"F Y" }} · {{ base_unit.name }}
             </p>
         </div>
 
@@ -38,8 +38,8 @@
             <span class="summary-card__value">{{ dates|length }}</span>
         </article>
         <article class="summary-card">
-            <span class="summary-card__label">Дочерние подразделения</span>
-            <span class="summary-card__value">{{ children|length }}</span>
+            <span class="summary-card__label">Доступно для делегирования</span>
+            <span class="summary-card__value">{{ delegate_units|length }}</span>
         </article>
     </div>
 </section>
@@ -50,7 +50,7 @@
             <div>
                 <h3 class="card__title">Таблица нарядов по дням</h3>
                 <p class="card__subtitle">
-                    Выберите, кто исполняет наряд: ваше подразделение или одно из дочерних.
+                    Выберите, кто исполняет наряд: базовое подразделение расписания или одно из разрешённых подразделений.
                 </p>
             </div>
         </div>
@@ -115,7 +115,7 @@
                                                     </div>
                                                 {% endif %}
 
-                                                {% if cell.unit_name and cell.unit_id != user_unit.id %}
+                                                {% if cell.unit_name and cell.unit_id != base_unit.id %}
                                                     <div class="plan-cell__meta">
                                                         {{ cell.unit_name }}
                                                     </div>
@@ -130,18 +130,18 @@
                                                             <option value="">—</option>
 
                                                             <option
-                                                                value="{{ user_unit.id }}"
-                                                                {% if cell.unit_id == user_unit.id %}selected{% endif %}
+                                                                value="{{ base_unit.id }}"
+                                                                {% if cell.unit_id == base_unit.id %}selected{% endif %}
                                                             >
-                                                                {{ user_unit.name }}
+                                                                {{ base_unit.name }}
                                                             </option>
 
-                                                            {% for child in children %}
+                                                            {% for item in delegate_units %}
                                                                 <option
-                                                                    value="{{ child.id }}"
-                                                                    {% if cell.unit_id == child.id %}selected{% endif %}
+                                                                    value="{{ item.id }}"
+                                                                    {% if cell.unit_id == item.id %}selected{% endif %}
                                                                 >
-                                                                    {{ child.name }}
+                                                                    {{ item.label }}
                                                                 </option>
                                                             {% endfor %}
                                                         </select>

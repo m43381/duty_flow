@@ -1,0 +1,57 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Управление доступом — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Управление доступом</h2>
+            <p class="page-header__subtitle">
+                Выберите сущность и откройте настройку прав.
+            </p>
+        </div>
+        <div class="page-header__actions">
+            <a href="{% url 'access_control:menu_matrix' %}" class="button">Меню</a>
+            <a href="{% url 'access_control:diagnostics' %}" class="button">Диагностика</a>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="dashboard-layout">
+        <div class="dashboard-layout__main">
+            {% for item in resource_cards %}
+            <article class="card" style="margin-bottom: 1rem;">
+                <div class="card__header">
+                    <div>
+                        <h3 class="card__title">{{ item.title }}</h3>
+                    </div>
+                </div>
+
+                <div class="card__body">
+                    <div class="form-actions">
+                        <a href="{% url 'access_control:resource_matrix' resource=item.code %}?level=0" class="button button--primary">
+                            Открыть матрицу
+                        </a>
+
+                        <form method="post" action="{% url 'access_control:seed_resource_rules' resource=item.code %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="button">
+                                Заполнить базовые правила
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="form-actions" style="margin-top: 0.75rem;">
+                        <a href="{% url 'access_control:resource_matrix' resource=item.code %}?level=0" class="button button--sm">0</a>
+                        <a href="{% url 'access_control:resource_matrix' resource=item.code %}?level=1" class="button button--sm">1</a>
+                        <a href="{% url 'access_control:resource_matrix' resource=item.code %}?level=2" class="button button--sm">2</a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

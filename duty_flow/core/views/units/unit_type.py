@@ -2,19 +2,34 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
+from access_control.services import AccessManager
 from units.models import UnitType
 from units.forms import UnitTypeForm
 from core.services.unit_service import UnitTypeService
 
 
+def apply_unit_type_access_to_form(form, access_manager, action: str):
+    visible_fields = set(access_manager.visible_unit_type_fields(action))
+    editable_fields = set(access_manager.editable_unit_type_fields(action))
+
+    for field_name in list(form.fields.keys()):
+        if field_name not in visible_fields:
+            form.fields.pop(field_name, None)
+            continue
+
+        if field_name not in editable_fields:
+            form.fields[field_name].disabled = True
+
+
 @login_required
 def unit_type_list(request):
-    """Список типов подразделений"""
-    if not UnitTypeService.can_manage(request.user):
-        messages.error(request, "Доступ только для администраторов")
+    access = AccessManager(request.user)
+
+    if not access.can_unit_type("view"):
+        messages.error(request, "Доступ запрещён")
         return redirect("auth:dashboard")
 
-    unit_types = UnitType.objects.all().order_by("level", "name")
+    unit_types = access.scope_unit_types(UnitType.objects.all().order_by("level", "name"))
 
     search_query = request.GET.get("q", "").strip()
     if search_query:
@@ -25,26 +40,29 @@ def unit_type_list(request):
         "active_tab": "unit_types",
         "page_title": "Типы подразделений",
         "page_subtitle": "Справочник типов подразделений и их уровней иерархии",
-        "can_add": True,
+        "can_add": access.can_unit_type("create"),
         "search_query": search_query,
     })
 
 
 @login_required
 def unit_type_add(request):
-    """Создание типа подразделения"""
-    if not UnitTypeService.can_manage(request.user):
-        messages.error(request, "Доступ только для администраторов")
+    access = AccessManager(request.user)
+
+    if not access.can_unit_type("create"):
+        messages.error(request, "Доступ запрещён")
         return redirect("auth:dashboard")
 
     if request.method == "POST":
         form = UnitTypeForm(request.POST)
+        apply_unit_type_access_to_form(form, access, "create")
         if form.is_valid():
-            unit_type = form.save()
-            messages.success(request, f'Тип "{unit_type.name}" создан')
-            return redirect("unit_type:detail", pk=unit_type.pk)
+            item = form.save()
+            messages.success(request, f'Тип "{item.name}" создан')
+            return redirect("unit_type:detail", pk=item.pk)
     else:
         form = UnitTypeForm()
+        apply_unit_type_access_to_form(form, access, "create")
 
     return render(request, "app/unit_types/form.html", {
         "form": form,
@@ -58,46 +76,51 @@ def unit_type_add(request):
 
 @login_required
 def unit_type_detail(request, pk):
-    """Просмотр типа подразделения"""
-    if not UnitTypeService.can_manage(request.user):
-        messages.error(request, "Доступ только для администраторов")
+    access = AccessManager(request.user)
+    item = get_object_or_404(UnitType, pk=pk)
+
+    if not access.can_unit_type("view", item):
+        messages.error(request, "Доступ запрещён")
         return redirect("auth:dashboard")
 
-    unit_type = get_object_or_404(UnitType, pk=pk)
-    units_count, users_count = UnitTypeService.get_usage_stats(unit_type)
+    units_count, users_count = UnitTypeService.get_usage_stats(item)
 
     return render(request, "app/unit_types/detail.html", {
-        "item": unit_type,
+        "item": item,
         "units_count": units_count,
         "users_count": users_count,
+        "can_edit": access.can_unit_type("update", item),
+        "can_delete": access.can_unit_type("delete", item),
         "active_tab": "unit_types",
         "page_title": "Типы подразделений",
         "page_subtitle": "Карточка типа подразделения",
-        "title": unit_type.name,
+        "title": item.name,
     })
 
 
 @login_required
 def unit_type_edit(request, pk):
-    """Редактирование типа подразделения"""
-    if not UnitTypeService.can_manage(request.user):
-        messages.error(request, "Доступ только для администраторов")
+    access = AccessManager(request.user)
+    item = get_object_or_404(UnitType, pk=pk)
+
+    if not access.can_unit_type("update", item):
+        messages.error(request, "Доступ запрещён")
         return redirect("auth:dashboard")
 
-    unit_type = get_object_or_404(UnitType, pk=pk)
-
     if request.method == "POST":
-        form = UnitTypeForm(request.POST, instance=unit_type)
+        form = UnitTypeForm(request.POST, instance=item)
+        apply_unit_type_access_to_form(form, access, "update")
         if form.is_valid():
             form.save()
-            messages.success(request, f'Тип "{unit_type.name}" обновлен')
-            return redirect("unit_type:detail", pk=unit_type.pk)
+            messages.success(request, f'Тип "{item.name}" обновлён')
+            return redirect("unit_type:detail", pk=item.pk)
     else:
-        form = UnitTypeForm(instance=unit_type)
+        form = UnitTypeForm(instance=item)
+        apply_unit_type_access_to_form(form, access, "update")
 
     return render(request, "app/unit_types/form.html", {
         "form": form,
-        "item": unit_type,
+        "item": item,
         "active_tab": "unit_types",
         "page_title": "Типы подразделений",
         "page_subtitle": "Редактирование типа подразделения",
@@ -107,25 +130,26 @@ def unit_type_edit(request, pk):
 
 @login_required
 def unit_type_delete(request, pk):
-    """Удаление типа подразделения"""
-    if not UnitTypeService.can_manage(request.user):
-        messages.error(request, "Доступ только для администраторов")
+    access = AccessManager(request.user)
+    item = get_object_or_404(UnitType, pk=pk)
+
+    if not access.can_unit_type("delete", item):
+        messages.error(request, "Доступ запрещён")
         return redirect("auth:dashboard")
 
-    unit_type = get_object_or_404(UnitType, pk=pk)
-
-    can_delete, error_msg = UnitTypeService.can_delete_type(unit_type)
+    can_delete, error_msg = UnitTypeService.can_delete_type(item)
     if not can_delete:
         messages.error(request, error_msg)
-        return redirect("unit_type:detail", pk=unit_type.pk)
+        return redirect("unit_type:detail", pk=item.pk)
 
     if request.method == "POST":
-        unit_type.delete()
-        messages.success(request, f'Тип "{unit_type.name}" удален')
+        name = item.name
+        item.delete()
+        messages.success(request, f'Тип "{name}" удалён')
         return redirect("unit_type:list")
 
     return render(request, "app/unit_types/delete.html", {
-        "item": unit_type,
+        "item": item,
         "active_tab": "unit_types",
         "page_title": "Типы подразделений",
         "page_subtitle": "Удаление типа подразделения",

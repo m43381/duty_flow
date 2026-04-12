@@ -1,0 +1,84 @@
+{% extends 'app/base_app.html' %}
+{% load static custom_filters %}
+
+{% block title %}Меню — DutyFlow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/access_control.css' %}">
+{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="acl-page">
+        <div class="page-header">
+            <div class="page-header__main">
+                <h2 class="page-header__title">Меню</h2>
+                <p class="page-header__subtitle">Видимость пунктов меню по уровням</p>
+            </div>
+
+            <div class="page-header__actions">
+                <a href="{% url 'access_control:dashboard' %}" class="button">Назад</a>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <article class="card acl-card">
+                <div class="card__header">
+                    <div>
+                        <h3 class="card__title">Матрица меню</h3>
+                        <p class="card__subtitle">Отметь, какие пункты видит каждый уровень</p>
+                    </div>
+                </div>
+
+                <div class="card__body acl-card__body--compact">
+                    <div class="acl-scroll">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Раздел</th>
+                                    <th>Пункт меню</th>
+                                    {% for level in levels %}
+                                        <th>
+                                            {{ level }}
+                                            {% if level in level_labels %}
+                                                <div style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 400;">
+                                                    {{ level_labels|get_item:level }}
+                                                </div>
+                                            {% endif %}
+                                        </th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in rows %}
+                                <tr>
+                                    <td>{{ row.section }}</td>
+                                    <td>{{ row.icon }} {{ row.title }}</td>
+                                    {% for cell in row.cells %}
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            name="menu__{{ row.key }}__{{ cell.level }}"
+                                            {% if cell.is_visible %}checked{% endif %}
+                                        >
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </article>
+
+            <section class="page-section">
+                <div class="form-actions">
+                    <button type="submit" class="button button--primary">Сохранить настройки меню</button>
+                </div>
+            </section>
+        </form>
+    </div>
+</section>
+{% endblock %}

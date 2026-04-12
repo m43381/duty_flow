@@ -19,9 +19,18 @@
 
         <div class="page-header__actions">
             <a href="{% url 'plan:list' %}" class="button">Назад к списку</a>
-            <a href="{% url 'plan:days' schedule.pk %}" class="button button--primary">Открыть таблицу дней</a>
-            <a href="{% url 'plan:edit' schedule.pk %}" class="button">Изменить</a>
-            <a href="{% url 'plan:delete' schedule.pk %}" class="button button--danger">Удалить</a>
+
+            {% if can_manage_days %}
+                <a href="{% url 'plan:days' schedule.pk %}" class="button button--primary">Открыть таблицу дней</a>
+            {% endif %}
+
+            {% if can_edit %}
+                <a href="{% url 'plan:edit' schedule.pk %}" class="button">Изменить</a>
+            {% endif %}
+
+            {% if can_delete %}
+                <a href="{% url 'plan:delete' schedule.pk %}" class="button button--danger">Удалить</a>
+            {% endif %}
         </div>
     </div>
 </section>

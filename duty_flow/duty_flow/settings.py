@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'people',
     'duty_plans',
     'users_app',
+    'access_control',
 ]
 
 MIDDLEWARE = [
@@ -49,6 +50,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.navigation_context',
             ],
         },
     },

@@ -1,0 +1,203 @@
+{% extends 'app/base_app.html' %}
+
+{% block title %}Диагностика доступа — DutyFlow{% endblock %}
+
+{% block app_content %}
+<section class="page-section">
+    <div class="page-header">
+        <div class="page-header__main">
+            <h2 class="page-header__title">Диагностика доступа</h2>
+            <p class="page-header__subtitle">Проверка фактических прав конкретного пользователя</p>
+        </div>
+        <div class="page-header__actions">
+            <a href="{% url 'access_control:dashboard' %}" class="button">Назад</a>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__body">
+            <form method="get" class="form">
+                <div class="form-layout" style="grid-template-columns: 320px 320px;">
+                    <div class="form-field">
+                        <label class="form-field__label">Пользователь</label>
+                        <select name="user_id" class="form-select">
+                            <option value="">Выберите пользователя</option>
+                            {% for item in users %}
+                                <option value="{{ item.id }}" {% if selected_user_id == item.id %}selected{% endif %}>
+                                    {{ item.username }}
+                                    {% if item.profile and item.profile.unit %} · {{ item.profile.unit.name }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-field__label">Сущность</label>
+                        <select name="resource" class="form-select">
+                            {% for code, info in resources.items %}
+                                <option value="{{ code }}" {% if selected_resource == code %}selected{% endif %}>{{ info.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="button button--primary">Показать диагностику</button>
+                </div>
+            </form>
+        </div>
+    </article>
+</section>
+
+{% if diagnostics %}
+<section class="page-section">
+    <div class="stats-strip">
+        <article class="metric-card">
+            <span class="metric-card__label">Пользователь</span>
+            <span class="metric-card__value">{{ diagnostics.target_user.username }}</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__label">Уровень</span>
+            <span class="metric-card__value">{{ diagnostics.user_level }}</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__label">Подразделение</span>
+            <span class="metric-card__value">
+                {% if diagnostics.user_unit %}{{ diagnostics.user_unit.name }}{% else %}—{% endif %}
+            </span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__label">Набор правил</span>
+            <span class="metric-card__value">{{ diagnostics.ruleset.name }}</span>
+        </article>
+    </div>
+</section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Действия</h3>
+                <p class="card__subtitle">{{ diagnostics.resource_label }}</p>
+            </div>
+        </div>
+        <div class="card__body">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Действие</th>
+                            <th>Разрешено</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in diagnostics.actions %}
+                        <tr>
+                            <td>{{ item.action }}</td>
+                            <td>{% if item.allowed %}Да{% else %}Нет{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </article>
+</section>
+
+{% if diagnostics.visible_fields %}
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <h3 class="card__title">Видимые поля</h3>
+        </div>
+        <div class="card__body">
+            <div class="details-list">
+                {% for item in diagnostics.visible_fields %}
+                <div class="details-list__row">
+                    <span class="details-list__label">{{ item.action }}</span>
+                    <span class="details-list__value">
+                        {% if item.fields %}{{ item.fields|join:", " }}{% else %}—{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </article>
+</section>
+{% endif %}
+
+{% if diagnostics.editable_fields %}
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <h3 class="card__title">Редактируемые поля</h3>
+        </div>
+        <div class="card__body">
+            <div class="details-list">
+                {% for item in diagnostics.editable_fields %}
+                <div class="details-list__row">
+                    <span class="details-list__label">{{ item.action }}</span>
+                    <span class="details-list__value">
+                        {% if item.fields %}{{ item.fields|join:", " }}{% else %}—{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </article>
+</section>
+{% endif %}
+
+{% if diagnostics.choices %}
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <h3 class="card__title">Select / queryset</h3>
+        </div>
+        <div class="card__body">
+            {% for item in diagnostics.choices %}
+                <div style="margin-bottom: 1.25rem;">
+                    <h4 style="margin-bottom: 0.5rem;">{{ item.action }}</h4>
+
+                    {% if item.summary %}
+                        {% if item.summary.parents or item.summary.unit_types %}
+                            <div class="details-list">
+                                {% if item.summary.parents %}
+                                <div class="details-list__row">
+                                    <span class="details-list__label">Родители</span>
+                                    <span class="details-list__value">{{ item.summary.parents|join:", " }}</span>
+                                </div>
+                                {% endif %}
+                                {% if item.summary.unit_types %}
+                                <div class="details-list__row">
+                                    <span class="details-list__label">Типы подразделений</span>
+                                    <span class="details-list__value">{{ item.summary.unit_types|join:", " }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="details-list">
+                                <div class="details-list__row">
+                                    <span class="details-list__label">Доступные значения</span>
+                                    <span class="details-list__value">{{ item.summary|join:", " }}</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="details-list">
+                            <div class="details-list__row">
+                                <span class="details-list__label">Состояние</span>
+                                <span class="details-list__value">Нет специальных ограничений</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}
