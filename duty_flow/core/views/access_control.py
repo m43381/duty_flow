@@ -3,18 +3,19 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
 
-from users_app.models import UserProfile
-from units.models import UnitType
 from access_control.forms import AccessFieldRuleForm, AccessRuleForm
 from access_control.models import AccessFieldRule, AccessRule
+from units.models import UnitType
+from users_app.models import UserProfile
 from core.services.access_control import AccessControlService
+from access_control.services import build_menu_matrix, save_menu_matrix
 
 
 def level0_required(view_func):
     @login_required
     def wrapper(request, *args, **kwargs):
         profile = getattr(request.user, "profile", None)
-        if not profile or profile.level != 0:
+        if not profile or not getattr(profile, "unit", None) or not getattr(profile.unit, "unit_type", None) or profile.unit.unit_type.level != 0:
             messages.error(request, "Доступ только для уровня 0")
             return redirect("auth:dashboard")
         return view_func(request, *args, **kwargs)
@@ -25,17 +26,14 @@ ALLOWED_RESOURCES = {"user", "person", "unit", "unit_type", "duty_type", "plan",
 
 
 def _get_available_levels():
-    from users_app.models import UserProfile
-
     levels = list(
         UserProfile.objects
         .filter(unit__isnull=False, unit__unit_type__isnull=False)
         .values_list("unit__unit_type__level", flat=True)
         .distinct()
     )
+    return sorted(level for level in levels if level is not None)
 
-    levels = sorted(level for level in levels if level is not None)
-    return levels
 
 def _get_level_labels(levels):
     result = {}
@@ -84,6 +82,26 @@ def access_dashboard(request):
         "page_title": "Управление доступом",
         "page_subtitle": "Настройка прав и ограничений",
         "title": "Управление доступом",
+    })
+
+
+@level0_required
+def access_menu_matrix(request):
+    if request.method == "POST":
+        save_menu_matrix(request.user, request.POST)
+        messages.success(request, "Настройки меню сохранены")
+        return redirect("access_control:menu_matrix")
+
+    matrix = build_menu_matrix(request.user)
+    level_labels = _get_level_labels(matrix["levels"])
+
+    return render(request, "app/access_control/menu_matrix.html", {
+        **matrix,
+        "level_labels": level_labels,
+        "active_tab": "access_control",
+        "page_title": "Управление доступом",
+        "page_subtitle": "Видимость пунктов меню по уровням",
+        "title": "Меню",
     })
 
 
@@ -138,7 +156,6 @@ def resource_matrix(request, resource):
         return redirect("access_control:dashboard")
 
     available_levels = _get_available_levels()
-    level_labels = _get_level_labels(available_levels)
 
     try:
         default_level = available_levels[0] if available_levels else 0
@@ -163,15 +180,16 @@ def resource_matrix(request, resource):
         return redirect(f"{request.path}?level={level}")
 
     matrix = AccessControlService.build_matrix(request.user, resource, level)
+    level_labels = _get_level_labels(available_levels)
 
     return render(request, "app/access_control/resource_matrix.html", {
         **matrix,
         "available_levels": available_levels,
+        "level_labels": level_labels,
         "active_tab": "access_control",
         "page_title": "Управление доступом",
         "page_subtitle": f"Матрица прав: {matrix['resource_title']} / уровень {level}",
         "title": f"Матрица прав: {matrix['resource_title']}",
-        "level_labels": level_labels,
     })
 
 

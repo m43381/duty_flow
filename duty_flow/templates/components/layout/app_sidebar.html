@@ -10,67 +10,20 @@
             </a>
         </div>
 
+        {% for section in nav_sections %}
         <div class="app-sidebar__section">
-            <div class="app-sidebar__section-title">Основное</div>
+            <div class="app-sidebar__section-title">{{ section.title }}</div>
 
             <nav class="app-sidebar__nav">
-                <a href="{% url 'auth:dashboard' %}" class="nav-item {% if active_tab == 'dashboard' %}is-active{% endif %}">
-                    <span class="nav-item__icon">📊</span>
-                    <span class="nav-item__label">Дашборд</span>
+                {% for item in section.items %}
+                <a href="{{ item.url }}" class="nav-item {% if active_tab == item.active_tab %}is-active{% endif %}">
+                    <span class="nav-item__icon">{{ item.icon }}</span>
+                    <span class="nav-item__label">{{ item.title }}</span>
                 </a>
-
-                <a href="{% url 'people:person_list' %}" class="nav-item {% if active_tab == 'people' %}is-active{% endif %}">
-                    <span class="nav-item__icon">👥</span>
-                    <span class="nav-item__label">Сотрудники</span>
-                </a>
-
-                <a href="{% url 'plan:list' %}" class="nav-item {% if active_tab == 'plans' %}is-active{% endif %}">
-                    <span class="nav-item__icon">📋</span>
-                    <span class="nav-item__label">Планы нарядов</span>
-                </a>
-
-                <a href="{% url 'assignment:calendar' %}" class="nav-item {% if active_tab == 'assignments' %}is-active{% endif %}">
-                    <span class="nav-item__icon">🗓️</span>
-                    <span class="nav-item__label">Назначения</span>
-                </a>
+                {% endfor %}
             </nav>
         </div>
-
-        <div class="app-sidebar__section">
-            <div class="app-sidebar__section-title">Справочники</div>
-
-            <nav class="app-sidebar__nav">
-                {% if user.profile.unit.unit_type.level <= 1 %}
-                <a href="{% url 'type:list' %}" class="nav-item {% if active_tab == 'duty_types' %}is-active{% endif %}">
-                    <span class="nav-item__icon">📌</span>
-                    <span class="nav-item__label">Типы нарядов</span>
-                </a>
-                {% endif %}
-
-                {% if user.profile.unit.unit_type.level == 0 %}
-                <a href="{% url 'unit_type:list' %}" class="nav-item {% if active_tab == 'unit_types' %}is-active{% endif %}">
-                    <span class="nav-item__icon">🏷️</span>
-                    <span class="nav-item__label">Типы подразделений</span>
-                </a>
-                {% endif %}
-
-                <a href="{% url 'units:list' %}" class="nav-item {% if active_tab == 'units' %}is-active{% endif %}">
-                    <span class="nav-item__icon">🏛️</span>
-                    <span class="nav-item__label">Подразделения</span>
-                </a>
-
-                <a href="{% url 'users:list' %}" class="nav-item {% if active_tab == 'users' %}is-active{% endif %}">
-                    <span class="nav-item__icon">👤</span>
-                    <span class="nav-item__label">Пользователи</span>
-                </a>
-                {% if user.profile.level == 0 %}
-                <a href="{% url 'access_control:dashboard' %}" class="nav-item {% if active_tab == 'access_control' %}is-active{% endif %}">
-                    <span class="nav-item__icon">🔐</span>
-                    <span class="nav-item__label">Управление доступом</span>
-                </a>
-                {% endif %}
-            </nav>
-        </div>
+        {% endfor %}
 
         {% if user.profile and user.profile.unit %}
         <div class="app-sidebar__footer">
@@ -78,7 +31,7 @@
                 <div class="app-sidebar__unit-label">Текущее подразделение</div>
                 <div class="app-sidebar__unit-name">{{ user.profile.unit.name }}</div>
                 <div class="app-sidebar__unit-meta">
-                    {{ user.profile.get_access_level_display }}
+                    {{ user.profile.unit.unit_type.name }}
                 </div>
             </div>
         </div>

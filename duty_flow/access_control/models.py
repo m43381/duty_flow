@@ -202,3 +202,32 @@ class AccessChoiceRule(models.Model):
 
     def __str__(self):
         return f"{self.ruleset} | {self.resource}.{self.action}.{self.field_name} -> {self.mode}"
+
+
+class AccessMenuRule(models.Model):
+    ruleset = models.ForeignKey(
+        AccessRuleSet,
+        on_delete=models.CASCADE,
+        related_name="menu_rules",
+        verbose_name="Набор правил",
+    )
+    menu_key = models.CharField("Ключ пункта меню", max_length=100)
+    subject_level = models.PositiveSmallIntegerField("Для уровня")
+    is_visible = models.BooleanField("Показывать", default=True)
+    is_active = models.BooleanField("Активно", default=True)
+    priority = models.PositiveIntegerField("Приоритет", default=100)
+    note = models.CharField("Комментарий", max_length=255, blank=True)
+    created_at = models.DateTimeField("Создано", auto_now_add=True)
+    updated_at = models.DateTimeField("Обновлено", auto_now=True)
+
+    class Meta:
+        verbose_name = "Правило видимости пункта меню"
+        verbose_name_plural = "Правила видимости пунктов меню"
+        ordering = ["subject_level", "priority", "menu_key", "id"]
+        unique_together = ("ruleset", "menu_key", "subject_level")
+        indexes = [
+            models.Index(fields=["ruleset", "subject_level", "menu_key"]),
+        ]
+
+    def __str__(self):
+        return f"{self.ruleset} | menu:{self.menu_key} | level={self.subject_level}"

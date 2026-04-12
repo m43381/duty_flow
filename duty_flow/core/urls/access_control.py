@@ -3,6 +3,7 @@ from core.views import access_control
 
 urlpatterns = [
     path("", access_control.access_dashboard, name="dashboard"),
+    path("menu/", access_control.access_menu_matrix, name="menu_matrix"),
     path("diagnostics/", access_control.access_diagnostics, name="diagnostics"),
 
     path("<str:resource>/seed/", access_control.seed_resource_rules, name="seed_resource_rules"),
