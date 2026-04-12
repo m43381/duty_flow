@@ -1,265 +1,314 @@
 {% extends 'app/base_app.html' %}
+{% load static custom_filters %}
 
-{% block title %}{{ title }} — DutyFlow{% endblock %}
+{% block title %}{{ resource_title }} — DutyFlow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/access_control.css' %}">
+{% endblock %}
 
 {% block app_content %}
 <section class="page-section">
-    <div class="page-header">
-        <div class="page-header__main">
-            <h2 class="page-header__title">{{ title }}</h2>
-            <p class="page-header__subtitle">
-                Активный набор: {{ ruleset.name }}. Настройка прав для уровня {{ level }}.
-            </p>
-        </div>
-        <div class="page-header__actions">
-            <a href="{% url 'access_control:dashboard' %}" class="button">Назад</a>
-            <a href="{% url 'access_control:rules' resource=resource %}" class="button">Все правила</a>
-        </div>
-    </div>
-</section>
+    <div class="acl-page">
+        <div class="page-header">
+            <div class="page-header__main">
+                <h2 class="page-header__title">{{ resource_title }}</h2>
+                <p class="page-header__subtitle">
+                    Уровень {{ level }}
+                    {% if level_labels.level %}
+                        · {{ level_labels.level }}
+                    {% endif %}
+                </p>
+            </div>
 
-<section class="page-section">
-    <article class="card">
-        <div class="card__body">
-            <form method="get" class="form">
-                <div class="form-layout" style="grid-template-columns: 240px auto;">
-                    <div class="form-field">
-                        <label class="form-field__label" for="id_level">Уровень</label>
-                        <select name="level" id="id_level" class="form-select">
-                            {% for item in available_levels %}
-                                <option value="{{ item }}" {% if item == level %}selected{% endif %}>{{ item }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="button button--primary">Показать</button>
-                </div>
-            </form>
+            <div class="page-header__actions">
+                <a href="{% url 'access_control:dashboard' %}" class="button">Назад</a>
+                <a href="{% url 'access_control:diagnostics' %}?resource={{ resource }}" class="button">Диагностика</a>
+            </div>
         </div>
-    </article>
-</section>
 
-<form method="post">
-    {% csrf_token %}
-    <input type="hidden" name="level" value="{{ level }}">
-
-    <section class="page-section">
         <article class="card">
-            <div class="card__header">
-                <div>
-                    <h3 class="card__title">Действия</h3>
-                    <p class="card__subtitle">Разрешение действий и scope записей</p>
-                </div>
-            </div>
             <div class="card__body">
-                <div class="table-wrap">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Действие</th>
-                                <th>Разрешено</th>
-                                <th>Scope</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in action_rows %}
-                            <tr>
-                                <td>{{ row.label }}</td>
-                                <td>
-                                    <input type="checkbox" name="action__{{ row.action }}__allowed" {% if row.allowed %}checked{% endif %}>
-                                </td>
-                                <td>
-                                    <select name="action__{{ row.action }}__scope" class="form-select">
-                                        {% for scope_value, scope_label in scopes %}
-                                            <option value="{{ scope_value }}" {% if row.scope == scope_value %}selected{% endif %}>
-                                                {{ scope_label }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </article>
-    </section>
-
-    <section class="page-section" style="margin-top: 1.5rem;">
-        <article class="card">
-            <div class="card__header">
-                <div>
-                    <h3 class="card__title">Поля</h3>
-                    <p class="card__subtitle">Видимость и редактирование полей по действиям</p>
-                </div>
-            </div>
-            <div class="card__body">
-                {% for block in field_rows %}
-                    <div style="{% if not forloop.last %}margin-bottom: 2rem;{% endif %}">
-                        <h4 style="margin-bottom: 1rem;">{{ block.action_label }}</h4>
-                        <div class="table-wrap">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Поле</th>
-                                        <th>Видно</th>
-                                        <th>Редактируется</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for field in block.fields %}
-                                    <tr>
-                                        <td>{{ field.field_label }}</td>
-                                        <td>
-                                            <input type="checkbox" name="field__{{ block.action }}__{{ field.field_name }}__view" {% if field.can_view %}checked{% endif %}>
-                                        </td>
-                                        <td>
-                                            <input type="checkbox" name="field__{{ block.action }}__{{ field.field_name }}__edit" {% if field.can_edit %}checked{% endif %}>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                <div class="acl-toolbar acl-toolbar--single-row">
+                    <div class="acl-toolbar__left acl-toolbar__left--column">
+                        <div class="acl-current-level">
+                            <span class="acl-current-level__label">Текущий уровень</span>
+                            <span class="acl-current-level__value">
+                                {{ level }}
+                                {% if level in level_labels %}
+                                    · {{ level_labels|get_item:level }}
+                                {% endif %}
+                            </span>
                         </div>
                     </div>
-                {% endfor %}
-            </div>
-        </article>
-    </section>
 
-    <section class="page-section" style="margin-top: 1.5rem;">
-        <article class="card">
-            <div class="card__header">
-                <div>
-                    <h3 class="card__title">Выпадающие списки</h3>
-                    <p class="card__subtitle">Какие значения доступны в select/queryset-полях</p>
+                    <div class="acl-toolbar__right">
+                        <div class="acl-level-switcher">
+                            {% for item in available_levels %}
+                                <a
+                                    href="{% url 'access_control:resource_matrix' resource=resource %}?level={{ item }}"
+                                    class="button button--sm {% if item == level %}button--primary{% endif %}"
+                                    title="{% if item in level_labels %}{{ level_labels|get_item:item }}{% else %}Уровень {{ item }}{% endif %}"
+                                >
+                                    {{ item }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="card__body">
-                {% for block in choice_rows %}
-                    <div style="{% if not forloop.last %}margin-bottom: 2rem;{% endif %}">
-                        <h4 style="margin-bottom: 1rem;">{{ block.action_label }}</h4>
-
-                        {% for field in block.fields %}
-                            <div style="border: 1px solid var(--color-border, #d9dee7); border-radius: 16px; padding: 1rem; margin-bottom: 1rem;">
-                                <h5 style="margin: 0 0 1rem 0;">{{ field.field_label }}</h5>
-
-                                {% if field.field_name == "parent" or field.field_name == "unit" or field.field_name == "delegate_unit" %}
-                                    <div class="form-layout" style="grid-template-columns: 280px 280px;">
-                                        <div class="form-field">
-                                            <label class="form-field__label">Режим</label>
-                                            <select name="choice__{{ block.action }}__{{ field.field_name }}__mode" class="form-select">
-                                                {% for mode_value, mode_label in field.mode_options %}
-                                                    <option value="{{ mode_value }}" {% if field.mode == mode_value %}selected{% endif %}>
-                                                        {{ mode_label }}
-                                                    </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-
-                                        <div class="form-field">
-                                            <label class="form-field__label">Scope</label>
-                                            <select name="choice__{{ block.action }}__{{ field.field_name }}__scope" class="form-select">
-                                                {% for scope_value, scope_label in scopes %}
-                                                    <option value="{{ scope_value }}" {% if field.scope == scope_value %}selected{% endif %}>
-                                                        {{ scope_label }}
-                                                    </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-field" style="margin-top: 1rem;">
-                                        <label class="form-field__label">Конкретные подразделения</label>
-                                        <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--color-border, #d9dee7); border-radius: 12px; padding: 0.75rem; background: var(--color-surface, #fff);">
-                                            {% for unit in field.unit_options %}
-                                                <label style="display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.35rem 0; cursor: pointer;">
-                                                    <input
-                                                        type="checkbox"
-                                                        name="choice__{{ block.action }}__{{ field.field_name }}__units"
-                                                        value="{{ unit.id }}"
-                                                        {% if unit.id in field.selected_unit_ids %}checked{% endif %}
-                                                        style="margin-top: 0.15rem;"
-                                                    >
-                                                    <span style="line-height: 1.35;">{{ unit.label }}</span>
-                                                </label>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-
-                                {% elif field.field_name == "unit_type" %}
-                                    <div class="form-layout" style="grid-template-columns: 320px;">
-                                        <div class="form-field">
-                                            <label class="form-field__label">Режим</label>
-                                            <select name="choice__{{ block.action }}__{{ field.field_name }}__mode" class="form-select">
-                                                {% for mode_value, mode_label in field.mode_options %}
-                                                    <option value="{{ mode_value }}" {% if field.mode == mode_value %}selected{% endif %}>
-                                                        {{ mode_label }}
-                                                    </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <input type="hidden" name="choice__{{ block.action }}__{{ field.field_name }}__scope" value="none">
-
-                                    <div class="form-field" style="margin-top: 1rem;">
-                                        <label class="form-field__label">Конкретные типы подразделений</label>
-                                        <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--color-border, #d9dee7); border-radius: 12px; padding: 0.75rem; background: var(--color-surface, #fff);">
-                                            {% for item in field.unit_type_options %}
-                                                <label style="display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.35rem 0; cursor: pointer;">
-                                                    <input
-                                                        type="checkbox"
-                                                        name="choice__{{ block.action }}__{{ field.field_name }}__unit_types"
-                                                        value="{{ item.id }}"
-                                                        {% if item.id in field.selected_unit_type_ids %}checked{% endif %}
-                                                        style="margin-top: 0.15rem;"
-                                                    >
-                                                    <span style="line-height: 1.35;">{{ item.label }}</span>
-                                                </label>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-
-                                {% else %}
-                                    <div class="form-layout" style="grid-template-columns: 280px 280px;">
-                                        <div class="form-field">
-                                            <label class="form-field__label">Режим</label>
-                                            <select name="choice__{{ block.action }}__{{ field.field_name }}__mode" class="form-select">
-                                                {% for mode_value, mode_label in field.mode_options %}
-                                                    <option value="{{ mode_value }}" {% if field.mode == mode_value %}selected{% endif %}>
-                                                        {{ mode_label }}
-                                                    </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-
-                                        <div class="form-field">
-                                            <label class="form-field__label">Scope</label>
-                                            <select name="choice__{{ block.action }}__{{ field.field_name }}__scope" class="form-select">
-                                                {% for scope_value, scope_label in scopes %}
-                                                    <option value="{{ scope_value }}" {% if field.scope == scope_value %}selected{% endif %}>
-                                                        {{ scope_label }}
-                                                    </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endfor %}
-            </div>
         </article>
-    </section>
 
-    <section class="page-section">
-        <div class="form-actions">
-            <button type="submit" class="button button--primary">Сохранить матрицу</button>
-        </div>
-    </section>
-</form>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="level" value="{{ level }}">
+
+            <div class="acl-sticky-save">
+                <div class="form-actions acl-sticky-save__actions">
+                    <div class="acl-note">
+                        Настрой действия, поля и значения списков для уровня {{ level }}.
+                    </div>
+                    <button type="submit" class="button button--primary">Сохранить матрицу</button>
+                </div>
+            </div>
+
+            <div class="acl-layout">
+                <div class="acl-column">
+                    <article class="card acl-card">
+                        <div class="card__header">
+                            <div>
+                                <h3 class="card__title">Действия</h3>
+                                <p class="card__subtitle">Основные права по сущности</p>
+                            </div>
+                        </div>
+                        <div class="card__body acl-card__body--compact">
+                            <div class="acl-scroll">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Действие</th>
+                                            <th>Разрешено</th>
+                                            <th>Scope</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in action_rows %}
+                                        <tr>
+                                            <td>{{ row.label }}</td>
+                                            <td>
+                                                <input
+                                                    type="checkbox"
+                                                    name="action__{{ row.action }}__allowed"
+                                                    {% if row.allowed %}checked{% endif %}
+                                                >
+                                            </td>
+                                            <td>
+                                                <select name="action__{{ row.action }}__scope" class="form-select">
+                                                    {% for scope_value, scope_label in scopes %}
+                                                        <option value="{{ scope_value }}" {% if row.scope == scope_value %}selected{% endif %}>
+                                                            {{ scope_label }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card acl-card">
+                        <div class="card__header">
+                            <div>
+                                <h3 class="card__title">Scope</h3>
+                                <p class="card__subtitle">Короткая расшифровка</p>
+                            </div>
+                        </div>
+                        <div class="card__body">
+                            <div class="acl-mini-help">
+                                <div class="acl-mini-help__item">Только своё подразделение — только текущее подразделение пользователя.</div>
+                                <div class="acl-mini-help__item">Только прямые дочерние — только первый уровень вниз.</div>
+                                <div class="acl-mini-help__item">Своё и прямые дочерние — без глубокой вложенности.</div>
+                                <div class="acl-mini-help__item">Все дочерние по иерархии — вся ветка вниз.</div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="acl-column">
+                    {% if field_rows %}
+                    <article class="card acl-card">
+                        <div class="card__header">
+                            <div>
+                                <h3 class="card__title">Поля</h3>
+                                <p class="card__subtitle">Что видно и что редактируется</p>
+                            </div>
+                        </div>
+                        <div class="card__body">
+                            <div class="acl-accordion-list">
+                                {% for block in field_rows %}
+                                <details class="acl-accordion" {% if forloop.first %}open{% endif %}>
+                                    <summary>
+                                        <span>{{ block.action_label }}</span>
+                                        <span class="acl-accordion__meta">{{ block.fields|length }} полей</span>
+                                    </summary>
+                                    <div class="acl-accordion__content">
+                                        <div class="acl-scroll acl-scroll--inner">
+                                            <table class="table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Поле</th>
+                                                        <th>Видно</th>
+                                                        <th>Редактируется</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for field in block.fields %}
+                                                    <tr>
+                                                        <td>{{ field.field_label }}</td>
+                                                        <td>
+                                                            <input
+                                                                type="checkbox"
+                                                                name="field__{{ block.action }}__{{ field.field_name }}__view"
+                                                                {% if field.can_view %}checked{% endif %}
+                                                            >
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                type="checkbox"
+                                                                name="field__{{ block.action }}__{{ field.field_name }}__edit"
+                                                                {% if field.can_edit %}checked{% endif %}
+                                                            >
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </details>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </article>
+                    {% endif %}
+
+                    {% if choice_rows %}
+                    <article class="card acl-card">
+                        <div class="card__header">
+                            <div>
+                                <h3 class="card__title">Выпадающие списки</h3>
+                                <p class="card__subtitle">Какие значения доступны пользователю</p>
+                            </div>
+                        </div>
+                        <div class="card__body">
+                            <div class="acl-accordion-list">
+                                {% for block in choice_rows %}
+                                <details class="acl-accordion">
+                                    <summary>
+                                        <span>{{ block.action_label }}</span>
+                                        <span class="acl-accordion__meta">{{ block.fields|length }} настроек</span>
+                                    </summary>
+                                    <div class="acl-accordion__content">
+                                        {% for field in block.fields %}
+                                            <div class="acl-choice-box">
+                                                <h5>{{ field.field_label }}</h5>
+
+                                                {% if field.field_name == "parent" or field.field_name == "unit" or field.field_name == "delegate_unit" %}
+                                                    <div class="form-layout acl-choice-box__layout">
+                                                        <div class="form-field">
+                                                            <label class="form-field__label">Режим</label>
+                                                            <select name="choice__{{ block.action }}__{{ field.field_name }}__mode" class="form-select">
+                                                                {% for mode_value, mode_label in field.mode_options %}
+                                                                    <option value="{{ mode_value }}" {% if field.mode == mode_value %}selected{% endif %}>
+                                                                        {{ mode_label }}
+                                                                    </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="form-field">
+                                                            <label class="form-field__label">Scope</label>
+                                                            <select name="choice__{{ block.action }}__{{ field.field_name }}__scope" class="form-select">
+                                                                {% for scope_value, scope_label in scopes %}
+                                                                    <option value="{{ scope_value }}" {% if field.scope == scope_value %}selected{% endif %}>
+                                                                        {{ scope_label }}
+                                                                    </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="form-field acl-choice-box__field">
+                                                        <label class="form-field__label">Конкретные подразделения</label>
+                                                        <div class="acl-checklist">
+                                                            {% for unit in field.unit_options %}
+                                                                <label>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        name="choice__{{ block.action }}__{{ field.field_name }}__units"
+                                                                        value="{{ unit.id }}"
+                                                                        {% if unit.id in field.selected_unit_ids %}checked{% endif %}
+                                                                    >
+                                                                    <span>{{ unit.label }}</span>
+                                                                </label>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+
+                                                {% elif field.field_name == "unit_type" %}
+                                                    <div class="form-layout acl-choice-box__layout--single">
+                                                        <div class="form-field">
+                                                            <label class="form-field__label">Режим</label>
+                                                            <select name="choice__{{ block.action }}__{{ field.field_name }}__mode" class="form-select">
+                                                                {% for mode_value, mode_label in field.mode_options %}
+                                                                    <option value="{{ mode_value }}" {% if field.mode == mode_value %}selected{% endif %}>
+                                                                        {{ mode_label }}
+                                                                    </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <input type="hidden" name="choice__{{ block.action }}__{{ field.field_name }}__scope" value="none">
+
+                                                    <div class="form-field acl-choice-box__field">
+                                                        <label class="form-field__label">Конкретные типы подразделений</label>
+                                                        <div class="acl-checklist">
+                                                            {% for item in field.unit_type_options %}
+                                                                <label>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        name="choice__{{ block.action }}__{{ field.field_name }}__unit_types"
+                                                                        value="{{ item.id }}"
+                                                                        {% if item.id in field.selected_unit_type_ids %}checked{% endif %}
+                                                                    >
+                                                                    <span>{{ item.label }}</span>
+                                                                </label>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </details>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </article>
+                    {% endif %}
+                </div>
+            </div>
+
+            <section class="page-section">
+                <div class="form-actions">
+                    <button type="submit" class="button button--primary">Сохранить матрицу</button>
+                </div>
+            </section>
+        </form>
+    </div>
+</section>
 {% endblock %}

@@ -2,6 +2,17 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 
+SCOPE_CHOICES = [
+    ("none", "Ничего"),
+    ("own_unit", "Только своё подразделение"),
+    ("children", "Только прямые дочерние подразделения"),
+    ("own_and_children", "Своё и прямые дочерние подразделения"),
+    ("all_descendants", "Все дочерние подразделения по всей иерархии"),
+    ("own_and_all_descendants", "Своё и все дочерние подразделения по всей иерархии"),
+    ("all", "Все подразделения"),
+]
+
+
 class AccessRuleSet(models.Model):
     name = models.CharField("Название", max_length=150, unique=True)
     code = models.SlugField("Код", max_length=100, unique=True)
@@ -60,14 +71,6 @@ class AccessRule(models.Model):
         ("unassign", "Снятие назначений"),
     ]
 
-    SCOPE_CHOICES = [
-        ("none", "Ничего"),
-        ("own_unit", "Только своё подразделение"),
-        ("descendants", "Только дочерние подразделения"),
-        ("own_and_descendants", "Своё и дочерние подразделения"),
-        ("all", "Все подразделения"),
-    ]
-
     ruleset = models.ForeignKey(
         AccessRuleSet,
         on_delete=models.CASCADE,
@@ -78,7 +81,7 @@ class AccessRule(models.Model):
     action = models.CharField("Действие", max_length=50, choices=ACTION_CHOICES)
     subject_level = models.PositiveSmallIntegerField("Для уровня")
     is_allowed = models.BooleanField("Разрешено", default=True)
-    scope = models.CharField("Scope записей", max_length=50, choices=SCOPE_CHOICES, default="none")
+    scope = models.CharField("Scope записей", max_length=64, choices=SCOPE_CHOICES, default="none")
     priority = models.PositiveIntegerField("Приоритет", default=100)
     is_active = models.BooleanField("Активно", default=True)
     note = models.CharField("Комментарий", max_length=255, blank=True)
@@ -140,7 +143,7 @@ class AccessFieldRule(models.Model):
 
 class AccessChoiceRule(models.Model):
     RESOURCE_CHOICES = AccessRule.RESOURCE_CHOICES
-    SCOPE_CHOICES = AccessRule.SCOPE_CHOICES
+    SCOPE_CHOICES = SCOPE_CHOICES
 
     ACTION_CHOICES = [
         ("create", "Создание"),
@@ -169,7 +172,7 @@ class AccessChoiceRule(models.Model):
     field_name = models.CharField("Поле select/queryset", max_length=100)
 
     mode = models.CharField("Режим выбора", max_length=32, choices=MODE_CHOICES, default="scope")
-    scope = models.CharField("Scope значений", max_length=50, choices=SCOPE_CHOICES, default="none")
+    scope = models.CharField("Scope значений", max_length=64, choices=SCOPE_CHOICES, default="none")
     units = models.ManyToManyField(
         "units.Unit",
         blank=True,

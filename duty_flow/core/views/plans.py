@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 
 from access_control.services import AccessManager
+from access_control.services.labels import build_unit_path_label
 from duty_plans.models import MonthlySchedule, DayPlan
 from duty_plans.forms import MonthlyScheduleForm
 from core.services.plan_service import PlanService
@@ -182,23 +183,34 @@ def delete(request, pk):
 @login_required
 def days(request, pk):
     access = AccessManager(request.user)
-    schedule = get_object_or_404(MonthlySchedule, pk=pk)
-    user_unit = request.user.profile.unit
+    schedule = get_object_or_404(
+        MonthlySchedule.objects.select_related("unit", "unit__parent", "unit__unit_type"),
+        pk=pk
+    )
+
+    base_unit = schedule.unit
 
     logger.info("\n" + "=" * 70)
     logger.info("=== DAYS() START ===")
     logger.info(f"Расписание: id={schedule.id}, month={schedule.month}, unit={schedule.unit.name}")
-    logger.info(f"Пользователь: {request.user.username}, подразделение: {user_unit.name}")
+    logger.info(f"Пользователь: {request.user.username}, подразделение пользователя: {request.user.profile.unit.name}")
 
     if not access.can_plan("manage_days", schedule):
         logger.warning("Нет прав на управление днями")
         messages.error(request, "Нет прав")
         return redirect("plan:list")
 
-    allowed_delegate_units = access.allowed_delegate_units_for_plan_days(schedule).exclude(id=user_unit.id)
+    allowed_delegate_units = access.allowed_delegate_units_for_plan_days(schedule).exclude(id=base_unit.id)
 
-    dates, duty_types, plans_dict, incoming_day = PlanService.build_table_data(schedule, user_unit)
-    delegate_units = allowed_delegate_units.all()
+    dates, duty_types, plans_dict, incoming_days = PlanService.build_table_data(schedule, base_unit)
+
+    delegate_units = [
+        {
+            "id": unit.id,
+            "label": build_unit_path_label(unit),
+        }
+        for unit in allowed_delegate_units
+    ]
 
     weekday_names = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     date_headers = []
@@ -217,8 +229,8 @@ def days(request, pk):
             schedule=schedule,
             post_data=request.POST,
             plans_dict=plans_dict,
-            incoming_day=incoming_day,
-            user_unit=user_unit,
+            incoming_days=incoming_days,
+            base_unit=base_unit,
             user=request.user,
             allowed_delegate_units=allowed_delegate_units,
         )
@@ -229,8 +241,8 @@ def days(request, pk):
         dates=dates,
         duty_types=duty_types,
         plans_dict=plans_dict,
-        incoming_day=incoming_day,
-        user_unit=user_unit,
+        incoming_days=incoming_days,
+        base_unit=base_unit,
         allowed_delegate_units=allowed_delegate_units,
     )
 
@@ -243,14 +255,14 @@ def days(request, pk):
         "date_headers": date_headers,
         "table": table,
         "delegate_units": delegate_units,
-        "user_unit": user_unit,
+        "base_unit": base_unit,
         "active_tab": "plans",
         "page_title": "Планы нарядов",
         "page_subtitle": "Таблица нарядов по дням",
         "title": schedule.name or str(schedule),
         "duty_types_count": len(duty_types),
         "dates_count": len(dates),
-        "incoming_day": incoming_day,
+        "incoming_days": incoming_days,
     })
 
 
@@ -277,11 +289,7 @@ def incoming(request):
         source_schedule = plan.parent.schedule if plan.parent else None
 
         if source_schedule not in grouped:
-            grouped[source_schedule] = {
-                "source_schedule": source_schedule,
-                "items": [],
-                "count": 0,
-            }
+            grouped[source_schedule] = {"source_schedule": source_schedule, "items": [], "count": 0}
 
         grouped[source_schedule]["items"].append(plan)
         grouped[source_schedule]["count"] += 1
@@ -322,6 +330,5 @@ def accept(request, plan_id):
         return redirect("plan:incoming")
 
     PlanService.accept_incoming_plan(source_plan, request.user)
-
     messages.success(request, f"Назначение на {source_plan.date} принято")
     return redirect("plan:incoming")

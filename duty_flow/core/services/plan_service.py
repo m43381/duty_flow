@@ -32,19 +32,19 @@ class PlanService:
         return [datetime(year, month, day).date() for day in range(1, last_day + 1)]
 
     @staticmethod
-    def build_table_data(schedule, user_unit):
+    def build_table_data(schedule, base_unit):
         year = schedule.month.year
         month = schedule.month.month
 
         dates = PlanService.get_month_dates(year, month)
-        all_plans = schedule.days.all()
+        all_plans = schedule.days.select_related("unit", "duty_type").all()
 
         duty_ids = set()
         for p in all_plans:
             if p.type == "own" or (p.type == "incoming" and p.status == "accepted"):
                 duty_ids.add(p.duty_type_id)
 
-        own_duty_types = DutyType.objects.filter(created_by_unit=user_unit)
+        own_duty_types = DutyType.objects.filter(created_by_unit=base_unit)
         for dt in own_duty_types:
             duty_ids.add(dt.id)
 
@@ -55,25 +55,24 @@ class PlanService:
             if p.type == "own" or (p.type == "incoming" and p.status == "accepted"):
                 plans_dict[(p.date, p.duty_type_id)] = p
 
-        incoming_day = {}
+        incoming_days = set()
         for p in all_plans:
             if p.type == "incoming" and p.status == "accepted":
-                incoming_day[p.duty_type_id] = p.date
+                incoming_days.add((p.date, p.duty_type_id))
 
-        return dates, duty_types, plans_dict, incoming_day
+        return dates, duty_types, plans_dict, incoming_days
 
     @staticmethod
-    def build_table_rows(dates, duty_types, plans_dict, incoming_day, user_unit, allowed_delegate_units):
+    def build_table_rows(dates, duty_types, plans_dict, incoming_days, base_unit, allowed_delegate_units):
         allowed_delegate_ids = set(allowed_delegate_units.values_list("id", flat=True))
         table = []
 
         for duty in duty_types:
             row = {"duty": duty, "cells": []}
-            inc_date = incoming_day.get(duty.id)
 
             for date in dates:
                 p = plans_dict.get((date, duty.id))
-                is_incoming_day = inc_date == date
+                is_incoming_day = (date, duty.id) in incoming_days
 
                 if p:
                     if p.type == "own":
@@ -82,7 +81,7 @@ class PlanService:
                             status_text = "Своими силами"
                         elif p.child_status == "pending":
                             cell_class = "delegated_pending"
-                            status_text = "Делегировано, ждет"
+                            status_text = "Делегировано, ждёт"
                         else:
                             cell_class = "delegated_accepted"
                             status_text = "Делегировано, принято"
@@ -90,7 +89,7 @@ class PlanService:
                         if p.status == "accepted":
                             if p.child_status == "pending":
                                 cell_class = "incoming_delegated_pending"
-                                status_text = "Получен, делегирован, ждет"
+                                status_text = "Получен, делегирован, ждёт"
                             elif p.child_status == "accepted":
                                 cell_class = "incoming_delegated_accepted"
                                 status_text = "Получен, делегирован, принят"
@@ -101,9 +100,9 @@ class PlanService:
                             cell_class = "incoming_pending"
                             status_text = "Ожидает принятия"
 
-                    can_edit = p.unit_id == user_unit.id or p.unit_id in allowed_delegate_ids
+                    can_edit = p.unit_id == base_unit.id or p.unit_id in allowed_delegate_ids
                 else:
-                    if duty.created_by_unit_id == user_unit.id:
+                    if duty.created_by_unit_id == base_unit.id:
                         can_edit = True
                         cell_class = "empty"
                         status_text = ""
@@ -129,10 +128,10 @@ class PlanService:
         return table
 
     @staticmethod
-    def process_post_data(schedule, post_data, plans_dict, incoming_day, user_unit, user, allowed_delegate_units):
+    def process_post_data(schedule, post_data, plans_dict, incoming_days, base_unit, user, allowed_delegate_units):
         allowed_delegate_ids = set(allowed_delegate_units.values_list("id", flat=True))
         allowed_unit_ids = set(allowed_delegate_ids)
-        allowed_unit_ids.add(user_unit.id)
+        allowed_unit_ids.add(base_unit.id)
 
         with transaction.atomic():
             parsed_data = {}
@@ -150,9 +149,9 @@ class PlanService:
 
             for (date, duty_id), unit_id in parsed_data.items():
                 existing = plans_dict.get((date, duty_id))
-                is_incoming = duty_id in incoming_day
+                is_incoming = (date, duty_id) in incoming_days
 
-                if unit_id == user_unit.id:
+                if unit_id == base_unit.id:
                     if existing:
                         if is_incoming:
                             existing.type = "incoming"
