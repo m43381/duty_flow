@@ -107,15 +107,40 @@ LOGIN_REDIRECT_URL = 'auth:dashboard'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+
+    'formatters': {
+        'standard': {
+            'format': '[%(asctime)s] %(levelname)s %(name)s: %(message)s',
+        },
+    },
+
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'standard',
         },
     },
+
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+
     'loggers': {
-        'core.views_plan': {
+        'core.views.plans': {
             'handlers': ['console'],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'core.services.plan_service': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'core.services.plan_automation_service': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
         },
     },
 }

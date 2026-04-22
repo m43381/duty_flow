@@ -8,6 +8,7 @@ from access_control.services.labels import build_unit_path_label
 from duty_plans.models import MonthlySchedule, DayPlan
 from duty_plans.forms import MonthlyScheduleForm
 from core.services.plan_service import PlanService
+from core.services.plan_automation_service import PlanAutomationService
 
 import logging
 
@@ -18,7 +19,7 @@ def apply_plan_access_to_form(form, access_manager, action: str):
     visible_fields = set(access_manager.visible_plan_fields(action))
     editable_fields = set(access_manager.editable_plan_fields(action))
 
-    for field_name in list(form.fields.keys()):
+    for field_name in tuple(form.fields.keys()):
         if field_name not in visible_fields:
             form.fields.pop(field_name, None)
             continue
@@ -190,19 +191,22 @@ def days(request, pk):
 
     base_unit = schedule.unit
 
-    logger.info("\n" + "=" * 70)
-    logger.info("=== DAYS() START ===")
-    logger.info(f"Расписание: id={schedule.id}, month={schedule.month}, unit={schedule.unit.name}")
-    logger.info(f"Пользователь: {request.user.username}, подразделение пользователя: {request.user.profile.unit.name}")
-
     if not access.can_plan("manage_days", schedule):
-        logger.warning("Нет прав на управление днями")
         messages.error(request, "Нет прав")
         return redirect("plan:list")
 
     allowed_delegate_units = access.allowed_delegate_units_for_plan_days(schedule).exclude(id=base_unit.id)
 
     dates, duty_types, plans_dict, incoming_days = PlanService.build_table_data(schedule, base_unit)
+
+    logger.info(
+        "PLAN DAYS schedule_id=%s unit=%s user=%s duty_types=%s dates=%s",
+        schedule.id,
+        schedule.unit.name,
+        request.user.username,
+        len(duty_types),
+        len(dates),
+    )
 
     delegate_units = [
         {
@@ -214,17 +218,16 @@ def days(request, pk):
 
     weekday_names = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     date_headers = []
-    for date in dates:
-        weekday_index = date.weekday()
+    for current_date in dates:
+        weekday_index = current_date.weekday()
         date_headers.append({
-            "date": date,
-            "day": date.day,
+            "date": current_date,
+            "day": current_date.day,
             "weekday_short": weekday_names[weekday_index],
             "is_weekend": weekday_index >= 5,
         })
 
     if request.method == "POST":
-        logger.info("\n--- ОБРАБОТКА POST ЗАПРОСА ---")
         PlanService.process_post_data(
             schedule=schedule,
             post_data=request.POST,
@@ -246,8 +249,13 @@ def days(request, pk):
         allowed_delegate_units=allowed_delegate_units,
     )
 
-    logger.info(f"\n--- ИТОГО СТРОК В ТАБЛИЦЕ: {len(table)} ---")
-    logger.info("=" * 70 + "\n")
+    distribution_preview = PlanAutomationService.preview_distribution(
+        schedule=schedule,
+        user=request.user,
+        mode=PlanAutomationService.MODE_BALANCED_STRUCTURE,
+        only_empty=False,
+    )
+    distribution_summary = distribution_preview.get("summary")
 
     return render(request, "app/plans/days.html", {
         "schedule": schedule,
@@ -263,6 +271,7 @@ def days(request, pk):
         "duty_types_count": len(duty_types),
         "dates_count": len(dates),
         "incoming_days": incoming_days,
+        "distribution_summary": distribution_summary,
     })
 
 
@@ -317,18 +326,117 @@ def accept(request, plan_id):
         messages.error(request, "Нет доступа")
         return redirect("plan:incoming")
 
-    logger.info("\n=== ACCEPT ===")
-    logger.info(f"source: id={source_plan.id}, date={source_plan.date}, duty={source_plan.duty_type.name}")
-    logger.info(
-        f"source.unit={source_plan.unit.name if source_plan.unit else 'None'}, "
-        f"type={source_plan.type}, status={source_plan.status}"
-    )
-
     if source_plan.unit != user_unit or source_plan.type != "incoming" or source_plan.status != "pending":
-        logger.warning("Не может быть принято")
         messages.error(request, "Это назначение не может быть принято")
         return redirect("plan:incoming")
 
     PlanService.accept_incoming_plan(source_plan, request.user)
     messages.success(request, f"Назначение на {source_plan.date} принято")
     return redirect("plan:incoming")
+
+
+@login_required
+def auto_distribute(request, pk):
+    access = AccessManager(request.user)
+
+    schedule = get_object_or_404(
+        MonthlySchedule.objects.select_related("unit", "unit__parent", "unit__unit_type"),
+        pk=pk
+    )
+
+    if not access.can_plan("manage_days", schedule):
+        messages.error(request, "Нет прав на автоматическое распределение")
+        return redirect("plan:days", pk=pk)
+
+    mode = request.POST.get("auto_mode", PlanAutomationService.MODE_BALANCED)
+    only_empty = request.POST.get("auto_only_empty") == "1"
+
+    logger.info(
+        "AUTO DISTRIBUTE start schedule_id=%s unit=%s user=%s mode=%s normalized_mode=%s only_empty=%s",
+        schedule.id,
+        schedule.unit.name,
+        request.user.username,
+        mode,
+        PlanAutomationService.normalize_mode(mode),
+        only_empty,
+    )
+
+    try:
+        preview = PlanAutomationService.preview_distribution(
+            schedule=schedule,
+            user=request.user,
+            mode=mode,
+            only_empty=only_empty,
+        )
+    except PermissionError as exc:
+        logger.warning("AUTO DISTRIBUTE denied schedule_id=%s: %s", schedule.id, exc)
+        messages.error(request, str(exc))
+        return redirect("plan:days", pk=pk)
+    except Exception as exc:
+        logger.exception("AUTO DISTRIBUTE preview failed schedule_id=%s", schedule.id)
+        messages.error(request, f"Ошибка предварительного анализа: {exc}")
+        return redirect("plan:days", pk=pk)
+
+    logger.info(
+        "AUTO DISTRIBUTE preview schedule_id=%s total=%s changed=%s",
+        schedule.id,
+        preview["total_count"],
+        preview["changed_count"],
+    )
+
+    for item in preview.get("duty_debug", {}).values():
+        logger.info(
+            "AUTO DISTRIBUTE duty=%s eligible=[%s] rejected=[%s]",
+            item["duty_name"],
+            ", ".join(item["eligible_units"]) or "-",
+            ", ".join(item["rejected_units"]) or "-",
+        )
+
+    if preview["total_count"] == 0:
+        messages.warning(
+            request,
+            (
+                "Автораспределению нечего обрабатывать. "
+                "Проверьте доступные типы нарядов и входящие принятые наряды."
+            )
+        )
+        return redirect("plan:days", pk=pk)
+
+    if preview["changed_count"] == 0:
+        messages.info(
+            request,
+            (
+                f"Подходящие ячейки найдены ({preview['total_count']}), "
+                "но изменений не предложено."
+            )
+        )
+        return redirect("plan:days", pk=pk)
+
+    try:
+        result = PlanAutomationService.apply_distribution(
+            schedule=schedule,
+            user=request.user,
+            mode=mode,
+            only_empty=only_empty,
+        )
+    except Exception as exc:
+        logger.exception("AUTO DISTRIBUTE apply failed schedule_id=%s", schedule.id)
+        messages.error(request, f"Ошибка применения автораспределения: {exc}")
+        return redirect("plan:days", pk=pk)
+
+    logger.info(
+        "AUTO DISTRIBUTE done schedule_id=%s total=%s changed=%s",
+        schedule.id,
+        result["total_count"],
+        result["changed_count"],
+    )
+
+    messages.success(
+        request,
+        (
+            f"Автораспределение выполнено ({result['mode']}): "
+            f"{result['changed_count']} изменений из {result['total_count']}"
+        )
+    )
+
+    return redirect("plan:days", pk=pk)
