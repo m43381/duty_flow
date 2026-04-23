@@ -77,6 +77,234 @@
 </section>
 
 <section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Автоназначение сотрудников</h3>
+                <p class="card__subtitle">Сначала построй предпросмотр, затем при необходимости примени его</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div
+                style="
+                    margin-bottom: 1rem;
+                    padding: .85rem 1rem;
+                    border: 1px solid var(--color-border, #d9d9d9);
+                    border-radius: .75rem;
+                    background: var(--color-surface-soft, #f8f9fb);
+                    font-size: .95rem;
+                    line-height: 1.45;
+                "
+            >
+                <strong>Режимы автоназначения:</strong>
+                <div style="margin-top: .4rem;">
+                    <strong>Только дозаполнить</strong> — добавляет сотрудников только туда, где не хватает назначений.
+                </div>
+                <div>
+                    <strong>Пересобрать полностью</strong> — снимает текущие назначения и собирает их заново.
+                </div>
+                <div>
+                    <strong>Только недоукомплектованные</strong> — обрабатывает только наряды, где людей меньше, чем требуется.
+                </div>
+            </div>
+
+            <form method="post" action="{% url 'assignment:preview_auto' %}">
+                {% csrf_token %}
+                <input type="hidden" name="year" value="{{ year }}">
+                <input type="hidden" name="month" value="{{ month }}">
+
+                <div class="form-actions form-actions--top" style="flex-wrap: wrap;">
+                    <div style="display:inline-flex; gap:.5rem; align-items:center; flex-wrap: wrap;">
+                        <select name="auto_mode" class="form-select">
+                            <option value="fill_only" {% if current_auto_params.mode == "fill_only" %}selected{% endif %}>
+                                Только дозаполнить
+                            </option>
+                            <option value="replace_all" {% if current_auto_params.mode == "replace_all" %}selected{% endif %}>
+                                Пересобрать полностью
+                            </option>
+                        </select>
+
+                        <label style="display:flex; align-items:center; gap:.35rem;">
+                            <input
+                                type="checkbox"
+                                name="auto_only_understaffed"
+                                value="1"
+                                {% if current_auto_params.only_understaffed %}checked{% endif %}
+                            >
+                            Только недоукомплектованные
+                        </label>
+                    </div>
+
+                    <button type="submit" class="button button--primary">
+                        Показать предпросмотр
+                    </button>
+                </div>
+            </form>
+
+            {% if auto_preview %}
+                <div
+                    style="
+                        margin-top: 1rem;
+                        padding: .85rem 1rem;
+                        border: 1px solid var(--color-border, #d9d9d9);
+                        border-radius: .75rem;
+                        background: var(--color-surface-soft, #f8f9fb);
+                    "
+                >
+                    <div style="font-weight: 600; margin-bottom: .35rem;">
+                        Текущий предпросмотр: {{ auto_preview.mode_label }}
+                    </div>
+                    <div style="font-size: .95rem; color: var(--color-text-muted, #666);">
+                        Планов изменится: <strong>{{ auto_preview.changed_plans }}</strong>
+                        · Новых назначений: <strong>{{ auto_preview.total_new_assignments }}</strong>
+                    </div>
+
+                    <div style="display:flex; gap:.5rem; margin-top:.75rem; flex-wrap: wrap;">
+                        <form method="post" action="{% url 'assignment:apply_auto' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="year" value="{{ year }}">
+                            <input type="hidden" name="month" value="{{ month }}">
+                            <button type="submit" class="button">
+                                Применить этот предпросмотр
+                            </button>
+                        </form>
+
+                        <form method="post" action="{% url 'assignment:clear_auto_preview' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="year" value="{{ year }}">
+                            <input type="hidden" name="month" value="{{ month }}">
+                            <button type="submit" class="button">
+                                Очистить предпросмотр
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+
+{% if auto_preview and auto_preview.summary %}
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Предпросмотр автоназначения</h3>
+                <p class="card__subtitle">{{ auto_preview.mode_label }}</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="assignment-stats" style="margin-bottom: 1rem;">
+                <article class="assignment-stat">
+                    <span class="assignment-stat__label">Планов в preview</span>
+                    <span class="assignment-stat__value">{{ auto_preview.summary.total_plans }}</span>
+                </article>
+
+                <article class="assignment-stat">
+                    <span class="assignment-stat__label">Планов изменится</span>
+                    <span class="assignment-stat__value">{{ auto_preview.summary.changed_plans }}</span>
+                </article>
+
+                <article class="assignment-stat assignment-stat--success">
+                    <span class="assignment-stat__label">Новых назначений</span>
+                    <span class="assignment-stat__value">{{ auto_preview.summary.total_new_assignments }}</span>
+                </article>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <article class="card" style="margin:0;">
+                    <div class="card__header">
+                        <h4 class="card__title">По дням</h4>
+                    </div>
+                    <div class="card__body">
+                        {% if auto_preview.summary.day_rows %}
+                            <div style="display:flex; flex-direction:column; gap:.75rem;">
+                                {% for row in auto_preview.summary.day_rows %}
+                                    <div>
+                                        <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.3rem;">
+                                            <strong>{{ row.day }}</strong>
+                                            <span>{{ row.count }}</span>
+                                        </div>
+                                        <div style="height:12px; background:#edf0f4; border-radius:999px; overflow:hidden;">
+                                            <div
+                                                style="height:12px; width:{% widthratio row.count auto_preview.summary.total_new_assignments|default:1 100 %}%; background:#16a34a; border-radius:999px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state__text">Нет данных</div>
+                        {% endif %}
+                    </div>
+                </article>
+
+                <article class="card" style="margin:0;">
+                    <div class="card__header">
+                        <h4 class="card__title">По типам нарядов</h4>
+                    </div>
+                    <div class="card__body">
+                        {% if auto_preview.summary.duty_rows %}
+                            <div style="display:flex; flex-direction:column; gap:.75rem;">
+                                {% for row in auto_preview.summary.duty_rows %}
+                                    <div>
+                                        <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.3rem;">
+                                            <strong>{{ row.duty_name }}</strong>
+                                            <span>{{ row.count }}</span>
+                                        </div>
+                                        <div style="height:12px; background:#edf0f4; border-radius:999px; overflow:hidden;">
+                                            <div
+                                                style="height:12px; width:{% widthratio row.count auto_preview.summary.total_new_assignments|default:1 100 %}%; background:#f59e0b; border-radius:999px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state__text">Нет данных</div>
+                        {% endif %}
+                    </div>
+                </article>
+            </div>
+
+            {% if auto_preview.suggestions %}
+                <div style="margin-top: 1rem;">
+                    <h4 class="card__title" style="margin-bottom:.75rem;">Детали по нарядам</h4>
+                    <div style="display:flex; flex-direction:column; gap:.85rem;">
+                        {% for item in auto_preview.suggestions %}
+                            {% if item.changed %}
+                                <div style="padding:.75rem; border:1px solid var(--color-border, #ddd); border-radius:.75rem;">
+                                    <div style="font-weight:600; margin-bottom:.35rem;">
+                                        {{ item.date|date:"d.m.Y" }} · {{ item.duty_name }} · {{ item.unit_name }}
+                                    </div>
+                                    <div style="font-size:.95rem; color:var(--color-text-muted, #666); margin-bottom:.35rem;">
+                                        Было: {{ item.current_count }} / {{ item.required_people }} · Нужно добавить: {{ item.need }}
+                                    </div>
+
+                                    {% if item.selected_people %}
+                                        <div>
+                                            <strong>Будут назначены:</strong>
+                                            {% for person in item.selected_people %}
+                                                {{ person.name }}{% if not forloop.last %} · {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="empty-state__text">Новых кандидатов не найдено</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endif %}
+
+<section class="page-section">
     <article class="card assignment-calendar-card">
         <div class="card__header assignment-calendar-card__header">
             <div>

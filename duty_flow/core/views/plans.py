@@ -8,23 +8,72 @@ from access_control.services.labels import build_unit_path_label
 from duty_plans.models import MonthlySchedule, DayPlan
 from duty_plans.forms import MonthlyScheduleForm
 from core.services.plan_service import PlanService
+from core.services.plan_automation_service import PlanAutomationService
 
 import logging
 
 logger = logging.getLogger(__name__)
+
+PREVIEW_SESSION_KEY = "plan_auto_distribution_preview"
 
 
 def apply_plan_access_to_form(form, access_manager, action: str):
     visible_fields = set(access_manager.visible_plan_fields(action))
     editable_fields = set(access_manager.editable_plan_fields(action))
 
-    for field_name in list(form.fields.keys()):
+    for field_name in tuple(form.fields.keys()):
         if field_name not in visible_fields:
             form.fields.pop(field_name, None)
             continue
 
         if field_name not in editable_fields:
             form.fields[field_name].disabled = True
+
+
+def _default_auto_params():
+    return {
+        "mode": PlanAutomationService.MODE_BALANCED_STRUCTURE,
+        "only_empty": False,
+        "normalize_by_headcount": False,
+    }
+
+
+def _build_auto_params(request):
+    return {
+        "mode": request.POST.get("auto_mode", PlanAutomationService.MODE_BALANCED_STRUCTURE),
+        "only_empty": request.POST.get("auto_only_empty") == "1",
+        "normalize_by_headcount": request.POST.get("auto_normalize_headcount") == "1",
+    }
+
+
+def _clear_preview_session(request, schedule_id: int):
+    preview = request.session.get(PREVIEW_SESSION_KEY)
+    if preview and preview.get("schedule_id") == schedule_id:
+        request.session.pop(PREVIEW_SESSION_KEY, None)
+        request.session.modified = True
+
+
+def _save_preview_session(request, schedule_id: int, params: dict, preview: dict):
+    request.session[PREVIEW_SESSION_KEY] = {
+        "schedule_id": schedule_id,
+        "params": params,
+        "summary": preview.get("summary"),
+        "duty_debug": preview.get("duty_debug"),
+        "mode": preview.get("mode"),
+        "mode_label": preview.get("mode_label"),
+        "total_count": preview.get("total_count"),
+        "changed_count": preview.get("changed_count"),
+    }
+    request.session.modified = True
+
+
+def _get_preview_session(request, schedule_id: int):
+    preview = request.session.get(PREVIEW_SESSION_KEY)
+    if not preview:
+        return None
+    if preview.get("schedule_id") != schedule_id:
+        return None
+    return preview
 
 
 @login_required
@@ -166,6 +215,7 @@ def delete(request, pk):
     if request.method == "POST":
         schedule_name = schedule.name or str(schedule)
         PlanService.delete_schedule_with_children(schedule)
+        _clear_preview_session(request, schedule.id)
         messages.success(request, f'Расписание "{schedule_name}" и все связанные данные удалены')
         return redirect("plan:list")
 
@@ -190,19 +240,22 @@ def days(request, pk):
 
     base_unit = schedule.unit
 
-    logger.info("\n" + "=" * 70)
-    logger.info("=== DAYS() START ===")
-    logger.info(f"Расписание: id={schedule.id}, month={schedule.month}, unit={schedule.unit.name}")
-    logger.info(f"Пользователь: {request.user.username}, подразделение пользователя: {request.user.profile.unit.name}")
-
     if not access.can_plan("manage_days", schedule):
-        logger.warning("Нет прав на управление днями")
         messages.error(request, "Нет прав")
         return redirect("plan:list")
 
     allowed_delegate_units = access.allowed_delegate_units_for_plan_days(schedule).exclude(id=base_unit.id)
 
     dates, duty_types, plans_dict, incoming_days = PlanService.build_table_data(schedule, base_unit)
+
+    logger.info(
+        "PLAN DAYS schedule_id=%s unit=%s user=%s duty_types=%s dates=%s",
+        schedule.id,
+        schedule.unit.name,
+        request.user.username,
+        len(duty_types),
+        len(dates),
+    )
 
     delegate_units = [
         {
@@ -214,17 +267,16 @@ def days(request, pk):
 
     weekday_names = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     date_headers = []
-    for date in dates:
-        weekday_index = date.weekday()
+    for current_date in dates:
+        weekday_index = current_date.weekday()
         date_headers.append({
-            "date": date,
-            "day": date.day,
+            "date": current_date,
+            "day": current_date.day,
             "weekday_short": weekday_names[weekday_index],
             "is_weekend": weekday_index >= 5,
         })
 
     if request.method == "POST":
-        logger.info("\n--- ОБРАБОТКА POST ЗАПРОСА ---")
         PlanService.process_post_data(
             schedule=schedule,
             post_data=request.POST,
@@ -246,8 +298,13 @@ def days(request, pk):
         allowed_delegate_units=allowed_delegate_units,
     )
 
-    logger.info(f"\n--- ИТОГО СТРОК В ТАБЛИЦЕ: {len(table)} ---")
-    logger.info("=" * 70 + "\n")
+    actual_distribution_summary = PlanService.build_distribution_summary_from_table(
+        table=table,
+        base_unit=base_unit,
+    )
+
+    saved_preview = _get_preview_session(request, schedule.id)
+    current_auto_params = saved_preview["params"] if saved_preview else _default_auto_params()
 
     return render(request, "app/plans/days.html", {
         "schedule": schedule,
@@ -263,6 +320,11 @@ def days(request, pk):
         "duty_types_count": len(duty_types),
         "dates_count": len(dates),
         "incoming_days": incoming_days,
+        "actual_distribution_summary": actual_distribution_summary,
+        "preview_distribution_summary": saved_preview["summary"] if saved_preview else None,
+        "preview_duty_debug": saved_preview["duty_debug"] if saved_preview else None,
+        "preview_meta": saved_preview,
+        "current_auto_params": current_auto_params,
     })
 
 
@@ -317,18 +379,151 @@ def accept(request, plan_id):
         messages.error(request, "Нет доступа")
         return redirect("plan:incoming")
 
-    logger.info("\n=== ACCEPT ===")
-    logger.info(f"source: id={source_plan.id}, date={source_plan.date}, duty={source_plan.duty_type.name}")
-    logger.info(
-        f"source.unit={source_plan.unit.name if source_plan.unit else 'None'}, "
-        f"type={source_plan.type}, status={source_plan.status}"
-    )
-
     if source_plan.unit != user_unit or source_plan.type != "incoming" or source_plan.status != "pending":
-        logger.warning("Не может быть принято")
         messages.error(request, "Это назначение не может быть принято")
         return redirect("plan:incoming")
 
     PlanService.accept_incoming_plan(source_plan, request.user)
     messages.success(request, f"Назначение на {source_plan.date} принято")
     return redirect("plan:incoming")
+
+
+@login_required
+def preview_distribute(request, pk):
+    access = AccessManager(request.user)
+
+    schedule = get_object_or_404(
+        MonthlySchedule.objects.select_related("unit", "unit__parent", "unit__unit_type"),
+        pk=pk
+    )
+
+    if not access.can_plan("manage_days", schedule):
+        messages.error(request, "Нет прав на предпросмотр автораспределения")
+        return redirect("plan:days", pk=pk)
+
+    params = _build_auto_params(request)
+
+    logger.info(
+        "AUTO PREVIEW start schedule_id=%s unit=%s user=%s mode=%s normalized_mode=%s only_empty=%s normalize_by_headcount=%s",
+        schedule.id,
+        schedule.unit.name,
+        request.user.username,
+        params["mode"],
+        PlanAutomationService.normalize_mode(params["mode"]),
+        params["only_empty"],
+        params["normalize_by_headcount"],
+    )
+
+    try:
+        preview = PlanAutomationService.preview_distribution(
+            schedule=schedule,
+            user=request.user,
+            mode=params["mode"],
+            only_empty=params["only_empty"],
+            normalize_by_headcount=params["normalize_by_headcount"],
+        )
+    except PermissionError as exc:
+        logger.warning("AUTO PREVIEW denied schedule_id=%s: %s", schedule.id, exc)
+        messages.error(request, str(exc))
+        return redirect("plan:days", pk=pk)
+    except Exception as exc:
+        logger.exception("AUTO PREVIEW failed schedule_id=%s", schedule.id)
+        messages.error(request, f"Ошибка предпросмотра автораспределения: {exc}")
+        return redirect("plan:days", pk=pk)
+
+    _save_preview_session(request, schedule.id, params, preview)
+
+    logger.info(
+        "AUTO PREVIEW done schedule_id=%s mode=%s total=%s changed=%s",
+        schedule.id,
+        preview["mode"],
+        preview["total_count"],
+        preview["changed_count"],
+    )
+
+    messages.success(
+        request,
+        (
+            f"Предпросмотр построен ({preview['mode_label']}): "
+            f"{preview['changed_count']} изменений из {preview['total_count']}"
+        )
+    )
+
+    return redirect("plan:days", pk=pk)
+
+
+@login_required
+def auto_distribute(request, pk):
+    access = AccessManager(request.user)
+
+    schedule = get_object_or_404(
+        MonthlySchedule.objects.select_related("unit", "unit__parent", "unit__unit_type"),
+        pk=pk
+    )
+
+    if not access.can_plan("manage_days", schedule):
+        messages.error(request, "Нет прав на автоматическое распределение")
+        return redirect("plan:days", pk=pk)
+
+    saved_preview = _get_preview_session(request, schedule.id)
+    params = saved_preview["params"] if saved_preview else _build_auto_params(request)
+
+    logger.info(
+        "AUTO DISTRIBUTE start schedule_id=%s unit=%s user=%s mode=%s normalized_mode=%s only_empty=%s normalize_by_headcount=%s source=%s",
+        schedule.id,
+        schedule.unit.name,
+        request.user.username,
+        params["mode"],
+        PlanAutomationService.normalize_mode(params["mode"]),
+        params["only_empty"],
+        params["normalize_by_headcount"],
+        "preview" if saved_preview else "post",
+    )
+
+    try:
+        result = PlanAutomationService.apply_distribution(
+            schedule=schedule,
+            user=request.user,
+            mode=params["mode"],
+            only_empty=params["only_empty"],
+            normalize_by_headcount=params["normalize_by_headcount"],
+        )
+    except Exception as exc:
+        logger.exception("AUTO DISTRIBUTE apply failed schedule_id=%s", schedule.id)
+        messages.error(request, f"Ошибка применения автораспределения: {exc}")
+        return redirect("plan:days", pk=pk)
+
+    _save_preview_session(request, schedule.id, params, result)
+
+    logger.info(
+        "AUTO DISTRIBUTE done schedule_id=%s mode=%s total=%s changed=%s",
+        schedule.id,
+        result["mode"],
+        result["total_count"],
+        result["changed_count"],
+    )
+
+    messages.success(
+        request,
+        (
+            f"Автораспределение выполнено ({result['mode_label']}): "
+            f"{result['changed_count']} изменений из {result['total_count']}"
+        )
+    )
+
+    return redirect("plan:days", pk=pk)
+
+
+@login_required
+def clear_distribution_preview(request, pk):
+    access = AccessManager(request.user)
+
+    schedule = get_object_or_404(MonthlySchedule, pk=pk)
+
+    if not access.can_plan("manage_days", schedule):
+        messages.error(request, "Нет прав")
+        return redirect("plan:days", pk=pk)
+
+    _clear_preview_session(request, schedule.id)
+    messages.success(request, "Предпросмотр очищен")
+    return redirect("plan:days", pk=pk)
