@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import calendar
-import logging
+from collections import Counter
 from datetime import datetime
 from typing import Dict, Tuple
 
 from django.db import transaction
 
 from duty_plans.models import DayPlan, MonthlySchedule
-
-logger = logging.getLogger(__name__)
+from duty_types.models import DutyType
 
 
 class PlanService:
@@ -42,11 +41,11 @@ class PlanService:
             if p.type == "own" or (p.type == "incoming" and p.status == "accepted"):
                 duty_ids.add(p.duty_type_id)
 
-        own_duty_types = base_unit.created_duty_types.all()
+        own_duty_types = DutyType.objects.filter(created_by_unit=base_unit)
         for dt in own_duty_types:
             duty_ids.add(dt.id)
 
-        duty_types = own_duty_types.model.objects.filter(id__in=duty_ids).order_by("name")
+        duty_types = DutyType.objects.filter(id__in=duty_ids).order_by("name")
 
         plans_dict = {}
         for p in all_plans:
@@ -125,6 +124,68 @@ class PlanService:
             table.append(row)
 
         return table
+
+    @staticmethod
+    def build_distribution_summary_from_table(*, table, base_unit):
+        per_unit_counter = Counter()
+        per_duty = []
+        empty_count = 0
+        active_cells = 0
+
+        for row in table:
+            duty_counter = Counter()
+            duty_total = 0
+
+            for cell in row["cells"]:
+                cell_class = cell.get("cell_class")
+                unit_name = cell.get("unit_name")
+                unit_id = cell.get("unit_id")
+
+                if cell_class == "inactive":
+                    continue
+
+                active_cells += 1
+
+                if not unit_id:
+                    empty_count += 1
+                    continue
+
+                if unit_id == base_unit.id:
+                    unit_name = base_unit.name
+                elif not unit_name:
+                    unit_name = "—"
+
+                per_unit_counter[unit_name] += 1
+                duty_counter[unit_name] += 1
+                duty_total += 1
+
+            per_duty.append({
+                "duty_name": row["duty"].name,
+                "total": duty_total,
+                "units": [
+                    {"unit_name": unit_name, "count": count}
+                    for unit_name, count in duty_counter.most_common()
+                ],
+            })
+
+        unit_rows = [
+            {"unit_name": unit_name, "count": count}
+            for unit_name, count in per_unit_counter.most_common()
+        ]
+
+        allocated_cells = sum(item["count"] for item in unit_rows)
+
+        return {
+            "kind": "actual",
+            "mode": "actual_table",
+            "mode_label": "Текущее состояние таблицы",
+            "base_unit_name": base_unit.name,
+            "total_cells": active_cells,
+            "allocated_cells": allocated_cells,
+            "empty_cells": empty_count,
+            "unit_rows": unit_rows,
+            "duty_rows": per_duty,
+        }
 
     @staticmethod
     def _delete_children_recursive(plan: DayPlan):
@@ -248,13 +309,6 @@ class PlanService:
 
     @staticmethod
     def process_post_data(schedule, post_data, plans_dict, incoming_days, base_unit, user, allowed_delegate_units):
-        """
-        Ручное сохранение таблицы дней.
-
-        Здесь сохраняем историческое поведение формы:
-        - всё, что пришло в POST как day_* — применяем;
-        - всё, что было editable и исчезло из POST — удаляем.
-        """
         allowed_delegate_ids = set(allowed_delegate_units.values_list("id", flat=True))
         allowed_unit_ids = {base_unit.id, *allowed_delegate_ids}
 
