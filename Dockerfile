@@ -1,27 +1,25 @@
-# Используем официальный образ Python
-FROM python:3.12
+FROM python:3.12-slim
 
-# Устанавливаем переменные окружения
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем requirements.txt
-COPY requirements.txt /app/
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем зависимости
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt /app/requirements.txt
 
-# Копируем весь проект
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r /app/requirements.txt
+
 COPY . /app/
 
-# Создаем папку для статических файлов
-RUN mkdir -p /app/staticfiles
+WORKDIR /app/duty_flow
 
-# Открываем порт
 EXPOSE 8000
 
-# Команда для запуска
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
