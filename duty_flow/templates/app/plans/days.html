@@ -1,520 +1,200 @@
 {% extends 'app/base_app.html' %}
+{% load static %}
 
 {% block title %}Таблица нарядов — DutyFlow{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/plans.css' %}">
+{% endblock %}
+
 {% block app_content %}
-<section class="page-section">
-    <div class="page-header">
-        <div class="page-header__main">
-            <h2 class="page-header__title">{{ schedule.name|default:schedule }}</h2>
-            <p class="page-header__subtitle">
-                {{ schedule.month|date:"F Y" }} · {{ base_unit.name }}
-            </p>
-        </div>
-
-        <div class="page-header__actions">
-            <a href="{% url 'plan:detail' schedule.pk %}" class="button">Назад к расписанию</a>
-            <a href="{% url 'plan:incoming' %}" class="button">Входящие</a>
-        </div>
-    </div>
-</section>
-
-<section class="page-section">
-    <div class="plan-summary-grid">
-        <article class="summary-card">
-            <span class="summary-card__label">Месяц</span>
-            <span class="summary-card__value">{{ schedule.month|date:"F Y" }}</span>
-        </article>
-        <article class="summary-card">
-            <span class="summary-card__label">Типов нарядов</span>
-            <span class="summary-card__value">{{ table|length }}</span>
-        </article>
-        <article class="summary-card">
-            <span class="summary-card__label">Дней в месяце</span>
-            <span class="summary-card__value">{{ dates|length }}</span>
-        </article>
-        <article class="summary-card">
-            <span class="summary-card__label">Доступно для делегирования</span>
-            <span class="summary-card__value">{{ delegate_units|length }}</span>
-        </article>
-    </div>
-</section>
-
-{% if actual_distribution_summary %}
-<section class="page-section">
-    <article class="card">
-        <div class="card__header">
-            <div>
-                <h3 class="card__title">Текущее распределение</h3>
-                <p class="card__subtitle">Фактическое состояние таблицы на данный момент</p>
+<div class="plans-page">
+    <section class="page-section page-section--compact">
+        <div class="page-header plans-header">
+            <div class="page-header__main">
+                <div class="plans-eyebrow">Plans · таблица нарядов</div>
+                <h2 class="page-header__title">{{ schedule.name|default:schedule }}</h2>
+                <p class="page-header__subtitle">{{ schedule.month|date:"F Y" }} · {{ base_unit.name }}</p>
+            </div>
+            <div class="page-header__actions plans-header__actions">
+                <a href="{% url 'plan:detail' schedule.pk %}" class="button">Назад к расписанию</a>
+                <a href="{% url 'plan:incoming' %}" class="button">Входящие</a>
             </div>
         </div>
+    </section>
 
-        <div class="card__body">
-            <div class="plan-summary-grid" style="margin-bottom: 1rem;">
-                <article class="summary-card">
-                    <span class="summary-card__label">Активных ячеек</span>
-                    <span class="summary-card__value">{{ actual_distribution_summary.total_cells }}</span>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-card__label">Распределено</span>
-                    <span class="summary-card__value">{{ actual_distribution_summary.allocated_cells }}</span>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-card__label">Пустых</span>
-                    <span class="summary-card__value">{{ actual_distribution_summary.empty_cells }}</span>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-card__label">Базовое подразделение</span>
-                    <span class="summary-card__value">{{ actual_distribution_summary.base_unit_name }}</span>
-                </article>
-            </div>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <article class="card" style="margin:0;">
-                    <div class="card__header">
-                        <h4 class="card__title">По подразделениям</h4>
-                    </div>
-                    <div class="card__body">
-                        {% if actual_distribution_summary.unit_rows %}
-                            <div style="display:flex; flex-direction:column; gap:.75rem;">
-                                {% for row in actual_distribution_summary.unit_rows %}
-                                    <div>
-                                        <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.3rem;">
-                                            <strong>{{ row.unit_name }}</strong>
-                                            <span>{{ row.count }}</span>
-                                        </div>
-                                        <div style="height:12px; background:#edf0f4; border-radius:999px; overflow:hidden;">
-                                            <div
-                                                style="height:12px; width:{% widthratio row.count actual_distribution_summary.allocated_cells|default:1 100 %}%; background:#4f46e5; border-radius:999px;">
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="empty-state__text">Нет данных</div>
-                        {% endif %}
-                    </div>
-                </article>
-
-                <article class="card" style="margin:0;">
-                    <div class="card__header">
-                        <h4 class="card__title">По типам нарядов</h4>
-                    </div>
-                    <div class="card__body">
-                        {% if actual_distribution_summary.duty_rows %}
-                            <div style="display:flex; flex-direction:column; gap:.85rem;">
-                                {% for duty in actual_distribution_summary.duty_rows %}
-                                    <div style="padding:.75rem; border:1px solid var(--color-border, #ddd); border-radius:.75rem;">
-                                        <div style="font-weight:600; margin-bottom:.45rem;">
-                                            {{ duty.duty_name }} — {{ duty.total }}
-                                        </div>
-
-                                        {% if duty.units %}
-                                            {% for item in duty.units %}
-                                                <div style="margin-bottom:.45rem;">
-                                                    <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.2rem;">
-                                                        <span>{{ item.unit_name }}</span>
-                                                        <span>{{ item.count }}</span>
-                                                    </div>
-                                                    <div style="height:10px; background:#edf0f4; border-radius:999px; overflow:hidden;">
-                                                        <div
-                                                            style="height:10px; width:{% widthratio item.count duty.total|default:1 100 %}%; background:#0ea5e9; border-radius:999px;">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            {% endfor %}
-                                        {% else %}
-                                            <div class="empty-state__text">Нет назначений</div>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="empty-state__text">Нет данных</div>
-                        {% endif %}
-                    </div>
-                </article>
-            </div>
+    <section class="page-section page-section--compact">
+        <div class="plan-summary-grid plan-summary-grid--compact">
+            <article class="summary-card plan-metric"><span class="summary-card__label">Месяц</span><span class="summary-card__value">{{ schedule.month|date:"F Y" }}</span></article>
+            <article class="summary-card plan-metric"><span class="summary-card__label">Типов нарядов</span><span class="summary-card__value">{{ table|length }}</span></article>
+            <article class="summary-card plan-metric"><span class="summary-card__label">Дней</span><span class="summary-card__value">{{ dates|length }}</span></article>
+            <article class="summary-card plan-metric"><span class="summary-card__label">Делегирование</span><span class="summary-card__value">{{ delegate_units|length }}</span></article>
         </div>
-    </article>
-</section>
-{% endif %}
+    </section>
 
-<section class="page-section">
-    <article class="card">
-        <div class="card__header">
-            <div>
-                <h3 class="card__title">Автоматизация распределения</h3>
-                <p class="card__subtitle">Построй предпросмотр, затем примени именно его</p>
-            </div>
-        </div>
+    <section class="page-section page-section--compact">
+        <article class="card plan-control-panel">
+            <div class="plan-control-panel__main">
+                <div>
+                    <h3 class="card__title">Автоматизация распределения</h3>
+                    <p class="card__subtitle">Компактный preview/apply flow без изменения текущих action URL.</p>
+                </div>
 
-        <div class="card__body">
-            <div
-                style="
-                    margin-bottom: 1rem;
-                    padding: .85rem 1rem;
-                    border: 1px solid var(--color-border, #d9d9d9);
-                    border-radius: .75rem;
-                    background: var(--color-surface-soft, #f8f9fb);
-                    font-size: .95rem;
-                    line-height: 1.45;
-                "
-            >
-                <strong>Режимы автораспределения:</strong>
-                <div style="margin-top: .4rem;">
-                    <strong>Равномерно по структуре</strong> — распределяет по подразделениям и нагрузке без проверки сотрудников.
-                </div>
-                <div>
-                    <strong>Равномерно с учётом людей</strong> — учитывает допуски, освобождения, занятость и требуемое количество людей.
-                </div>
-                <div>
-                    <strong>Только дочерние по структуре</strong> — исключает базовое подразделение и распределяет только вниз.
-                </div>
-                <div>
-                    <strong>Только дочерние с учётом людей</strong> — делегирует только вниз и проверяет кадровую выполнимость.
-                </div>
-                <div>
-                    <strong>Приоритет своим</strong> — старается оставлять наряды в базовом подразделении.
-                </div>
-                <div>
-                    <strong>Приоритет дочерним</strong> — старается отдавать наряды вниз по структуре.
-                </div>
-                <div>
-                    <strong>Нормализовать по размеру подразделения</strong> — крупные подразделения получают чуть больше нагрузки.
-                </div>
+                <form method="post" action="{% url 'plan:preview_distribute' schedule.pk %}" class="plan-auto-form">
+                    {% csrf_token %}
+                    <select name="auto_mode" class="form-select plan-auto-form__mode">
+                        <option value="balanced_structure" {% if current_auto_params.mode == "balanced_structure" %}selected{% endif %}>Равномерно по структуре</option>
+                        <option value="balanced_capacity" {% if current_auto_params.mode == "balanced_capacity" %}selected{% endif %}>Равномерно с учётом людей</option>
+                        <option value="children_only_structure" {% if current_auto_params.mode == "children_only_structure" %}selected{% endif %}>Только дочерние по структуре</option>
+                        <option value="children_only_capacity" {% if current_auto_params.mode == "children_only_capacity" %}selected{% endif %}>Только дочерние с учётом людей</option>
+                        <option value="prefer_own" {% if current_auto_params.mode == "prefer_own" %}selected{% endif %}>Приоритет своим</option>
+                        <option value="prefer_children" {% if current_auto_params.mode == "prefer_children" %}selected{% endif %}>Приоритет дочерним</option>
+                    </select>
+
+                    <label class="plan-check"><input type="checkbox" name="auto_only_empty" value="1" {% if current_auto_params.only_empty %}checked{% endif %}><span>Только пустые</span></label>
+                    <label class="plan-check"><input type="checkbox" name="auto_normalize_headcount" value="1" {% if current_auto_params.normalize_by_headcount %}checked{% endif %}><span>Нормализовать</span></label>
+                    <button type="submit" class="button button--primary">Показать preview</button>
+                </form>
             </div>
 
-            <form method="post" action="{% url 'plan:preview_distribute' schedule.pk %}">
-                {% csrf_token %}
-
-                <div class="form-actions form-actions--top" style="flex-wrap: wrap;">
-                    <div style="display:inline-flex; gap:.5rem; align-items:center; flex-wrap: wrap;">
-                        <select name="auto_mode" class="form-select">
-                            <option value="balanced_structure" {% if current_auto_params.mode == "balanced_structure" %}selected{% endif %}>Равномерно по структуре</option>
-                            <option value="balanced_capacity" {% if current_auto_params.mode == "balanced_capacity" %}selected{% endif %}>Равномерно с учётом людей</option>
-                            <option value="children_only_structure" {% if current_auto_params.mode == "children_only_structure" %}selected{% endif %}>Только дочерние по структуре</option>
-                            <option value="children_only_capacity" {% if current_auto_params.mode == "children_only_capacity" %}selected{% endif %}>Только дочерние с учётом людей</option>
-                            <option value="prefer_own" {% if current_auto_params.mode == "prefer_own" %}selected{% endif %}>Приоритет своим</option>
-                            <option value="prefer_children" {% if current_auto_params.mode == "prefer_children" %}selected{% endif %}>Приоритет дочерним</option>
-                        </select>
-
-                        <label style="display:flex; align-items:center; gap:.35rem;">
-                            <input type="checkbox" name="auto_only_empty" value="1" {% if current_auto_params.only_empty %}checked{% endif %}>
-                            Только пустые
-                        </label>
-
-                        <label style="display:flex; align-items:center; gap:.35rem;">
-                            <input type="checkbox" name="auto_normalize_headcount" value="1" {% if current_auto_params.normalize_by_headcount %}checked{% endif %}>
-                            Нормализовать по размеру подразделения
-                        </label>
-                    </div>
-
-                    <button type="submit" class="button button--primary">
-                        Показать предпросмотр
-                    </button>
+            <details class="plan-help">
+                <summary>Что делают режимы</summary>
+                <div class="plan-help__grid">
+                    <span><strong>По структуре</strong> — распределяет по подразделениям и нагрузке.</span>
+                    <span><strong>С учётом людей</strong> — проверяет допуски, освобождения и занятость.</span>
+                    <span><strong>Только дочерние</strong> — исключает базовое подразделение.</span>
+                    <span><strong>Приоритет</strong> — смещает нагрузку к своим или дочерним.</span>
                 </div>
-            </form>
+            </details>
 
             {% if preview_distribution_summary %}
-                <div style="margin-top: 1rem; padding: .85rem 1rem; border: 1px solid #d9d9d9; border-radius: .75rem; background: #f8f9fb;">
-                    <div style="font-weight: 600; margin-bottom: .35rem;">
-                        Сейчас выбран предпросмотр: {{ preview_distribution_summary.mode_label }}
-                    </div>
-                    <div style="font-size: .95rem; color: #555;">
-                        Режим: <strong>{{ preview_meta.params.mode }}</strong>
-                        {% if preview_meta.params.only_empty %} · только пустые{% endif %}
-                        {% if preview_meta.params.normalize_by_headcount %} · с нормализацией по размеру{% endif %}
-                    </div>
-
-                    <div style="display:flex; gap:.5rem; margin-top:.75rem; flex-wrap: wrap;">
-                        <form method="post" action="{% url 'plan:auto_distribute' schedule.pk %}" style="display:inline;">
-                            {% csrf_token %}
-                            <input type="hidden" name="auto_mode" value="{{ preview_meta.params.mode }}">
-                            {% if preview_meta.params.only_empty %}
-                                <input type="hidden" name="auto_only_empty" value="1">
-                            {% endif %}
-                            {% if preview_meta.params.normalize_by_headcount %}
-                                <input type="hidden" name="auto_normalize_headcount" value="1">
-                            {% endif %}
-                            <button type="submit" class="button">
-                                Применить этот предпросмотр
-                            </button>
-                        </form>
-
-                        <form method="post" action="{% url 'plan:clear_distribution_preview' schedule.pk %}" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit" class="button">
-                                Очистить предпросмотр
-                            </button>
-                        </form>
-                    </div>
+            <div class="plan-preview-strip">
+                <div class="plan-preview-strip__summary">
+                    <span class="badge badge--info">Preview</span>
+                    <strong>{{ preview_distribution_summary.mode_label }}</strong>
+                    <span class="muted">{{ preview_distribution_summary.changed_cells }} изменений · {{ preview_distribution_summary.unresolved_cells }} не распределено</span>
                 </div>
+                <div class="plan-preview-strip__actions">
+                    <form method="post" action="{% url 'plan:auto_distribute' schedule.pk %}" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="auto_mode" value="{{ preview_meta.params.mode }}">
+                        {% if preview_meta.params.only_empty %}<input type="hidden" name="auto_only_empty" value="1">{% endif %}
+                        {% if preview_meta.params.normalize_by_headcount %}<input type="hidden" name="auto_normalize_headcount" value="1">{% endif %}
+                        <button type="submit" class="button button--primary">Применить</button>
+                    </form>
+                    <form method="post" action="{% url 'plan:clear_distribution_preview' schedule.pk %}" class="inline-form">
+                        {% csrf_token %}
+                        <button type="submit" class="button">Очистить</button>
+                    </form>
+                </div>
+            </div>
             {% endif %}
-        </div>
-    </article>
-</section>
+        </article>
+    </section>
 
-{% if preview_distribution_summary %}
-<section class="page-section">
-    <article class="card">
-        <div class="card__header">
-            <div>
-                <h3 class="card__title">Предпросмотр автораспределения</h3>
-                <p class="card__subtitle">{{ preview_distribution_summary.mode_label }}</p>
-            </div>
-        </div>
-
-        <div class="card__body">
-            <div class="plan-summary-grid" style="margin-bottom: 1rem;">
-                <article class="summary-card">
-                    <span class="summary-card__label">Ячеек в preview</span>
-                    <span class="summary-card__value">{{ preview_distribution_summary.total_cells }}</span>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-card__label">Изменений предложено</span>
-                    <span class="summary-card__value">{{ preview_distribution_summary.changed_cells }}</span>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-card__label">Не удалось распределить</span>
-                    <span class="summary-card__value">{{ preview_distribution_summary.unresolved_cells }}</span>
-                </article>
-                <article class="summary-card">
-                    <span class="summary-card__label">Распределено</span>
-                    <span class="summary-card__value">{{ preview_distribution_summary.allocated_cells }}</span>
-                </article>
-            </div>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                <article class="card" style="margin:0;">
-                    <div class="card__header">
-                        <h4 class="card__title">Preview по подразделениям</h4>
-                    </div>
-                    <div class="card__body">
-                        {% if preview_distribution_summary.unit_rows %}
-                            <div style="display:flex; flex-direction:column; gap:.75rem;">
-                                {% for row in preview_distribution_summary.unit_rows %}
-                                    <div>
-                                        <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.3rem;">
-                                            <strong>{{ row.unit_name }}</strong>
-                                            <span>{{ row.count }}</span>
-                                        </div>
-                                        <div style="height:12px; background:#edf0f4; border-radius:999px; overflow:hidden;">
-                                            <div
-                                                style="height:12px; width:{% widthratio row.count preview_distribution_summary.allocated_cells|default:1 100 %}%; background:#16a34a; border-radius:999px;">
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="empty-state__text">Нет данных</div>
-                        {% endif %}
-                    </div>
-                </article>
-
-                <article class="card" style="margin:0;">
-                    <div class="card__header">
-                        <h4 class="card__title">Preview по типам нарядов</h4>
-                    </div>
-                    <div class="card__body">
-                        {% if preview_distribution_summary.duty_rows %}
-                            <div style="display:flex; flex-direction:column; gap:.85rem;">
-                                {% for duty in preview_distribution_summary.duty_rows %}
-                                    <div style="padding:.75rem; border:1px solid var(--color-border, #ddd); border-radius:.75rem;">
-                                        <div style="font-weight:600; margin-bottom:.45rem;">
-                                            {{ duty.duty_name }} — {{ duty.total }}
-                                        </div>
-
-                                        {% if duty.units %}
-                                            {% for item in duty.units %}
-                                                <div style="margin-bottom:.45rem;">
-                                                    <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.2rem;">
-                                                        <span>{{ item.unit_name }}</span>
-                                                        <span>{{ item.count }}</span>
-                                                    </div>
-                                                    <div style="height:10px; background:#edf0f4; border-radius:999px; overflow:hidden;">
-                                                        <div
-                                                            style="height:10px; width:{% widthratio item.count duty.total|default:1 100 %}%; background:#f59e0b; border-radius:999px;">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            {% endfor %}
-                                        {% else %}
-                                            <div class="empty-state__text">Нет назначений</div>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="empty-state__text">Нет данных</div>
-                        {% endif %}
-                    </div>
-                </article>
-            </div>
-
-            {% if preview_duty_debug %}
-            <article class="card" style="margin:0;">
-                <div class="card__header">
-                    <h4 class="card__title">Диагностика кандидатов</h4>
+    {% if preview_distribution_summary %}
+    <section class="page-section page-section--compact">
+        <article class="card plan-preview-card">
+            <div class="card__header plan-section-header">
+                <div><h3 class="card__title">Предпросмотр автораспределения</h3><p class="card__subtitle">{{ preview_distribution_summary.mode_label }}</p></div>
+                <div class="plan-mini-stats">
+                    <span><strong>{{ preview_distribution_summary.total_cells }}</strong> ячеек</span>
+                    <span><strong>{{ preview_distribution_summary.changed_cells }}</strong> изменений</span>
+                    <span><strong>{{ preview_distribution_summary.allocated_cells }}</strong> распределено</span>
                 </div>
-                <div class="card__body">
-                    <div style="display:flex; flex-direction:column; gap:.85rem;">
+            </div>
+            <div class="card__body">
+                <details class="plan-details" open>
+                    <summary>Сводка preview</summary>
+                    <div class="plan-insight-grid">
+                        <div class="plan-insight-box">
+                            <h4>По подразделениям</h4>
+                            {% if preview_distribution_summary.unit_rows %}
+                                <div class="plan-bars">
+                                    {% for row in preview_distribution_summary.unit_rows %}
+                                    <div class="plan-bar-row"><div class="plan-bar-row__top"><strong>{{ row.unit_name }}</strong><span>{{ row.count }}</span></div><div class="plan-bar"><span style="--bar-value:{% widthratio row.count preview_distribution_summary.allocated_cells|default:1 100 %}%;"></span></div></div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}<div class="empty-state__text">Нет данных</div>{% endif %}
+                        </div>
+                        <div class="plan-insight-box">
+                            <h4>По типам нарядов</h4>
+                            {% if preview_distribution_summary.duty_rows %}
+                                <div class="plan-duty-stack">
+                                    {% for duty in preview_distribution_summary.duty_rows %}
+                                    <details class="plan-nested-details"><summary>{{ duty.duty_name }} <span>{{ duty.total }}</span></summary>{% if duty.units %}{% for item in duty.units %}<div class="plan-bar-row plan-bar-row--sm"><div class="plan-bar-row__top"><span>{{ item.unit_name }}</span><span>{{ item.count }}</span></div><div class="plan-bar"><span style="--bar-value:{% widthratio item.count duty.total|default:1 100 %}%;"></span></div></div>{% endfor %}{% else %}<div class="empty-state__text">Нет назначений</div>{% endif %}</details>
+                                    {% endfor %}
+                                </div>
+                            {% else %}<div class="empty-state__text">Нет данных</div>{% endif %}
+                        </div>
+                    </div>
+                </details>
+
+                {% if preview_duty_debug %}
+                <details class="plan-details plan-details--muted">
+                    <summary>Диагностика кандидатов</summary>
+                    <div class="plan-debug-list">
                         {% for key, duty in preview_duty_debug.items %}
-                            <div style="padding:.75rem; border:1px solid var(--color-border, #ddd); border-radius:.75rem;">
-                                <div style="font-weight:600; margin-bottom:.45rem;">
-                                    {{ duty.duty_name }}
-                                </div>
-
-                                <div style="margin-bottom:.35rem;">
-                                    <strong>Подходят:</strong>
-                                    {% if duty.eligible_units %}
-                                        {% for item in duty.eligible_units %}
-                                            {{ item.unit_name }}
-                                            {% if item.max_capacity %}
-                                                (max capacity: {{ item.max_capacity }})
-                                            {% endif %}
-                                            {% if item.headcount %}
-                                                (людей: {{ item.headcount }})
-                                            {% endif %}
-                                            {% if not forloop.last %} · {% endif %}
-                                        {% endfor %}
-                                    {% else %}
-                                        —
-                                    {% endif %}
-                                </div>
-
-                                <div>
-                                    <strong>Отклонены:</strong>
-                                    {% if duty.rejected_units %}
-                                        {% for item in duty.rejected_units %}
-                                            {{ item.unit_name }}: {{ item.reason }}{% if not forloop.last %} · {% endif %}
-                                        {% endfor %}
-                                    {% else %}
-                                        —
-                                    {% endif %}
-                                </div>
-                            </div>
+                        <article class="plan-debug-item">
+                            <h4>{{ duty.duty_name }}</h4>
+                            <p><strong>Подходят:</strong> {% if duty.eligible_units %}{% for item in duty.eligible_units %}{{ item.unit_name }}{% if item.max_capacity %} (max: {{ item.max_capacity }}){% endif %}{% if item.headcount %} (людей: {{ item.headcount }}){% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}{% else %}—{% endif %}</p>
+                            <p><strong>Отклонены:</strong> {% if duty.rejected_units %}{% for item in duty.rejected_units %}{{ item.unit_name }}: {{ item.reason }}{% if not forloop.last %} · {% endif %}{% endfor %}{% else %}—{% endif %}</p>
+                        </article>
                         {% endfor %}
                     </div>
-                </div>
-            </article>
-            {% endif %}
-        </div>
-    </article>
-</section>
-{% endif %}
-
-<section class="page-section">
-    <article class="card">
-        <div class="card__header">
-            <div>
-                <h3 class="card__title">Таблица нарядов по дням</h3>
-                <p class="card__subtitle">
-                    Выберите, кто исполняет наряд: базовое подразделение расписания или одно из разрешённых подразделений.
-                </p>
+                </details>
+                {% endif %}
             </div>
-        </div>
+        </article>
+    </section>
+    {% endif %}
 
-        <div class="card__body">
-            <div class="plan-legend">
-                <span class="plan-legend__item plan-legend__item--own">Своими силами</span>
-                <span class="plan-legend__item plan-legend__item--delegated-pending">Делегировано, ждёт</span>
-                <span class="plan-legend__item plan-legend__item--delegated-accepted">Делегировано, принято</span>
-                <span class="plan-legend__item plan-legend__item--incoming">Входящий / принят</span>
-                <span class="plan-legend__item plan-legend__item--inactive">Недоступно</span>
-            </div>
-
-            <form method="post">
-                {% csrf_token %}
-
-                <div class="form-actions form-actions--top">
-                    <button type="submit" class="button button--primary">Сохранить изменения</button>
-                    <a href="{% url 'plan:detail' schedule.pk %}" class="button">Отмена</a>
+    {% if actual_distribution_summary %}
+    <section class="page-section page-section--compact">
+        <details class="card plan-details-card">
+            <summary class="plan-details-card__summary">
+                <span><strong>Текущее распределение</strong><small>Фактическое состояние таблицы</small></span>
+                <span class="plan-summary-pills"><em>{{ actual_distribution_summary.allocated_cells }} распределено</em><em>{{ actual_distribution_summary.empty_cells }} пустых</em></span>
+            </summary>
+            <div class="plan-details-card__body">
+                <div class="plan-insight-grid">
+                    <div class="plan-insight-box"><h4>По подразделениям</h4>{% if actual_distribution_summary.unit_rows %}<div class="plan-bars">{% for row in actual_distribution_summary.unit_rows %}<div class="plan-bar-row"><div class="plan-bar-row__top"><strong>{{ row.unit_name }}</strong><span>{{ row.count }}</span></div><div class="plan-bar"><span style="--bar-value:{% widthratio row.count actual_distribution_summary.allocated_cells|default:1 100 %}%;"></span></div></div>{% endfor %}</div>{% else %}<div class="empty-state__text">Нет данных</div>{% endif %}</div>
+                    <div class="plan-insight-box"><h4>По типам нарядов</h4>{% if actual_distribution_summary.duty_rows %}<div class="plan-duty-stack">{% for duty in actual_distribution_summary.duty_rows %}<details class="plan-nested-details"><summary>{{ duty.duty_name }} <span>{{ duty.total }}</span></summary>{% if duty.units %}{% for item in duty.units %}<div class="plan-bar-row plan-bar-row--sm"><div class="plan-bar-row__top"><span>{{ item.unit_name }}</span><span>{{ item.count }}</span></div><div class="plan-bar"><span style="--bar-value:{% widthratio item.count duty.total|default:1 100 %}%;"></span></div></div>{% endfor %}{% else %}<div class="empty-state__text">Нет назначений</div>{% endif %}</details>{% endfor %}</div>{% else %}<div class="empty-state__text">Нет данных</div>{% endif %}</div>
                 </div>
+            </div>
+        </details>
+    </section>
+    {% endif %}
 
-                <div class="plan-days-wrap">
-                    <table class="table plan-days-table">
-                        <thead>
-                            <tr>
-                                <th class="plan-days-table__sticky-col plan-days-table__sticky-head">Наряд</th>
-                                {% for header in date_headers %}
-                                    <th class="plan-days-table__date-head {% if header.is_weekend %}plan-days-table__date-head--weekend{% endif %}">
-                                        <div class="plan-days-table__date-num">{{ header.day }}</div>
-                                        <div class="plan-days-table__date-weekday">{{ header.weekday_short }}</div>
-                                    </th>
-                                {% endfor %}
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {% for row in table %}
+    <section class="page-section page-section--compact">
+        <article class="card plan-table-card">
+            <div class="card__header plan-section-header">
+                <div><h3 class="card__title">Таблица нарядов по дням</h3><p class="card__subtitle">Главный рабочий блок: кто исполняет наряд — базовое или делегированное подразделение.</p></div>
+                <div class="plan-legend"><span class="plan-legend__item plan-legend__item--own">Своими</span><span class="plan-legend__item plan-legend__item--delegated-pending">Ждёт</span><span class="plan-legend__item plan-legend__item--delegated-accepted">Принято</span><span class="plan-legend__item plan-legend__item--incoming">Входящий</span><span class="plan-legend__item plan-legend__item--inactive">Недоступно</span></div>
+            </div>
+            <div class="card__body">
+                <form method="post" class="plan-days-form">
+                    {% csrf_token %}
+                    <div class="plan-action-bar"><button type="submit" class="button button--primary">Сохранить изменения</button><a href="{% url 'plan:detail' schedule.pk %}" class="button">Отмена</a></div>
+                    <div class="plan-days-wrap">
+                        <table class="table plan-days-table">
+                            <thead><tr><th class="plan-days-table__sticky-col plan-days-table__sticky-head">Наряд</th>{% for header in date_headers %}<th class="plan-days-table__date-head {% if header.is_weekend %}plan-days-table__date-head--weekend{% endif %}"><div class="plan-days-table__date-num">{{ header.day }}</div><div class="plan-days-table__date-weekday">{{ header.weekday_short }}</div></th>{% endfor %}</tr></thead>
+                            <tbody>
+                                {% for row in table %}
                                 <tr>
-                                    <td class="plan-days-table__sticky-col plan-days-table__duty">
-                                        <div class="plan-days-table__duty-name">{{ row.duty.name }}</div>
-                                        <div class="plan-days-table__duty-meta">
-                                            {% if row.duty.required_people %}
-                                                Требуется: {{ row.duty.required_people }}
-                                            {% endif %}
-                                        </div>
-                                    </td>
-
+                                    <td class="plan-days-table__sticky-col plan-days-table__duty"><div class="plan-days-table__duty-name">{{ row.duty.name }}</div><div class="plan-days-table__duty-meta">{% if row.duty.required_people %}Требуется: {{ row.duty.required_people }}{% endif %}</div></td>
                                     {% for cell in row.cells %}
-                                        <td class="plan-days-table__cell plan-days-table__cell--{{ cell.cell_class }}">
-                                            <div class="plan-cell">
-                                                {% if cell.status_text %}
-                                                    <div class="plan-cell__status">{{ cell.status_text }}</div>
-                                                {% else %}
-                                                    <div class="plan-cell__status plan-cell__status--muted">—</div>
-                                                {% endif %}
-
-                                                {% if cell.unit_name and cell.unit_id != base_unit.id %}
-                                                    <div class="plan-cell__meta">{{ cell.unit_name }}</div>
-                                                {% endif %}
-
-                                                {% if cell.can_edit %}
-                                                    <div class="plan-cell__control">
-                                                        <select
-                                                            name="day_{{ cell.date|date:'Y-m-d' }}_{{ row.duty.id }}"
-                                                            class="plan-cell__select"
-                                                        >
-                                                            <option value="">—</option>
-
-                                                            <option
-                                                                value="{{ base_unit.id }}"
-                                                                {% if cell.unit_id == base_unit.id %}selected{% endif %}
-                                                            >
-                                                                {{ base_unit.name }}
-                                                            </option>
-
-                                                            {% for item in delegate_units %}
-                                                                <option
-                                                                    value="{{ item.id }}"
-                                                                    {% if cell.unit_id == item.id %}selected{% endif %}
-                                                                >
-                                                                    {{ item.label }}
-                                                                </option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                {% endif %}
-                                            </div>
-                                        </td>
+                                    <td class="plan-days-table__cell plan-days-table__cell--{{ cell.cell_class }}"><div class="plan-cell">{% if cell.status_text %}<div class="plan-cell__status">{{ cell.status_text }}</div>{% else %}<div class="plan-cell__status plan-cell__status--muted">—</div>{% endif %}{% if cell.unit_name and cell.unit_id != base_unit.id %}<div class="plan-cell__meta">{{ cell.unit_name }}</div>{% endif %}{% if cell.can_edit %}<div class="plan-cell__control"><select name="day_{{ cell.date|date:'Y-m-d' }}_{{ row.duty.id }}" class="plan-cell__select"><option value="">—</option><option value="{{ base_unit.id }}" {% if cell.unit_id == base_unit.id %}selected{% endif %}>{{ base_unit.name }}</option>{% for item in delegate_units %}<option value="{{ item.id }}" {% if cell.unit_id == item.id %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></div>{% endif %}</div></td>
                                     {% endfor %}
                                 </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="button button--primary">Сохранить изменения</button>
-                    <a href="{% url 'plan:detail' schedule.pk %}" class="button">Отмена</a>
-                </div>
-            </form>
-        </div>
-    </article>
-</section>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="plan-action-bar plan-action-bar--bottom"><button type="submit" class="button button--primary">Сохранить изменения</button><a href="{% url 'plan:detail' schedule.pk %}" class="button">Отмена</a></div>
+                </form>
+            </div>
+        </article>
+    </section>
+</div>
 {% endblock %}

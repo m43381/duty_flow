@@ -1,6 +1,6 @@
 =========================================
 === ПОЛНЫЙ ЭКСПОРТ ПРОЕКТА ===
-=== Дата: Wed, Apr 22, 2026 10:51:23 PM ===
+=== Дата: Sun, May  3, 2026 12:08:32 PM ===
 =========================================
 
 #########################################
@@ -1266,6 +1266,234 @@
         </article>
     </div>
 </section>
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Автоназначение сотрудников</h3>
+                <p class="card__subtitle">Сначала построй предпросмотр, затем при необходимости примени его</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div
+                style="
+                    margin-bottom: 1rem;
+                    padding: .85rem 1rem;
+                    border: 1px solid var(--color-border, #d9d9d9);
+                    border-radius: .75rem;
+                    background: var(--color-surface-soft, #f8f9fb);
+                    font-size: .95rem;
+                    line-height: 1.45;
+                "
+            >
+                <strong>Режимы автоназначения:</strong>
+                <div style="margin-top: .4rem;">
+                    <strong>Только дозаполнить</strong> — добавляет сотрудников только туда, где не хватает назначений.
+                </div>
+                <div>
+                    <strong>Пересобрать полностью</strong> — снимает текущие назначения и собирает их заново.
+                </div>
+                <div>
+                    <strong>Только недоукомплектованные</strong> — обрабатывает только наряды, где людей меньше, чем требуется.
+                </div>
+            </div>
+
+            <form method="post" action="{% url 'assignment:preview_auto' %}">
+                {% csrf_token %}
+                <input type="hidden" name="year" value="{{ year }}">
+                <input type="hidden" name="month" value="{{ month }}">
+
+                <div class="form-actions form-actions--top" style="flex-wrap: wrap;">
+                    <div style="display:inline-flex; gap:.5rem; align-items:center; flex-wrap: wrap;">
+                        <select name="auto_mode" class="form-select">
+                            <option value="fill_only" {% if current_auto_params.mode == "fill_only" %}selected{% endif %}>
+                                Только дозаполнить
+                            </option>
+                            <option value="replace_all" {% if current_auto_params.mode == "replace_all" %}selected{% endif %}>
+                                Пересобрать полностью
+                            </option>
+                        </select>
+
+                        <label style="display:flex; align-items:center; gap:.35rem;">
+                            <input
+                                type="checkbox"
+                                name="auto_only_understaffed"
+                                value="1"
+                                {% if current_auto_params.only_understaffed %}checked{% endif %}
+                            >
+                            Только недоукомплектованные
+                        </label>
+                    </div>
+
+                    <button type="submit" class="button button--primary">
+                        Показать предпросмотр
+                    </button>
+                </div>
+            </form>
+
+            {% if auto_preview %}
+                <div
+                    style="
+                        margin-top: 1rem;
+                        padding: .85rem 1rem;
+                        border: 1px solid var(--color-border, #d9d9d9);
+                        border-radius: .75rem;
+                        background: var(--color-surface-soft, #f8f9fb);
+                    "
+                >
+                    <div style="font-weight: 600; margin-bottom: .35rem;">
+                        Текущий предпросмотр: {{ auto_preview.mode_label }}
+                    </div>
+                    <div style="font-size: .95rem; color: var(--color-text-muted, #666);">
+                        Планов изменится: <strong>{{ auto_preview.changed_plans }}</strong>
+                        · Новых назначений: <strong>{{ auto_preview.total_new_assignments }}</strong>
+                    </div>
+
+                    <div style="display:flex; gap:.5rem; margin-top:.75rem; flex-wrap: wrap;">
+                        <form method="post" action="{% url 'assignment:apply_auto' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="year" value="{{ year }}">
+                            <input type="hidden" name="month" value="{{ month }}">
+                            <button type="submit" class="button">
+                                Применить этот предпросмотр
+                            </button>
+                        </form>
+
+                        <form method="post" action="{% url 'assignment:clear_auto_preview' %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="year" value="{{ year }}">
+                            <input type="hidden" name="month" value="{{ month }}">
+                            <button type="submit" class="button">
+                                Очистить предпросмотр
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+
+{% if auto_preview and auto_preview.summary %}
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Предпросмотр автоназначения</h3>
+                <p class="card__subtitle">{{ auto_preview.mode_label }}</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="assignment-stats" style="margin-bottom: 1rem;">
+                <article class="assignment-stat">
+                    <span class="assignment-stat__label">Планов в preview</span>
+                    <span class="assignment-stat__value">{{ auto_preview.summary.total_plans }}</span>
+                </article>
+
+                <article class="assignment-stat">
+                    <span class="assignment-stat__label">Планов изменится</span>
+                    <span class="assignment-stat__value">{{ auto_preview.summary.changed_plans }}</span>
+                </article>
+
+                <article class="assignment-stat assignment-stat--success">
+                    <span class="assignment-stat__label">Новых назначений</span>
+                    <span class="assignment-stat__value">{{ auto_preview.summary.total_new_assignments }}</span>
+                </article>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <article class="card" style="margin:0;">
+                    <div class="card__header">
+                        <h4 class="card__title">По дням</h4>
+                    </div>
+                    <div class="card__body">
+                        {% if auto_preview.summary.day_rows %}
+                            <div style="display:flex; flex-direction:column; gap:.75rem;">
+                                {% for row in auto_preview.summary.day_rows %}
+                                    <div>
+                                        <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.3rem;">
+                                            <strong>{{ row.day }}</strong>
+                                            <span>{{ row.count }}</span>
+                                        </div>
+                                        <div style="height:12px; background:#edf0f4; border-radius:999px; overflow:hidden;">
+                                            <div
+                                                style="height:12px; width:{% widthratio row.count auto_preview.summary.total_new_assignments|default:1 100 %}%; background:#16a34a; border-radius:999px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state__text">Нет данных</div>
+                        {% endif %}
+                    </div>
+                </article>
+
+                <article class="card" style="margin:0;">
+                    <div class="card__header">
+                        <h4 class="card__title">По типам нарядов</h4>
+                    </div>
+                    <div class="card__body">
+                        {% if auto_preview.summary.duty_rows %}
+                            <div style="display:flex; flex-direction:column; gap:.75rem;">
+                                {% for row in auto_preview.summary.duty_rows %}
+                                    <div>
+                                        <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.3rem;">
+                                            <strong>{{ row.duty_name }}</strong>
+                                            <span>{{ row.count }}</span>
+                                        </div>
+                                        <div style="height:12px; background:#edf0f4; border-radius:999px; overflow:hidden;">
+                                            <div
+                                                style="height:12px; width:{% widthratio row.count auto_preview.summary.total_new_assignments|default:1 100 %}%; background:#f59e0b; border-radius:999px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state__text">Нет данных</div>
+                        {% endif %}
+                    </div>
+                </article>
+            </div>
+
+            {% if auto_preview.suggestions %}
+                <div style="margin-top: 1rem;">
+                    <h4 class="card__title" style="margin-bottom:.75rem;">Детали по нарядам</h4>
+                    <div style="display:flex; flex-direction:column; gap:.85rem;">
+                        {% for item in auto_preview.suggestions %}
+                            {% if item.changed %}
+                                <div style="padding:.75rem; border:1px solid var(--color-border, #ddd); border-radius:.75rem;">
+                                    <div style="font-weight:600; margin-bottom:.35rem;">
+                                        {{ item.date|date:"d.m.Y" }} · {{ item.duty_name }} · {{ item.unit_name }}
+                                    </div>
+                                    <div style="font-size:.95rem; color:var(--color-text-muted, #666); margin-bottom:.35rem;">
+                                        Было: {{ item.current_count }} / {{ item.required_people }} · Нужно добавить: {{ item.need }}
+                                    </div>
+
+                                    {% if item.selected_people %}
+                                        <div>
+                                            <strong>Будут назначены:</strong>
+                                            {% for person in item.selected_people %}
+                                                {{ person.name }}{% if not forloop.last %} · {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="empty-state__text">Новых кандидатов не найдено</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endif %}
 
 <section class="page-section">
     <article class="card assignment-calendar-card">
@@ -2864,12 +3092,8 @@
         </div>
 
         <div class="page-header__actions">
-            <a href="{% url 'plan:detail' schedule.pk %}" class="button">
-                Назад к расписанию
-            </a>
-            <a href="{% url 'plan:incoming' %}" class="button">
-                Входящие
-            </a>
+            <a href="{% url 'plan:detail' schedule.pk %}" class="button">Назад к расписанию</a>
+            <a href="{% url 'plan:incoming' %}" class="button">Входящие</a>
         </div>
     </div>
 </section>
@@ -2895,6 +3119,373 @@
     </div>
 </section>
 
+{% if actual_distribution_summary %}
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Текущее распределение</h3>
+                <p class="card__subtitle">Фактическое состояние таблицы на данный момент</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="plan-summary-grid" style="margin-bottom: 1rem;">
+                <article class="summary-card">
+                    <span class="summary-card__label">Активных ячеек</span>
+                    <span class="summary-card__value">{{ actual_distribution_summary.total_cells }}</span>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-card__label">Распределено</span>
+                    <span class="summary-card__value">{{ actual_distribution_summary.allocated_cells }}</span>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-card__label">Пустых</span>
+                    <span class="summary-card__value">{{ actual_distribution_summary.empty_cells }}</span>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-card__label">Базовое подразделение</span>
+                    <span class="summary-card__value">{{ actual_distribution_summary.base_unit_name }}</span>
+                </article>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <article class="card" style="margin:0;">
+                    <div class="card__header">
+                        <h4 class="card__title">По подразделениям</h4>
+                    </div>
+                    <div class="card__body">
+                        {% if actual_distribution_summary.unit_rows %}
+                            <div style="display:flex; flex-direction:column; gap:.75rem;">
+                                {% for row in actual_distribution_summary.unit_rows %}
+                                    <div>
+                                        <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.3rem;">
+                                            <strong>{{ row.unit_name }}</strong>
+                                            <span>{{ row.count }}</span>
+                                        </div>
+                                        <div style="height:12px; background:#edf0f4; border-radius:999px; overflow:hidden;">
+                                            <div
+                                                style="height:12px; width:{% widthratio row.count actual_distribution_summary.allocated_cells|default:1 100 %}%; background:#4f46e5; border-radius:999px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state__text">Нет данных</div>
+                        {% endif %}
+                    </div>
+                </article>
+
+                <article class="card" style="margin:0;">
+                    <div class="card__header">
+                        <h4 class="card__title">По типам нарядов</h4>
+                    </div>
+                    <div class="card__body">
+                        {% if actual_distribution_summary.duty_rows %}
+                            <div style="display:flex; flex-direction:column; gap:.85rem;">
+                                {% for duty in actual_distribution_summary.duty_rows %}
+                                    <div style="padding:.75rem; border:1px solid var(--color-border, #ddd); border-radius:.75rem;">
+                                        <div style="font-weight:600; margin-bottom:.45rem;">
+                                            {{ duty.duty_name }} — {{ duty.total }}
+                                        </div>
+
+                                        {% if duty.units %}
+                                            {% for item in duty.units %}
+                                                <div style="margin-bottom:.45rem;">
+                                                    <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.2rem;">
+                                                        <span>{{ item.unit_name }}</span>
+                                                        <span>{{ item.count }}</span>
+                                                    </div>
+                                                    <div style="height:10px; background:#edf0f4; border-radius:999px; overflow:hidden;">
+                                                        <div
+                                                            style="height:10px; width:{% widthratio item.count duty.total|default:1 100 %}%; background:#0ea5e9; border-radius:999px;">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="empty-state__text">Нет назначений</div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state__text">Нет данных</div>
+                        {% endif %}
+                    </div>
+                </article>
+            </div>
+        </div>
+    </article>
+</section>
+{% endif %}
+
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Автоматизация распределения</h3>
+                <p class="card__subtitle">Построй предпросмотр, затем примени именно его</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div
+                style="
+                    margin-bottom: 1rem;
+                    padding: .85rem 1rem;
+                    border: 1px solid var(--color-border, #d9d9d9);
+                    border-radius: .75rem;
+                    background: var(--color-surface-soft, #f8f9fb);
+                    font-size: .95rem;
+                    line-height: 1.45;
+                "
+            >
+                <strong>Режимы автораспределения:</strong>
+                <div style="margin-top: .4rem;">
+                    <strong>Равномерно по структуре</strong> — распределяет по подразделениям и нагрузке без проверки сотрудников.
+                </div>
+                <div>
+                    <strong>Равномерно с учётом людей</strong> — учитывает допуски, освобождения, занятость и требуемое количество людей.
+                </div>
+                <div>
+                    <strong>Только дочерние по структуре</strong> — исключает базовое подразделение и распределяет только вниз.
+                </div>
+                <div>
+                    <strong>Только дочерние с учётом людей</strong> — делегирует только вниз и проверяет кадровую выполнимость.
+                </div>
+                <div>
+                    <strong>Приоритет своим</strong> — старается оставлять наряды в базовом подразделении.
+                </div>
+                <div>
+                    <strong>Приоритет дочерним</strong> — старается отдавать наряды вниз по структуре.
+                </div>
+                <div>
+                    <strong>Нормализовать по размеру подразделения</strong> — крупные подразделения получают чуть больше нагрузки.
+                </div>
+            </div>
+
+            <form method="post" action="{% url 'plan:preview_distribute' schedule.pk %}">
+                {% csrf_token %}
+
+                <div class="form-actions form-actions--top" style="flex-wrap: wrap;">
+                    <div style="display:inline-flex; gap:.5rem; align-items:center; flex-wrap: wrap;">
+                        <select name="auto_mode" class="form-select">
+                            <option value="balanced_structure" {% if current_auto_params.mode == "balanced_structure" %}selected{% endif %}>Равномерно по структуре</option>
+                            <option value="balanced_capacity" {% if current_auto_params.mode == "balanced_capacity" %}selected{% endif %}>Равномерно с учётом людей</option>
+                            <option value="children_only_structure" {% if current_auto_params.mode == "children_only_structure" %}selected{% endif %}>Только дочерние по структуре</option>
+                            <option value="children_only_capacity" {% if current_auto_params.mode == "children_only_capacity" %}selected{% endif %}>Только дочерние с учётом людей</option>
+                            <option value="prefer_own" {% if current_auto_params.mode == "prefer_own" %}selected{% endif %}>Приоритет своим</option>
+                            <option value="prefer_children" {% if current_auto_params.mode == "prefer_children" %}selected{% endif %}>Приоритет дочерним</option>
+                        </select>
+
+                        <label style="display:flex; align-items:center; gap:.35rem;">
+                            <input type="checkbox" name="auto_only_empty" value="1" {% if current_auto_params.only_empty %}checked{% endif %}>
+                            Только пустые
+                        </label>
+
+                        <label style="display:flex; align-items:center; gap:.35rem;">
+                            <input type="checkbox" name="auto_normalize_headcount" value="1" {% if current_auto_params.normalize_by_headcount %}checked{% endif %}>
+                            Нормализовать по размеру подразделения
+                        </label>
+                    </div>
+
+                    <button type="submit" class="button button--primary">
+                        Показать предпросмотр
+                    </button>
+                </div>
+            </form>
+
+            {% if preview_distribution_summary %}
+                <div style="margin-top: 1rem; padding: .85rem 1rem; border: 1px solid #d9d9d9; border-radius: .75rem; background: #f8f9fb;">
+                    <div style="font-weight: 600; margin-bottom: .35rem;">
+                        Сейчас выбран предпросмотр: {{ preview_distribution_summary.mode_label }}
+                    </div>
+                    <div style="font-size: .95rem; color: #555;">
+                        Режим: <strong>{{ preview_meta.params.mode }}</strong>
+                        {% if preview_meta.params.only_empty %} · только пустые{% endif %}
+                        {% if preview_meta.params.normalize_by_headcount %} · с нормализацией по размеру{% endif %}
+                    </div>
+
+                    <div style="display:flex; gap:.5rem; margin-top:.75rem; flex-wrap: wrap;">
+                        <form method="post" action="{% url 'plan:auto_distribute' schedule.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="auto_mode" value="{{ preview_meta.params.mode }}">
+                            {% if preview_meta.params.only_empty %}
+                                <input type="hidden" name="auto_only_empty" value="1">
+                            {% endif %}
+                            {% if preview_meta.params.normalize_by_headcount %}
+                                <input type="hidden" name="auto_normalize_headcount" value="1">
+                            {% endif %}
+                            <button type="submit" class="button">
+                                Применить этот предпросмотр
+                            </button>
+                        </form>
+
+                        <form method="post" action="{% url 'plan:clear_distribution_preview' schedule.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="button">
+                                Очистить предпросмотр
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+
+{% if preview_distribution_summary %}
+<section class="page-section">
+    <article class="card">
+        <div class="card__header">
+            <div>
+                <h3 class="card__title">Предпросмотр автораспределения</h3>
+                <p class="card__subtitle">{{ preview_distribution_summary.mode_label }}</p>
+            </div>
+        </div>
+
+        <div class="card__body">
+            <div class="plan-summary-grid" style="margin-bottom: 1rem;">
+                <article class="summary-card">
+                    <span class="summary-card__label">Ячеек в preview</span>
+                    <span class="summary-card__value">{{ preview_distribution_summary.total_cells }}</span>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-card__label">Изменений предложено</span>
+                    <span class="summary-card__value">{{ preview_distribution_summary.changed_cells }}</span>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-card__label">Не удалось распределить</span>
+                    <span class="summary-card__value">{{ preview_distribution_summary.unresolved_cells }}</span>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-card__label">Распределено</span>
+                    <span class="summary-card__value">{{ preview_distribution_summary.allocated_cells }}</span>
+                </article>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <article class="card" style="margin:0;">
+                    <div class="card__header">
+                        <h4 class="card__title">Preview по подразделениям</h4>
+                    </div>
+                    <div class="card__body">
+                        {% if preview_distribution_summary.unit_rows %}
+                            <div style="display:flex; flex-direction:column; gap:.75rem;">
+                                {% for row in preview_distribution_summary.unit_rows %}
+                                    <div>
+                                        <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.3rem;">
+                                            <strong>{{ row.unit_name }}</strong>
+                                            <span>{{ row.count }}</span>
+                                        </div>
+                                        <div style="height:12px; background:#edf0f4; border-radius:999px; overflow:hidden;">
+                                            <div
+                                                style="height:12px; width:{% widthratio row.count preview_distribution_summary.allocated_cells|default:1 100 %}%; background:#16a34a; border-radius:999px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state__text">Нет данных</div>
+                        {% endif %}
+                    </div>
+                </article>
+
+                <article class="card" style="margin:0;">
+                    <div class="card__header">
+                        <h4 class="card__title">Preview по типам нарядов</h4>
+                    </div>
+                    <div class="card__body">
+                        {% if preview_distribution_summary.duty_rows %}
+                            <div style="display:flex; flex-direction:column; gap:.85rem;">
+                                {% for duty in preview_distribution_summary.duty_rows %}
+                                    <div style="padding:.75rem; border:1px solid var(--color-border, #ddd); border-radius:.75rem;">
+                                        <div style="font-weight:600; margin-bottom:.45rem;">
+                                            {{ duty.duty_name }} — {{ duty.total }}
+                                        </div>
+
+                                        {% if duty.units %}
+                                            {% for item in duty.units %}
+                                                <div style="margin-bottom:.45rem;">
+                                                    <div style="display:flex; justify-content:space-between; gap:1rem; margin-bottom:.2rem;">
+                                                        <span>{{ item.unit_name }}</span>
+                                                        <span>{{ item.count }}</span>
+                                                    </div>
+                                                    <div style="height:10px; background:#edf0f4; border-radius:999px; overflow:hidden;">
+                                                        <div
+                                                            style="height:10px; width:{% widthratio item.count duty.total|default:1 100 %}%; background:#f59e0b; border-radius:999px;">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="empty-state__text">Нет назначений</div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state__text">Нет данных</div>
+                        {% endif %}
+                    </div>
+                </article>
+            </div>
+
+            {% if preview_duty_debug %}
+            <article class="card" style="margin:0;">
+                <div class="card__header">
+                    <h4 class="card__title">Диагностика кандидатов</h4>
+                </div>
+                <div class="card__body">
+                    <div style="display:flex; flex-direction:column; gap:.85rem;">
+                        {% for key, duty in preview_duty_debug.items %}
+                            <div style="padding:.75rem; border:1px solid var(--color-border, #ddd); border-radius:.75rem;">
+                                <div style="font-weight:600; margin-bottom:.45rem;">
+                                    {{ duty.duty_name }}
+                                </div>
+
+                                <div style="margin-bottom:.35rem;">
+                                    <strong>Подходят:</strong>
+                                    {% if duty.eligible_units %}
+                                        {% for item in duty.eligible_units %}
+                                            {{ item.unit_name }}
+                                            {% if item.max_capacity %}
+                                                (max capacity: {{ item.max_capacity }})
+                                            {% endif %}
+                                            {% if item.headcount %}
+                                                (людей: {{ item.headcount }})
+                                            {% endif %}
+                                            {% if not forloop.last %} · {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </div>
+
+                                <div>
+                                    <strong>Отклонены:</strong>
+                                    {% if duty.rejected_units %}
+                                        {% for item in duty.rejected_units %}
+                                            {{ item.unit_name }}: {{ item.reason }}{% if not forloop.last %} · {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </article>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endif %}
+
 <section class="page-section">
     <article class="card">
         <div class="card__header">
@@ -2919,33 +3510,8 @@
                 {% csrf_token %}
 
                 <div class="form-actions form-actions--top">
-                    <button type="submit" class="button button--primary">
-                        Сохранить изменения
-                    </button>
-                    <div style="display:inline-flex; gap: .5rem; align-items: center; margin-left: .75rem;">
-                        <select name="auto_mode" class="form-select">
-                            <option value="balanced">Равномерно</option>
-                            <option value="prefer_own">Приоритет своим</option>
-                            <option value="prefer_children">Приоритет дочерним</option>
-                        </select>
-
-                        <label style="display:flex; align-items:center; gap:.35rem;">
-                            <input type="checkbox" name="auto_only_empty" value="1">
-                            Только пустые
-                        </label>
-
-                        <button
-                            type="submit"
-                            class="button"
-                            formaction="{% url 'plan:auto_distribute' schedule.pk %}"
-                            formmethod="post"
-                        >
-                            Автоматически распределить
-                        </button>
-                    </div>
-                    <a href="{% url 'plan:detail' schedule.pk %}" class="button">
-                        Отмена
-                    </a>
+                    <button type="submit" class="button button--primary">Сохранить изменения</button>
+                    <a href="{% url 'plan:detail' schedule.pk %}" class="button">Отмена</a>
                 </div>
 
                 <div class="plan-days-wrap">
@@ -2978,19 +3544,13 @@
                                         <td class="plan-days-table__cell plan-days-table__cell--{{ cell.cell_class }}">
                                             <div class="plan-cell">
                                                 {% if cell.status_text %}
-                                                    <div class="plan-cell__status">
-                                                        {{ cell.status_text }}
-                                                    </div>
+                                                    <div class="plan-cell__status">{{ cell.status_text }}</div>
                                                 {% else %}
-                                                    <div class="plan-cell__status plan-cell__status--muted">
-                                                        —
-                                                    </div>
+                                                    <div class="plan-cell__status plan-cell__status--muted">—</div>
                                                 {% endif %}
 
                                                 {% if cell.unit_name and cell.unit_id != base_unit.id %}
-                                                    <div class="plan-cell__meta">
-                                                        {{ cell.unit_name }}
-                                                    </div>
+                                                    <div class="plan-cell__meta">{{ cell.unit_name }}</div>
                                                 {% endif %}
 
                                                 {% if cell.can_edit %}
@@ -3029,12 +3589,8 @@
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="button button--primary">
-                        Сохранить изменения
-                    </button>
-                    <a href="{% url 'plan:detail' schedule.pk %}" class="button">
-                        Отмена
-                    </a>
+                    <button type="submit" class="button button--primary">Сохранить изменения</button>
+                    <a href="{% url 'plan:detail' schedule.pk %}" class="button">Отмена</a>
                 </div>
             </form>
         </div>
@@ -9970,12 +10526,83 @@ from datetime import datetime
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from access_control.services import AccessManager
+from core.services.assignment_automation_service import AssignmentAutomationService
+from core.services.assignment_service import AssignmentService
 from duty_plans.models import DayPlan, DutyAssignment
 from people.models import Person
-from core.services.assignment_service import AssignmentService
+
+
+AUTO_ASSIGN_PREVIEW_SESSION_KEY = "assignment_auto_preview"
+
+
+def _calendar_redirect(year: int, month: int):
+    return redirect(f"{reverse('assignment:calendar')}?year={year}&month={month}")
+
+
+def _build_auto_params(request):
+    return {
+        "mode": request.POST.get("auto_mode", AssignmentAutomationService.MODE_FILL_ONLY),
+        "only_understaffed": request.POST.get("auto_only_understaffed") == "1",
+    }
+
+
+def _serialize_auto_preview(preview: dict) -> dict:
+    serialized = {
+        "mode": preview.get("mode"),
+        "mode_label": preview.get("mode_label"),
+        "total_plans": preview.get("total_plans"),
+        "changed_plans": preview.get("changed_plans"),
+        "total_new_assignments": preview.get("total_new_assignments"),
+        "summary": preview.get("summary"),
+        "suggestions": [],
+    }
+
+    for item in preview.get("suggestions", []):
+        serialized["suggestions"].append({
+            "plan_id": item.get("plan_id"),
+            "date": item["date"].isoformat() if item.get("date") else None,
+            "duty_name": item.get("duty_name"),
+            "unit_name": item.get("unit_name"),
+            "required_people": item.get("required_people"),
+            "current_count": item.get("current_count"),
+            "need": item.get("need"),
+            "current_people": item.get("current_people", []),
+            "selected_people": item.get("selected_people", []),
+            "candidate_debug": item.get("candidate_debug", []),
+            "unavailable_count": item.get("unavailable_count"),
+            "changed": item.get("changed", False),
+        })
+
+    return serialized
+
+
+def _save_auto_preview(request, year: int, month: int, params: dict, preview: dict):
+    request.session[AUTO_ASSIGN_PREVIEW_SESSION_KEY] = {
+        "year": year,
+        "month": month,
+        "params": params,
+        **_serialize_auto_preview(preview),
+    }
+    request.session.modified = True
+
+
+def _get_auto_preview(request, year: int, month: int):
+    preview = request.session.get(AUTO_ASSIGN_PREVIEW_SESSION_KEY)
+    if not preview:
+        return None
+    if preview.get("year") != year or preview.get("month") != month:
+        return None
+    return preview
+
+
+def _clear_auto_preview(request):
+    if AUTO_ASSIGN_PREVIEW_SESSION_KEY in request.session:
+        request.session.pop(AUTO_ASSIGN_PREVIEW_SESSION_KEY, None)
+        request.session.modified = True
 
 
 @login_required
@@ -10004,6 +10631,11 @@ def calendar(request):
             "page_title": "Назначения сотрудников",
             "page_subtitle": "Календарь назначений",
             "title": "Назначения сотрудников",
+            "auto_preview": None,
+            "current_auto_params": {
+                "mode": AssignmentAutomationService.MODE_FILL_ONLY,
+                "only_understaffed": True,
+            },
         })
 
     today = datetime.now().date()
@@ -10016,6 +10648,15 @@ def calendar(request):
         month=month,
         today=today,
     )
+
+    saved_preview = _get_auto_preview(request, year, month)
+    current_auto_params = saved_preview["params"] if saved_preview else {
+        "mode": AssignmentAutomationService.MODE_FILL_ONLY,
+        "only_understaffed": True,
+    }
+
+    context["auto_preview"] = saved_preview
+    context["current_auto_params"] = current_auto_params
 
     return render(request, "app/assignments/calendar.html", context)
 
@@ -10076,6 +10717,92 @@ def unassign_person(request, assignment_id):
     messages.success(request, f"Назначение сотрудника {person_name} снято")
 
     return AssignmentService.redirect_to_calendar(plan)
+
+
+@login_required
+def preview_auto_assign(request):
+    access = AccessManager(request.user)
+    if not access.can_assignment("view"):
+        messages.error(request, "Нет прав")
+        return _calendar_redirect(datetime.now().date().year, datetime.now().date().month)
+
+    today = datetime.now().date()
+    year = int(request.POST.get("year", today.year))
+    month = int(request.POST.get("month", today.month))
+    params = _build_auto_params(request)
+
+    try:
+        preview = AssignmentAutomationService.preview_assignments(
+            user=request.user,
+            year=year,
+            month=month,
+            mode=params["mode"],
+            only_understaffed=params["only_understaffed"],
+        )
+    except PermissionError as exc:
+        messages.error(request, str(exc))
+        return _calendar_redirect(year, month)
+    except Exception as exc:
+        messages.error(request, f"Ошибка предпросмотра автоназначения: {exc}")
+        return _calendar_redirect(year, month)
+
+    _save_auto_preview(request, year, month, params, preview)
+    messages.success(
+        request,
+        (
+            f"Предпросмотр автоназначения построен ({preview['mode_label']}): "
+            f"{preview['changed_plans']} планов, {preview['total_new_assignments']} новых назначений"
+        )
+    )
+    return _calendar_redirect(year, month)
+
+
+@login_required
+def apply_auto_assign(request):
+    access = AccessManager(request.user)
+    if not access.can_assignment("view"):
+        messages.error(request, "Нет прав")
+        return _calendar_redirect(datetime.now().date().year, datetime.now().date().month)
+
+    today = datetime.now().date()
+    year = int(request.POST.get("year", today.year))
+    month = int(request.POST.get("month", today.month))
+
+    saved_preview = _get_auto_preview(request, year, month)
+    params = saved_preview["params"] if saved_preview else _build_auto_params(request)
+
+    try:
+        result = AssignmentAutomationService.apply_assignments(
+            user=request.user,
+            year=year,
+            month=month,
+            mode=params["mode"],
+            only_understaffed=params["only_understaffed"],
+        )
+    except Exception as exc:
+        messages.error(request, f"Ошибка применения автоназначения: {exc}")
+        return _calendar_redirect(year, month)
+
+    _save_auto_preview(request, year, month, params, result)
+    messages.success(
+        request,
+        (
+            f"Автоназначение выполнено ({result['mode_label']}): "
+            f"{result['changed_plans']} планов, {result['total_new_assignments']} новых назначений"
+        )
+    )
+    return _calendar_redirect(year, month)
+
+
+@login_required
+def clear_auto_assign_preview(request):
+    today = datetime.now().date()
+    year = int(request.POST.get("year", today.year))
+    month = int(request.POST.get("month", today.month))
+
+    _clear_auto_preview(request)
+    messages.success(request, "Предпросмотр автоназначения очищен")
+    return _calendar_redirect(year, month)
 === ФАЙЛ: core/views/auth.py ===
 
 from django.shortcuts import render
@@ -10711,18 +11438,66 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+PREVIEW_SESSION_KEY = "plan_auto_distribution_preview"
+
 
 def apply_plan_access_to_form(form, access_manager, action: str):
     visible_fields = set(access_manager.visible_plan_fields(action))
     editable_fields = set(access_manager.editable_plan_fields(action))
 
-    for field_name in list(form.fields.keys()):
+    for field_name in tuple(form.fields.keys()):
         if field_name not in visible_fields:
             form.fields.pop(field_name, None)
             continue
 
         if field_name not in editable_fields:
             form.fields[field_name].disabled = True
+
+
+def _default_auto_params():
+    return {
+        "mode": PlanAutomationService.MODE_BALANCED_STRUCTURE,
+        "only_empty": False,
+        "normalize_by_headcount": False,
+    }
+
+
+def _build_auto_params(request):
+    return {
+        "mode": request.POST.get("auto_mode", PlanAutomationService.MODE_BALANCED_STRUCTURE),
+        "only_empty": request.POST.get("auto_only_empty") == "1",
+        "normalize_by_headcount": request.POST.get("auto_normalize_headcount") == "1",
+    }
+
+
+def _clear_preview_session(request, schedule_id: int):
+    preview = request.session.get(PREVIEW_SESSION_KEY)
+    if preview and preview.get("schedule_id") == schedule_id:
+        request.session.pop(PREVIEW_SESSION_KEY, None)
+        request.session.modified = True
+
+
+def _save_preview_session(request, schedule_id: int, params: dict, preview: dict):
+    request.session[PREVIEW_SESSION_KEY] = {
+        "schedule_id": schedule_id,
+        "params": params,
+        "summary": preview.get("summary"),
+        "duty_debug": preview.get("duty_debug"),
+        "mode": preview.get("mode"),
+        "mode_label": preview.get("mode_label"),
+        "total_count": preview.get("total_count"),
+        "changed_count": preview.get("changed_count"),
+    }
+    request.session.modified = True
+
+
+def _get_preview_session(request, schedule_id: int):
+    preview = request.session.get(PREVIEW_SESSION_KEY)
+    if not preview:
+        return None
+    if preview.get("schedule_id") != schedule_id:
+        return None
+    return preview
 
 
 @login_required
@@ -10864,6 +11639,7 @@ def delete(request, pk):
     if request.method == "POST":
         schedule_name = schedule.name or str(schedule)
         PlanService.delete_schedule_with_children(schedule)
+        _clear_preview_session(request, schedule.id)
         messages.success(request, f'Расписание "{schedule_name}" и все связанные данные удалены')
         return redirect("plan:list")
 
@@ -10888,19 +11664,22 @@ def days(request, pk):
 
     base_unit = schedule.unit
 
-    logger.info("\n" + "=" * 70)
-    logger.info("=== DAYS() START ===")
-    logger.info(f"Расписание: id={schedule.id}, month={schedule.month}, unit={schedule.unit.name}")
-    logger.info(f"Пользователь: {request.user.username}, подразделение пользователя: {request.user.profile.unit.name}")
-
     if not access.can_plan("manage_days", schedule):
-        logger.warning("Нет прав на управление днями")
         messages.error(request, "Нет прав")
         return redirect("plan:list")
 
     allowed_delegate_units = access.allowed_delegate_units_for_plan_days(schedule).exclude(id=base_unit.id)
 
     dates, duty_types, plans_dict, incoming_days = PlanService.build_table_data(schedule, base_unit)
+
+    logger.info(
+        "PLAN DAYS schedule_id=%s unit=%s user=%s duty_types=%s dates=%s",
+        schedule.id,
+        schedule.unit.name,
+        request.user.username,
+        len(duty_types),
+        len(dates),
+    )
 
     delegate_units = [
         {
@@ -10912,17 +11691,16 @@ def days(request, pk):
 
     weekday_names = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     date_headers = []
-    for date in dates:
-        weekday_index = date.weekday()
+    for current_date in dates:
+        weekday_index = current_date.weekday()
         date_headers.append({
-            "date": date,
-            "day": date.day,
+            "date": current_date,
+            "day": current_date.day,
             "weekday_short": weekday_names[weekday_index],
             "is_weekend": weekday_index >= 5,
         })
 
     if request.method == "POST":
-        logger.info("\n--- ОБРАБОТКА POST ЗАПРОСА ---")
         PlanService.process_post_data(
             schedule=schedule,
             post_data=request.POST,
@@ -10944,8 +11722,13 @@ def days(request, pk):
         allowed_delegate_units=allowed_delegate_units,
     )
 
-    logger.info(f"\n--- ИТОГО СТРОК В ТАБЛИЦЕ: {len(table)} ---")
-    logger.info("=" * 70 + "\n")
+    actual_distribution_summary = PlanService.build_distribution_summary_from_table(
+        table=table,
+        base_unit=base_unit,
+    )
+
+    saved_preview = _get_preview_session(request, schedule.id)
+    current_auto_params = saved_preview["params"] if saved_preview else _default_auto_params()
 
     return render(request, "app/plans/days.html", {
         "schedule": schedule,
@@ -10961,6 +11744,11 @@ def days(request, pk):
         "duty_types_count": len(duty_types),
         "dates_count": len(dates),
         "incoming_days": incoming_days,
+        "actual_distribution_summary": actual_distribution_summary,
+        "preview_distribution_summary": saved_preview["summary"] if saved_preview else None,
+        "preview_duty_debug": saved_preview["duty_debug"] if saved_preview else None,
+        "preview_meta": saved_preview,
+        "current_auto_params": current_auto_params,
     })
 
 
@@ -11015,15 +11803,7 @@ def accept(request, plan_id):
         messages.error(request, "Нет доступа")
         return redirect("plan:incoming")
 
-    logger.info("\n=== ACCEPT ===")
-    logger.info(f"source: id={source_plan.id}, date={source_plan.date}, duty={source_plan.duty_type.name}")
-    logger.info(
-        f"source.unit={source_plan.unit.name if source_plan.unit else 'None'}, "
-        f"type={source_plan.type}, status={source_plan.status}"
-    )
-
     if source_plan.unit != user_unit or source_plan.type != "incoming" or source_plan.status != "pending":
-        logger.warning("Не может быть принято")
         messages.error(request, "Это назначение не может быть принято")
         return redirect("plan:incoming")
 
@@ -11031,14 +11811,77 @@ def accept(request, plan_id):
     messages.success(request, f"Назначение на {source_plan.date} принято")
     return redirect("plan:incoming")
 
+
+@login_required
+def preview_distribute(request, pk):
+    access = AccessManager(request.user)
+
+    schedule = get_object_or_404(
+        MonthlySchedule.objects.select_related("unit", "unit__parent", "unit__unit_type"),
+        pk=pk
+    )
+
+    if not access.can_plan("manage_days", schedule):
+        messages.error(request, "Нет прав на предпросмотр автораспределения")
+        return redirect("plan:days", pk=pk)
+
+    params = _build_auto_params(request)
+
+    logger.info(
+        "AUTO PREVIEW start schedule_id=%s unit=%s user=%s mode=%s normalized_mode=%s only_empty=%s normalize_by_headcount=%s",
+        schedule.id,
+        schedule.unit.name,
+        request.user.username,
+        params["mode"],
+        PlanAutomationService.normalize_mode(params["mode"]),
+        params["only_empty"],
+        params["normalize_by_headcount"],
+    )
+
+    try:
+        preview = PlanAutomationService.preview_distribution(
+            schedule=schedule,
+            user=request.user,
+            mode=params["mode"],
+            only_empty=params["only_empty"],
+            normalize_by_headcount=params["normalize_by_headcount"],
+        )
+    except PermissionError as exc:
+        logger.warning("AUTO PREVIEW denied schedule_id=%s: %s", schedule.id, exc)
+        messages.error(request, str(exc))
+        return redirect("plan:days", pk=pk)
+    except Exception as exc:
+        logger.exception("AUTO PREVIEW failed schedule_id=%s", schedule.id)
+        messages.error(request, f"Ошибка предпросмотра автораспределения: {exc}")
+        return redirect("plan:days", pk=pk)
+
+    _save_preview_session(request, schedule.id, params, preview)
+
+    logger.info(
+        "AUTO PREVIEW done schedule_id=%s mode=%s total=%s changed=%s",
+        schedule.id,
+        preview["mode"],
+        preview["total_count"],
+        preview["changed_count"],
+    )
+
+    messages.success(
+        request,
+        (
+            f"Предпросмотр построен ({preview['mode_label']}): "
+            f"{preview['changed_count']} изменений из {preview['total_count']}"
+        )
+    )
+
+    return redirect("plan:days", pk=pk)
+
+
 @login_required
 def auto_distribute(request, pk):
     access = AccessManager(request.user)
 
     schedule = get_object_or_404(
-        MonthlySchedule.objects.select_related(
-            "unit", "unit__parent", "unit__unit_type"
-        ),
+        MonthlySchedule.objects.select_related("unit", "unit__parent", "unit__unit_type"),
         pk=pk
     )
 
@@ -11046,87 +11889,67 @@ def auto_distribute(request, pk):
         messages.error(request, "Нет прав на автоматическое распределение")
         return redirect("plan:days", pk=pk)
 
-    mode = request.POST.get("auto_mode", PlanAutomationService.MODE_BALANCED)
-    only_empty = request.POST.get("auto_only_empty") == "1"
+    saved_preview = _get_preview_session(request, schedule.id)
+    params = saved_preview["params"] if saved_preview else _build_auto_params(request)
 
-    logger.info("=" * 80)
-    logger.info("AUTO DISTRIBUTE VIEW START")
     logger.info(
-        "schedule_id=%s unit=%s user=%s mode=%s only_empty=%s",
+        "AUTO DISTRIBUTE start schedule_id=%s unit=%s user=%s mode=%s normalized_mode=%s only_empty=%s normalize_by_headcount=%s source=%s",
         schedule.id,
         schedule.unit.name,
         request.user.username,
-        mode,
-        only_empty,
+        params["mode"],
+        PlanAutomationService.normalize_mode(params["mode"]),
+        params["only_empty"],
+        params["normalize_by_headcount"],
+        "preview" if saved_preview else "post",
     )
-
-    try:
-        preview = PlanAutomationService.preview_distribution(
-            schedule=schedule,
-            user=request.user,
-            mode=mode,
-            only_empty=only_empty,
-        )
-    except PermissionError as exc:
-        logger.warning("AUTO DISTRIBUTE denied: %s", exc)
-        messages.error(request, str(exc))
-        return redirect("plan:days", pk=pk)
-    except Exception as exc:
-        logger.exception("AUTO DISTRIBUTE preview failed")
-        messages.error(request, f"Ошибка предварительного анализа: {exc}")
-        return redirect("plan:days", pk=pk)
-
-    logger.info(
-        "AUTO DISTRIBUTE preview total=%s changed=%s",
-        preview["total_count"],
-        preview["changed_count"],
-    )
-
-    if preview["total_count"] == 0:
-        messages.warning(
-            request,
-            (
-                "Автораспределению нечего обрабатывать. "
-                "Проверь: есть ли у этого подразделения типы нарядов, где "
-                "DutyType.created_by_unit = текущее подразделение, "
-                "или принятые входящие наряды."
-            )
-        )
-        logger.warning("AUTO DISTRIBUTE: no editable cells")
-        return redirect("plan:days", pk=pk)
-
-    if preview["changed_count"] == 0:
-        messages.info(
-            request,
-            (
-                f"Подходящие ячейки найдены ({preview['total_count']}), "
-                "но алгоритм не предложил изменений. "
-                "Либо уже всё распределено оптимально, либо нет доступных кандидатов."
-            )
-        )
-        logger.info("AUTO DISTRIBUTE: no changes suggested")
-        return redirect("plan:days", pk=pk)
 
     try:
         result = PlanAutomationService.apply_distribution(
             schedule=schedule,
             user=request.user,
-            mode=mode,
-            only_empty=only_empty,
+            mode=params["mode"],
+            only_empty=params["only_empty"],
+            normalize_by_headcount=params["normalize_by_headcount"],
         )
     except Exception as exc:
-        logger.exception("AUTO DISTRIBUTE apply failed")
+        logger.exception("AUTO DISTRIBUTE apply failed schedule_id=%s", schedule.id)
         messages.error(request, f"Ошибка применения автораспределения: {exc}")
         return redirect("plan:days", pk=pk)
 
-    messages.success(
-        request,
-        f"Автораспределение выполнено: {result['changed_count']} изменений из {result['total_count']}"
+    _save_preview_session(request, schedule.id, params, result)
+
+    logger.info(
+        "AUTO DISTRIBUTE done schedule_id=%s mode=%s total=%s changed=%s",
+        schedule.id,
+        result["mode"],
+        result["total_count"],
+        result["changed_count"],
     )
 
-    logger.info("AUTO DISTRIBUTE VIEW END")
-    logger.info("=" * 80)
+    messages.success(
+        request,
+        (
+            f"Автораспределение выполнено ({result['mode_label']}): "
+            f"{result['changed_count']} изменений из {result['total_count']}"
+        )
+    )
 
+    return redirect("plan:days", pk=pk)
+
+
+@login_required
+def clear_distribution_preview(request, pk):
+    access = AccessManager(request.user)
+
+    schedule = get_object_or_404(MonthlySchedule, pk=pk)
+
+    if not access.can_plan("manage_days", schedule):
+        messages.error(request, "Нет прав")
+        return redirect("plan:days", pk=pk)
+
+    _clear_preview_session(request, schedule.id)
+    messages.success(request, "Предпросмотр очищен")
     return redirect("plan:days", pk=pk)
 === ФАЙЛ: core/views/units/__init__.py ===
 
@@ -12362,6 +13185,371 @@ class AccessControlService:
     @staticmethod
     def save_matrix(user, resource: str, level: int, post_data):
         return save_matrix(user, resource, level, post_data)
+=== ФАЙЛ: core/services/assignment_automation_service.py ===
+
+from __future__ import annotations
+
+from collections import Counter, defaultdict
+from dataclasses import dataclass
+from datetime import date, timedelta
+from typing import Dict, List, Optional
+
+from django.db import transaction
+from django.db.models import Q
+
+from access_control.services import AccessManager
+from core.services.assignment_service import AssignmentService
+from duty_plans.models import DayPlan, DutyAssignment, MonthlySchedule
+from people.models import Person
+
+
+@dataclass(frozen=True)
+class PersonCandidate:
+    person: Person
+    month_count: int
+    same_duty_count: int
+    recent_penalty: int
+    score: int
+    reason: str
+
+
+class AssignmentAutomationService:
+    MODE_FILL_ONLY = "fill_only"
+    MODE_REPLACE_ALL = "replace_all"
+
+    MONTH_ASSIGNMENT_WEIGHT = 10
+    SAME_DUTY_WEIGHT = 5
+    RECENT_ASSIGNMENT_PENALTY = 20
+    CONSECUTIVE_DAY_PENALTY = 30
+
+    @classmethod
+    def preview_assignments(
+        cls,
+        *,
+        user,
+        year: int,
+        month: int,
+        mode: str = MODE_FILL_ONLY,
+        only_understaffed: bool = True,
+    ) -> dict:
+        access = AccessManager(user)
+        if not access.can_assignment("view"):
+            raise PermissionError("Нет прав на просмотр назначений")
+
+        user_unit = user.profile.unit
+        month_start = date(year, month, 1)
+
+        schedule = MonthlySchedule.objects.filter(
+            month=month_start,
+            unit=user_unit,
+        ).first()
+
+        if not schedule:
+            return {
+                "mode": mode,
+                "mode_label": cls._mode_label(mode),
+                "total_plans": 0,
+                "changed_plans": 0,
+                "total_new_assignments": 0,
+                "suggestions": [],
+                "summary": cls._build_empty_summary(mode),
+            }
+
+        plans = (
+            schedule.days
+            .filter(Q(type="own") | Q(type="incoming", status="accepted"))
+            .select_related("unit", "duty_type", "parent")
+            .prefetch_related("assignments__person", "children")
+            .order_by("date", "duty_type__name")
+        )
+
+        suggestions = []
+        per_person_month = cls._build_person_month_load(year=year, month=month, unit=user_unit)
+        per_person_same_duty = cls._build_person_same_duty_load(year=year, month=month, unit=user_unit)
+
+        for plan in plans:
+            if not AssignmentService.can_assign_plan(plan, user):
+                continue
+
+            required = plan.duty_type.required_people or 0
+            current_assignments = list(plan.assignments.select_related("person"))
+            current_count = len(current_assignments)
+
+            if mode == cls.MODE_FILL_ONLY:
+                need = max(required - current_count, 0)
+                if only_understaffed and need <= 0:
+                    continue
+            else:
+                need = required
+                if only_understaffed and current_count >= required:
+                    continue
+
+            available_people, assigned_ids, unavailable = AssignmentService.get_available_people_for_plan(
+                plan, user_unit
+            )
+
+            available_people = cls._exclude_same_day_busy_people(
+                plan=plan,
+                people=list(available_people),
+            )
+
+            candidates: List[PersonCandidate] = []
+            for person in available_people:
+                month_count = per_person_month[person.id]
+                same_duty_count = per_person_same_duty[(person.id, plan.duty_type_id)]
+                recent_penalty = cls._recent_penalty(person=person, target_date=plan.date)
+
+                score = (
+                    month_count * cls.MONTH_ASSIGNMENT_WEIGHT
+                    + same_duty_count * cls.SAME_DUTY_WEIGHT
+                    + recent_penalty
+                )
+
+                reason = (
+                    f"score={score}; month={month_count}; "
+                    f"same_duty={same_duty_count}; recent_penalty={recent_penalty}"
+                )
+
+                candidates.append(
+                    PersonCandidate(
+                        person=person,
+                        month_count=month_count,
+                        same_duty_count=same_duty_count,
+                        recent_penalty=recent_penalty,
+                        score=score,
+                        reason=reason,
+                    )
+                )
+
+            candidates.sort(
+                key=lambda x: (
+                    x.score,
+                    x.month_count,
+                    x.same_duty_count,
+                    x.person.last_name,
+                    x.person.first_name,
+                )
+            )
+
+            chosen_people = [c.person for c in candidates[:need]]
+
+            suggestions.append({
+                "plan_id": plan.id,
+                "date": plan.date,
+                "duty_name": plan.duty_type.name,
+                "unit_name": plan.unit.name if plan.unit else "—",
+                "required_people": required,
+                "current_count": current_count,
+                "need": need,
+                "current_people": [
+                    {
+                        "id": a.person.id,
+                        "name": a.person.full_name(),
+                    }
+                    for a in current_assignments
+                ],
+                "selected_people": [
+                    {
+                        "id": person.id,
+                        "name": person.full_name(),
+                    }
+                    for person in chosen_people
+                ],
+                "candidate_debug": [
+                    {
+                        "id": c.person.id,
+                        "name": c.person.full_name(),
+                        "score": c.score,
+                        "month_count": c.month_count,
+                        "same_duty_count": c.same_duty_count,
+                        "recent_penalty": c.recent_penalty,
+                    }
+                    for c in candidates[:10]
+                ],
+                "unavailable_count": len(unavailable),
+                "changed": len(chosen_people) > 0 or (mode == cls.MODE_REPLACE_ALL and current_count > 0),
+            })
+
+        summary = cls._build_preview_summary(mode=mode, suggestions=suggestions)
+
+        return {
+            "mode": mode,
+            "mode_label": cls._mode_label(mode),
+            "total_plans": len(suggestions),
+            "changed_plans": summary["changed_plans"],
+            "total_new_assignments": summary["total_new_assignments"],
+            "suggestions": suggestions,
+            "summary": summary,
+        }
+
+    @classmethod
+    def apply_assignments(
+        cls,
+        *,
+        user,
+        year: int,
+        month: int,
+        mode: str = MODE_FILL_ONLY,
+        only_understaffed: bool = True,
+    ) -> dict:
+        preview = cls.preview_assignments(
+            user=user,
+            year=year,
+            month=month,
+            mode=mode,
+            only_understaffed=only_understaffed,
+        )
+
+        with transaction.atomic():
+            for item in preview["suggestions"]:
+                if not item["changed"]:
+                    continue
+
+                plan = DayPlan.objects.select_related("unit", "duty_type").get(pk=item["plan_id"])
+
+                if mode == cls.MODE_REPLACE_ALL:
+                    plan.assignments.all().delete()
+
+                selected_ids = [person["id"] for person in item["selected_people"]]
+                if not selected_ids:
+                    continue
+
+                people = Person.objects.filter(id__in=selected_ids)
+
+                for person in people:
+                    can_assign, _error = AssignmentService.can_assign_to_plan(plan, user, person)
+                    if not can_assign:
+                        continue
+
+                    DutyAssignment.objects.get_or_create(
+                        day_plan=plan,
+                        person=person,
+                        defaults={"assigned_by": user},
+                    )
+
+        return preview
+
+    @classmethod
+    def _mode_label(cls, mode: str) -> str:
+        if mode == cls.MODE_REPLACE_ALL:
+            return "Пересобрать полностью"
+        return "Только дозаполнить"
+
+    @classmethod
+    def _build_empty_summary(cls, mode: str) -> dict:
+        return {
+            "kind": "preview",
+            "mode": mode,
+            "mode_label": cls._mode_label(mode),
+            "total_plans": 0,
+            "changed_plans": 0,
+            "total_new_assignments": 0,
+            "unit_rows": [],
+            "day_rows": [],
+        }
+
+    @classmethod
+    def _build_preview_summary(cls, *, mode: str, suggestions: list) -> dict:
+        per_day = Counter()
+        per_duty = Counter()
+        total_new_assignments = 0
+        changed_plans = 0
+
+        for item in suggestions:
+            if item["changed"]:
+                changed_plans += 1
+
+            added = len(item["selected_people"])
+            total_new_assignments += added
+            per_day[item["date"].strftime("%d.%m.%Y")] += added
+            per_duty[item["duty_name"]] += added
+
+        day_rows = [
+            {"day": day, "count": count}
+            for day, count in per_day.most_common()
+        ]
+
+        duty_rows = [
+            {"duty_name": duty_name, "count": count}
+            for duty_name, count in per_duty.most_common()
+        ]
+
+        return {
+            "kind": "preview",
+            "mode": mode,
+            "mode_label": cls._mode_label(mode),
+            "total_plans": len(suggestions),
+            "changed_plans": changed_plans,
+            "total_new_assignments": total_new_assignments,
+            "day_rows": day_rows,
+            "duty_rows": duty_rows,
+        }
+
+    @staticmethod
+    def _build_person_month_load(*, year: int, month: int, unit) -> defaultdict:
+        result = defaultdict(int)
+
+        rows = DutyAssignment.objects.filter(
+            day_plan__date__year=year,
+            day_plan__date__month=month,
+            person__unit=unit,
+        ).values_list("person_id", flat=True)
+
+        for person_id in rows:
+            result[person_id] += 1
+
+        return result
+
+    @staticmethod
+    def _build_person_same_duty_load(*, year: int, month: int, unit) -> defaultdict:
+        result = defaultdict(int)
+
+        rows = DutyAssignment.objects.filter(
+            day_plan__date__year=year,
+            day_plan__date__month=month,
+            person__unit=unit,
+        ).values_list("person_id", "day_plan__duty_type_id")
+
+        for person_id, duty_type_id in rows:
+            result[(person_id, duty_type_id)] += 1
+
+        return result
+
+    @staticmethod
+    def _exclude_same_day_busy_people(*, plan: DayPlan, people: List[Person]) -> List[Person]:
+        if not people:
+            return []
+
+        person_ids = [p.id for p in people]
+
+        busy_ids = set(
+            DutyAssignment.objects.filter(
+                day_plan__date=plan.date,
+                person_id__in=person_ids,
+            ).exclude(day_plan=plan).values_list("person_id", flat=True)
+        )
+
+        return [p for p in people if p.id not in busy_ids]
+
+    @classmethod
+    def _recent_penalty(cls, *, person: Person, target_date: date) -> int:
+        yesterday = target_date - timedelta(days=1)
+        two_days_ago = target_date - timedelta(days=2)
+
+        assigned_dates = set(
+            DutyAssignment.objects.filter(
+                person=person,
+                day_plan__date__in=[yesterday, two_days_ago],
+            ).values_list("day_plan__date", flat=True)
+        )
+
+        penalty = 0
+        if yesterday in assigned_dates:
+            penalty += cls.RECENT_ASSIGNMENT_PENALTY
+        if yesterday in assigned_dates and two_days_ago in assigned_dates:
+            penalty += cls.CONSECUTIVE_DAY_PENALTY
+
+        return penalty
 === ФАЙЛ: core/services/assignment_service.py ===
 
 """
@@ -12926,13 +14114,10 @@ class PersonService:
 
 from __future__ import annotations
 
-import logging
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import date
 from typing import Dict, Iterable, List, Optional, Tuple
-
-from django.http import QueryDict
 
 from access_control.services import AccessManager
 from core.services.plan_service import PlanService
@@ -12941,40 +14126,91 @@ from duty_types.models import DutyType
 from people.models import Person
 from units.models import Unit
 
-logger = logging.getLogger(__name__)
-
 
 @dataclass(frozen=True)
 class DistributionCandidate:
     unit: Unit
-    capacity: int
+    capacity: Optional[int]
+    headcount: int
     total_month_load: int
     same_duty_month_load: int
-    score: int
+    day_load: int
+    day_same_duty_load: int
+    rotation_load: int
+    score: float
     reason: str
 
 
 class PlanAutomationService:
-    """
-    Автоматическое распределение нарядов по подразделениям.
-
-    Важно:
-    - сервис НЕ меняет напрямую дерево делегирования;
-    - сервис вычисляет, в какое подразделение поставить ячейку;
-    - применение результата идёт через существующий PlanService.process_post_data(...),
-      но туда передаётся ПОЛНЫЙ снимок editable-таблицы, а не только изменённые ячейки.
-    """
-
+    MODE_BALANCED = "balanced"  # legacy alias
+    MODE_BALANCED_STRUCTURE = "balanced_structure"
+    MODE_BALANCED_CAPACITY = "balanced_capacity"
+    MODE_CHILDREN_ONLY_STRUCTURE = "children_only_structure"
+    MODE_CHILDREN_ONLY_CAPACITY = "children_only_capacity"
     MODE_PREFER_OWN = "prefer_own"
-    MODE_BALANCED = "balanced"
     MODE_PREFER_CHILDREN = "prefer_children"
 
-    BASE_LOAD_WEIGHT = 10
-    SAME_DUTY_WEIGHT = 5
-    SHORTAGE_PENALTY = 1000
-    DELEGATION_PENALTY = 15
-    OWN_UNIT_BONUS = 30
-    PREFER_CHILDREN_BASE_PENALTY = 20
+    BASE_LOAD_WEIGHT = 8.0
+    SAME_DUTY_WEIGHT = 4.0
+    DAY_LOAD_WEIGHT = 20.0
+    DAY_SAME_DUTY_WEIGHT = 12.0
+
+    DELEGATION_PENALTY = 12.0
+    OWN_UNIT_BONUS = 25.0
+    PREFER_CHILDREN_BASE_PENALTY = 20.0
+
+    @classmethod
+    def normalize_mode(cls, mode: str) -> str:
+        if mode == cls.MODE_BALANCED:
+            return cls.MODE_BALANCED_CAPACITY
+        return mode
+
+    @classmethod
+    def mode_meta(cls, mode: str) -> dict:
+        mode = cls.normalize_mode(mode)
+
+        if mode == cls.MODE_BALANCED_STRUCTURE:
+            return {
+                "use_capacity": False,
+                "children_only": False,
+                "label": "Равномерно по структуре",
+            }
+        if mode == cls.MODE_BALANCED_CAPACITY:
+            return {
+                "use_capacity": True,
+                "children_only": False,
+                "label": "Равномерно с учётом людей",
+            }
+        if mode == cls.MODE_CHILDREN_ONLY_STRUCTURE:
+            return {
+                "use_capacity": False,
+                "children_only": True,
+                "label": "Только дочерние по структуре",
+            }
+        if mode == cls.MODE_CHILDREN_ONLY_CAPACITY:
+            return {
+                "use_capacity": True,
+                "children_only": True,
+                "label": "Только дочерние с учётом людей",
+            }
+        if mode == cls.MODE_PREFER_OWN:
+            return {
+                "use_capacity": True,
+                "children_only": False,
+                "label": "Приоритет своим",
+            }
+        if mode == cls.MODE_PREFER_CHILDREN:
+            return {
+                "use_capacity": True,
+                "children_only": False,
+                "label": "Приоритет дочерним",
+            }
+
+        return {
+            "use_capacity": True,
+            "children_only": False,
+            "label": mode,
+        }
 
     @classmethod
     def preview_distribution(
@@ -12986,7 +14222,11 @@ class PlanAutomationService:
         only_empty: bool = False,
         selected_dates: Optional[Iterable[date]] = None,
         selected_duty_type_ids: Optional[Iterable[int]] = None,
+        normalize_by_headcount: bool = False,
     ) -> dict:
+        mode = cls.normalize_mode(mode)
+        meta = cls.mode_meta(mode)
+
         access = AccessManager(user)
         if not access.can_plan("manage_days", schedule):
             raise PermissionError("Нет прав на автоматическое распределение")
@@ -12997,28 +14237,15 @@ class PlanAutomationService:
         )
         allowed_delegate_units = list(allowed_delegate_units_qs)
 
+        if meta["children_only"]:
+            candidate_units = list(allowed_delegate_units)
+        else:
+            candidate_units = [base_unit, *allowed_delegate_units]
+
         dates, duty_types, plans_dict, incoming_days = PlanService.build_table_data(schedule, base_unit)
 
         selected_dates = set(selected_dates or dates)
         selected_duty_type_ids = set(selected_duty_type_ids or [dt.id for dt in duty_types])
-
-        candidate_units = [base_unit, *allowed_delegate_units]
-
-        logger.info("=" * 80)
-        logger.info("PLAN AUTO PREVIEW START")
-        logger.info(
-            "schedule_id=%s unit=%s month=%s user=%s mode=%s only_empty=%s",
-            schedule.id,
-            base_unit.name,
-            schedule.month,
-            getattr(user, "username", None),
-            mode,
-            only_empty,
-        )
-        logger.info(
-            "candidate_units=%s",
-            [(u.id, u.name) for u in candidate_units]
-        )
 
         unit_month_load = cls._build_unit_month_load(
             year=schedule.month.year,
@@ -13030,13 +14257,48 @@ class PlanAutomationService:
             month=schedule.month.month,
             candidate_units=candidate_units,
         )
+        unit_daily_load = defaultdict(int)
+        unit_daily_duty_load = defaultdict(int)
+        unit_duty_rotation_load = defaultdict(int)
+        unit_headcount = cls._build_unit_headcount(candidate_units)
 
         suggestions = []
         mapping: Dict[Tuple[date, int], int] = {}
+        duty_debug = {}
 
+        # Важный момент: обрабатываем по duty_type, а внутри по датам,
+        # чтобы round-robin был естественным внутри конкретного типа наряда.
         for duty_type in duty_types:
             if duty_type.id not in selected_duty_type_ids:
                 continue
+
+            duty_eligible = []
+            duty_rejected = []
+
+            for unit in candidate_units:
+                is_ok, debug_reason, max_capacity = cls._is_unit_eligible_for_duty(
+                    use_capacity=meta["use_capacity"],
+                    unit=unit,
+                    duty_type=duty_type,
+                    dates=dates,
+                )
+                if is_ok:
+                    duty_eligible.append({
+                        "unit_name": unit.name,
+                        "headcount": unit_headcount[unit.id],
+                        "max_capacity": max_capacity,
+                    })
+                else:
+                    duty_rejected.append({
+                        "unit_name": unit.name,
+                        "reason": debug_reason,
+                    })
+
+            duty_debug[duty_type.id] = {
+                "duty_name": duty_type.name,
+                "eligible_units": duty_eligible,
+                "rejected_units": duty_rejected,
+            }
 
             for current_date in dates:
                 if current_date not in selected_dates:
@@ -13059,88 +14321,76 @@ class PlanAutomationService:
 
                 current_unit_id = existing_plan.unit_id if existing_plan else None
                 current_unit_name = existing_plan.unit.name if existing_plan and existing_plan.unit else None
-
-                logger.info(
-                    "cell date=%s duty_type=%s(%s) existing_plan_id=%s current_unit_id=%s current_unit_name=%s",
-                    current_date,
-                    duty_type.id,
-                    duty_type.name,
-                    existing_plan.id if existing_plan else None,
-                    current_unit_id,
-                    current_unit_name,
-                )
+                required_people = duty_type.required_people or 0
 
                 candidates: List[DistributionCandidate] = []
 
                 for unit in candidate_units:
-                    capacity = cls._calculate_capacity(
+                    is_eligible, _reject_reason, capacity = cls._is_unit_eligible_for_date(
+                        use_capacity=meta["use_capacity"],
                         unit=unit,
                         duty_type=duty_type,
                         target_date=current_date,
+                        required_people=required_people,
                     )
-
-                    required_people = duty_type.required_people or 0
-
-                    logger.info(
-                        "  candidate unit_id=%s unit_name=%s capacity=%s required=%s month_load=%s same_duty_load=%s",
-                        unit.id,
-                        unit.name,
-                        capacity,
-                        required_people,
-                        unit_month_load[unit.id],
-                        unit_duty_month_load[(unit.id, duty_type.id)],
-                    )
-
-                    if capacity <= 0:
-                        logger.info("    -> skipped: capacity <= 0")
-                        continue
-
-                    if required_people and capacity < required_people:
-                        logger.info("    -> skipped: capacity < required_people")
+                    if not is_eligible:
                         continue
 
                     total_month_load = unit_month_load[unit.id]
                     same_duty_month_load = unit_duty_month_load[(unit.id, duty_type.id)]
+                    day_load = unit_daily_load[(current_date, unit.id)]
+                    day_same_duty_load = unit_daily_duty_load[(current_date, unit.id, duty_type.id)]
+                    rotation_load = unit_duty_rotation_load[(duty_type.id, unit.id)]
+                    headcount = unit_headcount[unit.id]
 
-                    score, reason = cls._score_unit(
+                    score = cls._calculate_score(
                         mode=mode,
                         unit=unit,
                         base_unit=base_unit,
-                        capacity=capacity,
-                        required_people=required_people,
                         total_month_load=total_month_load,
                         same_duty_month_load=same_duty_month_load,
+                        day_load=day_load,
+                        day_same_duty_load=day_same_duty_load,
+                        headcount=headcount,
+                        normalize_by_headcount=normalize_by_headcount,
                     )
 
-                    logger.info("    -> accepted: score=%s reason=%s", score, reason)
+                    reason = (
+                        f"score={score:.2f}; month={total_month_load}; same_duty={same_duty_month_load}; "
+                        f"day={day_load}; day_same_duty={day_same_duty_load}; rotation={rotation_load}; "
+                        f"headcount={headcount}; capacity={'n/a' if capacity is None else capacity}; "
+                        f"required={required_people}; mode={mode}"
+                    )
 
                     candidates.append(
                         DistributionCandidate(
                             unit=unit,
                             capacity=capacity,
+                            headcount=headcount,
                             total_month_load=total_month_load,
                             same_duty_month_load=same_duty_month_load,
+                            day_load=day_load,
+                            day_same_duty_load=day_same_duty_load,
+                            rotation_load=rotation_load,
                             score=score,
                             reason=reason,
                         )
                     )
 
+                # Для production-логики важнее предсказуемая ротация, чем "магический" score.
                 candidates.sort(
                     key=lambda x: (
-                        x.score,
-                        x.total_month_load,
+                        x.rotation_load,
                         x.same_duty_month_load,
+                        x.total_month_load,
+                        x.day_same_duty_load,
+                        x.day_load,
+                        round(x.score, 4),
                         x.unit.name,
                     )
                 )
 
                 if not candidates:
-                    logger.warning(
-                        "  no candidates for date=%s duty_type=%s(%s)",
-                        current_date,
-                        duty_type.id,
-                        duty_type.name,
-                    )
                     suggestions.append({
                         "date": current_date,
                         "duty_type": duty_type,
@@ -13149,19 +14399,16 @@ class PlanAutomationService:
                         "selected_unit_id": None,
                         "selected_unit_name": None,
                         "changed": False,
-                        "reason": "Нет подходящего подразделения с доступной ёмкостью",
+                        "reason": (
+                            "Нет подходящего подразделения"
+                            if not meta["use_capacity"]
+                            else "Нет подразделения с достаточной кадровой ёмкостью"
+                        ),
                         "candidates": [],
                     })
                     continue
 
                 winner = candidates[0]
-
-                logger.info(
-                    "  winner unit_id=%s unit_name=%s changed=%s",
-                    winner.unit.id,
-                    winner.unit.name,
-                    current_unit_id != winner.unit.id,
-                )
 
                 suggestions.append({
                     "date": current_date,
@@ -13172,28 +14419,51 @@ class PlanAutomationService:
                     "selected_unit_name": winner.unit.name,
                     "changed": current_unit_id != winner.unit.id,
                     "reason": winner.reason,
-                    "candidates": candidates,
+                    "candidates": [
+                        {
+                            "unit_name": candidate.unit.name,
+                            "score": round(candidate.score, 2),
+                            "headcount": candidate.headcount,
+                            "capacity": candidate.capacity,
+                            "month_load": candidate.total_month_load,
+                            "same_duty_load": candidate.same_duty_month_load,
+                            "day_load": candidate.day_load,
+                            "rotation_load": candidate.rotation_load,
+                        }
+                        for candidate in candidates[:5]
+                    ],
                 })
 
                 mapping[(current_date, duty_type.id)] = winner.unit.id
 
-                # балансировка внутри одного прогона
                 unit_month_load[winner.unit.id] += 1
                 unit_duty_month_load[(winner.unit.id, duty_type.id)] += 1
+                unit_daily_load[(current_date, winner.unit.id)] += 1
+                unit_daily_duty_load[(current_date, winner.unit.id, duty_type.id)] += 1
+                unit_duty_rotation_load[(duty_type.id, winner.unit.id)] += 1
 
-        logger.info(
-            "PLAN AUTO PREVIEW END total=%s changed=%s",
-            len(suggestions),
-            sum(1 for item in suggestions if item["changed"]),
+        summary = cls._build_preview_summary(
+            suggestions=suggestions,
+            mode=mode,
+            mode_label=meta["label"],
+            base_unit=base_unit,
         )
-        logger.info("=" * 80)
 
         return {
             "mode": mode,
+            "mode_label": meta["label"],
             "total_count": len(suggestions),
             "changed_count": sum(1 for item in suggestions if item["changed"]),
             "suggestions": suggestions,
             "mapping": mapping,
+            "duty_debug": duty_debug,
+            "summary": summary,
+            "settings": {
+                "only_empty": only_empty,
+                "normalize_by_headcount": normalize_by_headcount,
+                "children_only": meta["children_only"],
+                "use_capacity": meta["use_capacity"],
+            },
         }
 
     @classmethod
@@ -13206,25 +14476,20 @@ class PlanAutomationService:
         only_empty: bool = False,
         selected_dates: Optional[Iterable[date]] = None,
         selected_duty_type_ids: Optional[Iterable[int]] = None,
+        normalize_by_headcount: bool = False,
     ) -> dict:
-        """
-        Применяет автораспределение безопасно:
-        1) собирает ПОЛНЫЙ снимок текущих editable-ячеек
-        2) поверх него накладывает авто-выбор
-        3) передаёт полный post_data в существующий PlanService.process_post_data(...)
-        """
+        mode = cls.normalize_mode(mode)
+
         access = AccessManager(user)
         if not access.can_plan("manage_days", schedule):
             raise PermissionError("Нет прав на автоматическое распределение")
 
         base_unit = schedule.unit
-        allowed_delegate_units_qs = access.allowed_delegate_units_for_plan_days(schedule).exclude(id=base_unit.id)
-        allowed_delegate_units = list(allowed_delegate_units_qs)
+        allowed_delegate_units_qs = access.allowed_delegate_units_for_plan_days(schedule).exclude(
+            id=base_unit.id
+        )
 
-        dates, duty_types, plans_dict, incoming_days = PlanService.build_table_data(schedule, base_unit)
-
-        logger.info("=" * 80)
-        logger.info("PLAN AUTO APPLY START schedule_id=%s user=%s", schedule.id, getattr(user, "username", None))
+        _, _, plans_dict, incoming_days = PlanService.build_table_data(schedule, base_unit)
 
         preview = cls.preview_distribution(
             schedule=schedule,
@@ -13233,94 +14498,151 @@ class PlanAutomationService:
             only_empty=only_empty,
             selected_dates=selected_dates,
             selected_duty_type_ids=selected_duty_type_ids,
+            normalize_by_headcount=normalize_by_headcount,
         )
 
-        # Ключевой фикс:
-        # формируем полный снимок editable-таблицы, как будто пользователь руками отправил всю форму.
-        post_data = QueryDict("", mutable=True)
+        decisions = {}
+        for item in preview["suggestions"]:
+            if not item["selected_unit_id"]:
+                continue
+            if not item["changed"]:
+                continue
+            decisions[(item["date"], item["duty_type"].id)] = item["selected_unit_id"]
 
-        editable_count = 0
-        preserved_count = 0
-        overwritten_count = 0
-
-        for duty_type in duty_types:
-            for current_date in dates:
-                existing_plan = plans_dict.get((current_date, duty_type.id))
-
-                editable = cls._is_editable_cell(
-                    duty_type=duty_type,
-                    current_date=current_date,
-                    existing_plan=existing_plan,
-                    incoming_days=incoming_days,
-                    base_unit=base_unit,
-                    allowed_delegate_units=allowed_delegate_units,
-                )
-                if not editable:
-                    continue
-
-                editable_count += 1
-                key = f"day_{current_date.strftime('%Y-%m-%d')}_{duty_type.id}"
-
-                # Сначала сохраняем текущее состояние ячейки, чтобы process_post_data
-                # не интерпретировал отсутствие поля как удаление.
-                if existing_plan and existing_plan.unit_id:
-                    post_data[key] = str(existing_plan.unit_id)
-                    preserved_count += 1
-
-        # Затем поверх текущего состояния накладываем авто-решения
-        for (current_date, duty_type_id), unit_id in preview["mapping"].items():
-            key = f"day_{current_date.strftime('%Y-%m-%d')}_{duty_type_id}"
-            post_data[key] = str(unit_id)
-            overwritten_count += 1
-
-        logger.info(
-            "PLAN AUTO APPLY snapshot editable_count=%s preserved_count=%s overwritten_count=%s final_post_fields=%s",
-            editable_count,
-            preserved_count,
-            overwritten_count,
-            len(post_data),
-        )
-
-        sample_items = list(post_data.items())[:30]
-        logger.info("PLAN AUTO APPLY post_data sample=%s", sample_items)
-
-        PlanService.process_post_data(
-            schedule=schedule,
-            post_data=post_data,
-            plans_dict=plans_dict,
-            incoming_days=incoming_days,
-            base_unit=base_unit,
-            user=user,
-            allowed_delegate_units=allowed_delegate_units_qs,
-        )
-
-        logger.info(
-            "PLAN AUTO APPLY END changed_count=%s total_count=%s",
-            preview["changed_count"],
-            preview["total_count"],
-        )
-        logger.info("=" * 80)
+        if decisions:
+            PlanService.apply_unit_decisions(
+                schedule=schedule,
+                decisions=decisions,
+                plans_dict=plans_dict,
+                incoming_days=incoming_days,
+                base_unit=base_unit,
+                user=user,
+                allowed_delegate_units=allowed_delegate_units_qs,
+            )
 
         return preview
 
     @classmethod
-    def _score_unit(
+    def _build_preview_summary(cls, *, suggestions, mode, mode_label, base_unit):
+        per_unit_counter = Counter()
+        per_duty = defaultdict(Counter)
+        unresolved_count = 0
+
+        for item in suggestions:
+            selected_unit_name = item.get("selected_unit_name")
+            if not selected_unit_name:
+                unresolved_count += 1
+                continue
+
+            per_unit_counter[selected_unit_name] += 1
+            per_duty[item["duty_type"].name][selected_unit_name] += 1
+
+        unit_rows = [
+            {"unit_name": unit_name, "count": count}
+            for unit_name, count in per_unit_counter.most_common()
+        ]
+
+        duty_rows = []
+        for duty_name in sorted(per_duty.keys()):
+            unit_distribution = [
+                {"unit_name": unit_name, "count": count}
+                for unit_name, count in per_duty[duty_name].most_common()
+            ]
+            duty_rows.append({
+                "duty_name": duty_name,
+                "total": sum(per_duty[duty_name].values()),
+                "units": unit_distribution,
+            })
+
+        allocated_cells = sum(item["count"] for item in unit_rows)
+
+        return {
+            "kind": "preview",
+            "mode": mode,
+            "mode_label": mode_label,
+            "base_unit_name": base_unit.name,
+            "total_cells": len(suggestions),
+            "allocated_cells": allocated_cells,
+            "changed_cells": sum(1 for item in suggestions if item["changed"]),
+            "unresolved_cells": unresolved_count,
+            "unit_rows": unit_rows,
+            "duty_rows": duty_rows,
+        }
+
+    @classmethod
+    def _is_unit_eligible_for_duty(
+        cls,
+        *,
+        use_capacity: bool,
+        unit: Unit,
+        duty_type: DutyType,
+        dates: List[date],
+    ) -> Tuple[bool, str, Optional[int]]:
+        if not use_capacity:
+            return True, "структурный режим", None
+
+        max_capacity = 0
+        for target_date in dates:
+            capacity = cls._calculate_capacity(unit=unit, duty_type=duty_type, target_date=target_date)
+            max_capacity = max(max_capacity, capacity)
+
+        if max_capacity <= 0:
+            return False, "нет сотрудников с допуском / все недоступны", 0
+
+        required_people = duty_type.required_people or 0
+        if required_people and max_capacity < required_people:
+            return False, f"max capacity {max_capacity} < required {required_people}", max_capacity
+
+        return True, "достаточная кадровая ёмкость", max_capacity
+
+    @classmethod
+    def _is_unit_eligible_for_date(
+        cls,
+        *,
+        use_capacity: bool,
+        unit: Unit,
+        duty_type: DutyType,
+        target_date: date,
+        required_people: int,
+    ) -> Tuple[bool, str, Optional[int]]:
+        if not use_capacity:
+            return True, "структурный режим", None
+
+        capacity = cls._calculate_capacity(
+            unit=unit,
+            duty_type=duty_type,
+            target_date=target_date,
+        )
+
+        if capacity <= 0:
+            return False, "capacity=0", capacity
+
+        if required_people and capacity < required_people:
+            return False, f"capacity {capacity} < required {required_people}", capacity
+
+        return True, "ok", capacity
+
+    @classmethod
+    def _calculate_score(
         cls,
         *,
         mode: str,
         unit: Unit,
         base_unit: Unit,
-        capacity: int,
-        required_people: int,
         total_month_load: int,
         same_duty_month_load: int,
-    ) -> Tuple[int, str]:
-        score = 0
-        score += total_month_load * cls.BASE_LOAD_WEIGHT
-        score += same_duty_month_load * cls.SAME_DUTY_WEIGHT
+        day_load: int,
+        day_same_duty_load: int,
+        headcount: int,
+        normalize_by_headcount: bool,
+    ) -> float:
+        divisor = max(headcount, 1) if normalize_by_headcount else 1
 
-        if capacity < required_people:
-            score += cls.SHORTAGE_PENALTY
+        score = 0.0
+        score += (total_month_load * cls.BASE_LOAD_WEIGHT) / divisor
+        score += (same_duty_month_load * cls.SAME_DUTY_WEIGHT) / divisor
+        score += (day_load * cls.DAY_LOAD_WEIGHT) / divisor
+        score += (day_same_duty_load * cls.DAY_SAME_DUTY_WEIGHT) / divisor
 
         if mode == cls.MODE_PREFER_OWN:
             if unit.id == base_unit.id:
@@ -13328,28 +14650,16 @@ class PlanAutomationService:
             else:
                 score += cls.DELEGATION_PENALTY
 
-        elif mode == cls.MODE_BALANCED:
-            if unit.id == base_unit.id:
-                score -= 5
-
         elif mode == cls.MODE_PREFER_CHILDREN:
             if unit.id == base_unit.id:
                 score += cls.PREFER_CHILDREN_BASE_PENALTY
 
-        reason = (
-            f"score={score}; "
-            f"month_load={total_month_load}; "
-            f"same_duty_load={same_duty_month_load}; "
-            f"capacity={capacity}; "
-            f"required={required_people}"
-        )
-        return score, reason
+        return score
 
     @staticmethod
     def _build_unit_month_load(*, year: int, month: int, candidate_units: List[Unit]) -> defaultdict:
         result = defaultdict(int)
         unit_ids = [u.id for u in candidate_units]
-
         rows = DayPlan.objects.filter(
             schedule__month__year=year,
             schedule__month__month=month,
@@ -13365,7 +14675,6 @@ class PlanAutomationService:
     def _build_unit_duty_month_load(*, year: int, month: int, candidate_units: List[Unit]) -> defaultdict:
         result = defaultdict(int)
         unit_ids = [u.id for u in candidate_units]
-
         rows = DayPlan.objects.filter(
             schedule__month__year=year,
             schedule__month__month=month,
@@ -13378,13 +14687,18 @@ class PlanAutomationService:
         return result
 
     @staticmethod
+    def _build_unit_headcount(candidate_units: List[Unit]) -> dict:
+        unit_ids = [u.id for u in candidate_units]
+        counts = defaultdict(int)
+        for unit_id in Person.objects.filter(unit_id__in=unit_ids).values_list("unit_id", flat=True):
+            counts[unit_id] += 1
+        return {unit.id: counts[unit.id] for unit in candidate_units}
+
+    @staticmethod
     def _calculate_capacity(*, unit: Unit, duty_type: DutyType, target_date: date) -> int:
-        people_qs = (
+        available_people = (
             Person.objects
-            .filter(
-                unit=unit,
-                clearances__duty_type=duty_type,
-            )
+            .filter(unit=unit, clearances__duty_type=duty_type)
             .exclude(
                 exemptions__date_from__lte=target_date,
                 exemptions__date_to__gte=target_date,
@@ -13399,7 +14713,7 @@ class PlanAutomationService:
             ).values_list("person_id", flat=True)
         )
 
-        return people_qs.exclude(id__in=busy_ids).count()
+        return available_people.exclude(id__in=busy_ids).count()
 
     @staticmethod
     def _is_editable_cell(
@@ -13422,20 +14736,17 @@ class PlanAutomationService:
         return (current_date, duty_type.id) in incoming_days
 === ФАЙЛ: core/services/plan_service.py ===
 
-"""
-Сервис для работы с планами нарядов (расписаниями)
-Содержит всю бизнес-логику
-"""
-from datetime import datetime
+from __future__ import annotations
+
 import calendar
-import logging
+from collections import Counter
+from datetime import datetime
+from typing import Dict, Tuple
 
 from django.db import transaction
 
-from duty_plans.models import MonthlySchedule, DayPlan
+from duty_plans.models import DayPlan, MonthlySchedule
 from duty_types.models import DutyType
-
-logger = logging.getLogger(__name__)
 
 
 class PlanService:
@@ -13494,9 +14805,9 @@ class PlanService:
         for duty in duty_types:
             row = {"duty": duty, "cells": []}
 
-            for date in dates:
-                p = plans_dict.get((date, duty.id))
-                is_incoming_day = (date, duty.id) in incoming_days
+            for current_date in dates:
+                p = plans_dict.get((current_date, duty.id))
+                is_incoming_day = (current_date, duty.id) in incoming_days
 
                 if p:
                     if p.type == "own":
@@ -13540,194 +14851,274 @@ class PlanService:
                         status_text = ""
 
                 row["cells"].append({
-                    "date": date,
+                    "date": current_date,
                     "unit_id": p.unit_id if p else None,
                     "unit_name": p.unit.name if p and p.unit else None,
                     "cell_class": cell_class,
                     "status_text": status_text,
                     "can_edit": can_edit,
                 })
+
             table.append(row)
 
         return table
 
     @staticmethod
-    def process_post_data(schedule, post_data, plans_dict, incoming_days, base_unit, user, allowed_delegate_units):
-        allowed_delegate_ids = set(allowed_delegate_units.values_list("id", flat=True))
-        allowed_unit_ids = set(allowed_delegate_ids)
-        allowed_unit_ids.add(base_unit.id)
+    def build_distribution_summary_from_table(*, table, base_unit):
+        per_unit_counter = Counter()
+        per_duty = []
+        empty_count = 0
+        active_cells = 0
 
-        with transaction.atomic():
-            parsed_data = {}
-            for key, value in post_data.items():
-                if key.startswith("day_") and value:
-                    parts = key.split("_")
-                    if len(parts) == 3:
-                        date_str = parts[1]
-                        duty_id = int(parts[2])
-                        date = datetime.strptime(date_str, "%Y-%m-%d").date()
-                        unit_id = int(value)
+        for row in table:
+            duty_counter = Counter()
+            duty_total = 0
 
-                        if unit_id in allowed_unit_ids:
-                            parsed_data[(date, duty_id)] = unit_id
+            for cell in row["cells"]:
+                cell_class = cell.get("cell_class")
+                unit_name = cell.get("unit_name")
+                unit_id = cell.get("unit_id")
 
-            for (date, duty_id), unit_id in parsed_data.items():
-                existing = plans_dict.get((date, duty_id))
-                is_incoming = (date, duty_id) in incoming_days
+                if cell_class == "inactive":
+                    continue
+
+                active_cells += 1
+
+                if not unit_id:
+                    empty_count += 1
+                    continue
 
                 if unit_id == base_unit.id:
-                    if existing:
-                        if is_incoming:
-                            existing.type = "incoming"
-                            existing.status = "accepted"
-                            existing.child_status = "none"
-                        else:
-                            existing.type = "own"
-                            existing.status = None
-                            existing.child_status = "none"
-                        existing.unit_id = unit_id
-                        existing.save()
+                    unit_name = base_unit.name
+                elif not unit_name:
+                    unit_name = "—"
 
-                        def delete_children(plan):
-                            for child in plan.children.all():
-                                delete_children(child)
-                                child.delete()
+                per_unit_counter[unit_name] += 1
+                duty_counter[unit_name] += 1
+                duty_total += 1
 
-                        delete_children(existing)
-                    else:
-                        if is_incoming:
-                            DayPlan.objects.create(
-                                schedule=schedule,
-                                date=date,
-                                duty_type_id=duty_id,
-                                unit_id=unit_id,
-                                type="incoming",
-                                status="accepted",
-                                child_status="none",
-                            )
-                        else:
-                            DayPlan.objects.create(
-                                schedule=schedule,
-                                date=date,
-                                duty_type_id=duty_id,
-                                unit_id=unit_id,
-                                type="own",
-                                status=None,
-                                child_status="none",
-                            )
-                else:
-                    if existing:
-                        if is_incoming:
-                            existing.type = "incoming"
-                            existing.status = "accepted"
-                            existing.child_status = "pending"
-                        else:
-                            existing.type = "own"
-                            existing.status = None
-                            existing.child_status = "pending"
-                        existing.unit_id = unit_id
-                        existing.save()
-                    else:
-                        if is_incoming:
-                            existing = DayPlan.objects.create(
-                                schedule=schedule,
-                                date=date,
-                                duty_type_id=duty_id,
-                                unit_id=unit_id,
-                                type="incoming",
-                                status="accepted",
-                                child_status="pending",
-                            )
-                        else:
-                            existing = DayPlan.objects.create(
-                                schedule=schedule,
-                                date=date,
-                                duty_type_id=duty_id,
-                                unit_id=unit_id,
-                                type="own",
-                                status=None,
-                                child_status="pending",
-                            )
+            per_duty.append({
+                "duty_name": row["duty"].name,
+                "total": duty_total,
+                "units": [
+                    {"unit_name": unit_name, "count": count}
+                    for unit_name, count in duty_counter.most_common()
+                ],
+            })
 
-                    child_schedule, _ = MonthlySchedule.objects.get_or_create(
-                        month=schedule.month,
-                        unit_id=unit_id,
-                        defaults={
-                            "name": f"Расписание {schedule.month.strftime('%B %Y')}",
-                            "status": "draft",
-                            "parent_schedule": schedule,
-                            "created_by": user,
-                        },
-                    )
+        unit_rows = [
+            {"unit_name": unit_name, "count": count}
+            for unit_name, count in per_unit_counter.most_common()
+        ]
 
-                    child_plan = existing.children.first()
-                    if child_plan:
-                        child_plan.schedule = child_schedule
-                        child_plan.unit_id = unit_id
-                        child_plan.type = "incoming"
-                        child_plan.status = "pending"
-                        child_plan.child_status = "none"
-                        child_plan.parent = existing
-                        child_plan.save()
-                    else:
-                        DayPlan.objects.create(
-                            schedule=child_schedule,
-                            date=date,
-                            duty_type_id=duty_id,
-                            unit_id=unit_id,
-                            type="incoming",
-                            status="pending",
-                            child_status="none",
-                            parent=existing,
-                        )
+        allocated_cells = sum(item["count"] for item in unit_rows)
 
-            keys_to_delete = [key for key in plans_dict.keys() if key not in parsed_data]
+        return {
+            "kind": "actual",
+            "mode": "actual_table",
+            "mode_label": "Текущее состояние таблицы",
+            "base_unit_name": base_unit.name,
+            "total_cells": active_cells,
+            "allocated_cells": allocated_cells,
+            "empty_cells": empty_count,
+            "unit_rows": unit_rows,
+            "duty_rows": per_duty,
+        }
 
-            def delete_with_children(plan):
-                for child in plan.children.all():
-                    delete_with_children(child)
-                plan.delete()
+    @staticmethod
+    def _delete_children_recursive(plan: DayPlan):
+        children = list(plan.children.all().select_related("schedule"))
+        for child in children:
+            PlanService._delete_children_recursive(child)
+            child.delete()
+
+    @staticmethod
+    def _cleanup_empty_child_schedule(schedule):
+        if schedule.parent_schedule_id and not schedule.days.exists():
+            schedule.delete()
+
+    @staticmethod
+    def _ensure_child_schedule(parent_schedule, month, unit_id, user):
+        child_schedule, _ = MonthlySchedule.objects.get_or_create(
+            month=month,
+            unit_id=unit_id,
+            defaults={
+                "name": f"Расписание {month.strftime('%B %Y')}",
+                "status": "draft",
+                "parent_schedule": parent_schedule,
+                "created_by": user,
+            },
+        )
+        return child_schedule
+
+    @staticmethod
+    def _upsert_root_plan(schedule, target_date, duty_id, unit_id, incoming_days):
+        is_incoming = (target_date, duty_id) in incoming_days
+
+        plan, created = DayPlan.objects.get_or_create(
+            schedule=schedule,
+            date=target_date,
+            duty_type_id=duty_id,
+            defaults={
+                "unit_id": unit_id,
+                "type": "incoming" if is_incoming else "own",
+                "status": "accepted" if is_incoming else None,
+                "child_status": "none",
+            },
+        )
+
+        if not created:
+            plan.unit_id = unit_id
+            plan.type = "incoming" if is_incoming else "own"
+            plan.status = "accepted" if is_incoming else None
+            if not plan.child_status:
+                plan.child_status = "none"
+            plan.save()
+
+        return plan
+
+    @staticmethod
+    def _create_child_plan(parent_plan, child_schedule, unit_id):
+        return DayPlan.objects.create(
+            schedule=child_schedule,
+            date=parent_plan.date,
+            duty_type_id=parent_plan.duty_type_id,
+            unit_id=unit_id,
+            type="incoming",
+            status="pending",
+            child_status="none",
+            parent=parent_plan,
+        )
+
+    @staticmethod
+    def apply_unit_decisions(
+        *,
+        schedule,
+        decisions: Dict[Tuple[datetime.date, int], int],
+        plans_dict,
+        incoming_days,
+        base_unit,
+        user,
+        allowed_delegate_units,
+    ):
+        allowed_delegate_ids = set(allowed_delegate_units.values_list("id", flat=True))
+        allowed_unit_ids = {base_unit.id, *allowed_delegate_ids}
+
+        with transaction.atomic():
+            for (target_date, duty_id), unit_id in decisions.items():
+                if unit_id not in allowed_unit_ids:
+                    continue
+
+                root_plan = PlanService._upsert_root_plan(
+                    schedule=schedule,
+                    target_date=target_date,
+                    duty_id=duty_id,
+                    unit_id=unit_id,
+                    incoming_days=incoming_days,
+                )
+
+                old_child_schedules = [child.schedule for child in root_plan.children.all() if child.schedule_id]
+
+                PlanService._delete_children_recursive(root_plan)
+
+                for child_schedule in old_child_schedules:
+                    PlanService._cleanup_empty_child_schedule(child_schedule)
+
+                if unit_id == base_unit.id:
+                    root_plan.child_status = "none"
+                    root_plan.save(update_fields=["child_status"])
+                    continue
+
+                root_plan.child_status = "pending"
+                root_plan.save(update_fields=["child_status"])
+
+                child_schedule = PlanService._ensure_child_schedule(
+                    parent_schedule=schedule,
+                    month=schedule.month,
+                    unit_id=unit_id,
+                    user=user,
+                )
+
+                PlanService._create_child_plan(
+                    parent_plan=root_plan,
+                    child_schedule=child_schedule,
+                    unit_id=unit_id,
+                )
+
+    @staticmethod
+    def process_post_data(schedule, post_data, plans_dict, incoming_days, base_unit, user, allowed_delegate_units):
+        allowed_delegate_ids = set(allowed_delegate_units.values_list("id", flat=True))
+        allowed_unit_ids = {base_unit.id, *allowed_delegate_ids}
+
+        parsed_data = {}
+        editable_keys = set()
+
+        for (target_date, duty_id), plan in plans_dict.items():
+            if plan.unit_id == base_unit.id or plan.unit_id in allowed_delegate_ids:
+                editable_keys.add((target_date, duty_id))
+
+        for key in incoming_days:
+            editable_keys.add(key)
+
+        for key, value in post_data.items():
+            if not key.startswith("day_") or not value:
+                continue
+
+            parts = key.split("_")
+            if len(parts) != 3:
+                continue
+
+            date_str = parts[1]
+            duty_id = int(parts[2])
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            unit_id = int(value)
+
+            if unit_id not in allowed_unit_ids:
+                continue
+
+            parsed_data[(target_date, duty_id)] = unit_id
+            editable_keys.add((target_date, duty_id))
+
+        with transaction.atomic():
+            if parsed_data:
+                PlanService.apply_unit_decisions(
+                    schedule=schedule,
+                    decisions=parsed_data,
+                    plans_dict=plans_dict,
+                    incoming_days=incoming_days,
+                    base_unit=base_unit,
+                    user=user,
+                    allowed_delegate_units=allowed_delegate_units,
+                )
+
+            keys_to_delete = [key for key in editable_keys if key not in parsed_data]
 
             for key in keys_to_delete:
-                p = plans_dict.get(key)
-                if p:
-                    delete_with_children(p)
+                existing = plans_dict.get(key)
+                if not existing:
+                    continue
+
+                old_child_schedules = [child.schedule for child in existing.children.all() if child.schedule_id]
+                PlanService._delete_children_recursive(existing)
+                existing.delete()
+
+                for child_schedule in old_child_schedules:
+                    PlanService._cleanup_empty_child_schedule(child_schedule)
 
     @staticmethod
     def accept_incoming_plan(source_plan, user):
         with transaction.atomic():
-            schedule, _ = MonthlySchedule.objects.get_or_create(
-                month=source_plan.schedule.month,
-                unit=user.profile.unit,
-                defaults={
-                    "name": f"Расписание {source_plan.schedule.month.strftime('%B %Y')}",
-                    "status": "draft",
-                    "parent_schedule": source_plan.schedule,
-                    "created_by": user,
-                },
-            )
-
-            DayPlan.objects.get_or_create(
-                schedule=schedule,
-                date=source_plan.date,
-                duty_type=source_plan.duty_type,
-                defaults={
-                    "unit": user.profile.unit,
-                    "type": "incoming",
-                    "status": "accepted",
-                    "child_status": "none",
-                    "parent": source_plan,
-                },
-            )
-
             source_plan.status = "accepted"
-            source_plan.save()
+            source_plan.save(update_fields=["status"])
 
-            if source_plan.parent:
-                source_plan.parent.child_status = "accepted"
-                source_plan.parent.save()
+            if source_plan.parent_id:
+                parent_plan = source_plan.parent
+                parent_plan.child_status = "accepted"
+                parent_plan.save(update_fields=["child_status"])
 
-            return schedule
+            if source_plan.schedule and source_plan.schedule.status == "draft":
+                source_plan.schedule.status = "active"
+                source_plan.schedule.save(update_fields=["status"])
 === ФАЙЛ: core/services/unit_service.py ===
 
 """
@@ -13992,13 +15383,15 @@ urlpatterns = [
 from django.urls import path
 from core.views import assignments
 
-# app_name = 'assignments'
-
 urlpatterns = [
-    path('', assignments.calendar, name='calendar'),
-    path('assign/<int:plan_id>/', assignments.assign_person, name='assign'),
-    path('unassign/<int:assignment_id>/', assignments.unassign_person, name='unassign'),
-    path('get-people/<int:plan_id>/', assignments.get_available_people, name='get_people'),
+    path("", assignments.calendar, name="calendar"),
+    path("assign/<int:plan_id>/", assignments.assign_person, name="assign"),
+    path("unassign/<int:assignment_id>/", assignments.unassign_person, name="unassign"),
+    path("get-people/<int:plan_id>/", assignments.get_available_people, name="get_people"),
+
+    path("preview-auto/", assignments.preview_auto_assign, name="preview_auto"),
+    path("apply-auto/", assignments.apply_auto_assign, name="apply_auto"),
+    path("clear-auto-preview/", assignments.clear_auto_assign_preview, name="clear_auto_preview"),
 ]
 === ФАЙЛ: core/urls/auth.py ===
 
@@ -14056,18 +15449,23 @@ urlpatterns = [
 from django.urls import path
 from core.views import plans
 
-# app_name = 'plans'
+# app_name = 'plan'
 
 urlpatterns = [
-    path('', plans.list, name='list'),
-    path('add/', plans.add, name='add'),
-    path('<int:pk>/', plans.detail, name='detail'),
-    path('<int:pk>/edit/', plans.edit, name='edit'),
-    path('<int:pk>/delete/', plans.delete, name='delete'),
-    path('<int:pk>/days/', plans.days, name='days'),
-    path('incoming/', plans.incoming, name='incoming'),
-    path('incoming/<int:plan_id>/accept/', plans.accept, name='accept'),
-    path('<int:pk>/days/auto-distribute/', plans.auto_distribute, name='auto_distribute'),
+    path("", plans.list, name="list"),
+    path("add/", plans.add, name="add"),
+    path("<int:pk>/", plans.detail, name="detail"),
+    path("<int:pk>/edit/", plans.edit, name="edit"),
+    path("<int:pk>/delete/", plans.delete, name="delete"),
+
+    path("<int:pk>/days/", plans.days, name="days"),
+
+    path("incoming/", plans.incoming, name="incoming"),
+    path("incoming/<int:plan_id>/accept/", plans.accept, name="accept"),
+
+    path("<int:pk>/days/preview-distribute/", plans.preview_distribute, name="preview_distribute"),
+    path("<int:pk>/days/auto-distribute/", plans.auto_distribute, name="auto_distribute"),
+    path("<int:pk>/days/clear-preview/", plans.clear_distribution_preview, name="clear_distribution_preview"),
 ]
 === ФАЙЛ: core/urls/unit_types.py ===
 

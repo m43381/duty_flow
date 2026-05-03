@@ -1,12 +1,30 @@
 services:
   web:
     build: .
-    container_name: duty_flow_app
-    command: python duty_flow/manage.py runserver 0.0.0.0:8000
+    container_name: dutyflow_web
+    command: python manage.py runserver 0.0.0.0:8000
+    working_dir: /app/duty_flow
     volumes:
       - .:/app
     ports:
       - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    container_name: dutyflow_db
+    restart: unless-stopped
     environment:
-      - DJANGO_DEBUG=True
-    working_dir: /app  # Указываем рабочую директорию
+      POSTGRES_DB: dutyflow
+      POSTGRES_USER: dutyflow
+      POSTGRES_PASSWORD: dutyflow_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - dutyflow_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  dutyflow_postgres_data:
